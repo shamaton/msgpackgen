@@ -136,26 +136,19 @@ func (d *Decoder) AsInterface(offset int) (interface{}, int, error) {
 		return v, offset, nil
 	}
 
-	/* use ext
-	if d.isDateTime(offset) {
-		v, offset, err := d.asDateTime(offset, k)
-		if err != nil {
-			return nil, 0, err
-		}
-		return v, offset, nil
-	}
-	*/
-
 	// ext
-	for i := range extCoders {
-		if extCoders[i].IsType(offset, &d.data) {
-			v, offset, err := extCoders[i].AsValue(offset, k, &d.data)
-			if err != nil {
-				return nil, 0, err
+	/*
+		for i := range extCoders {
+			if extCoders[i].IsType(offset, &d.data) {
+				v, offset, err := extCoders[i].AsValue(offset, k, &d.data)
+				if err != nil {
+					return nil, 0, err
+				}
+				return v, offset, nil
 			}
-			return v, offset, nil
 		}
-	}
+
+	*/
 
 	return nil, 0, d.errorTemplate(code, "AsInterface")
 }
