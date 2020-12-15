@@ -32,7 +32,7 @@ func (d *Decoder) isFixSlice(v byte) bool {
 	return def.FixArray <= v && v <= def.FixArray+0x0f
 }
 
-func (d *Decoder) sliceLength(offset int, k reflect.Kind) (int, int, error) {
+func (d *Decoder) SliceLength(offset int) (int, int, error) {
 	code, offset := d.readSize1(offset)
 
 	switch {
@@ -45,7 +45,7 @@ func (d *Decoder) sliceLength(offset int, k reflect.Kind) (int, int, error) {
 		bs, offset := d.readSize4(offset)
 		return int(binary.BigEndian.Uint32(bs)), offset, nil
 	}
-	return 0, 0, d.errorTemplate(code, "sliceLength")
+	return 0, 0, d.errorTemplate(code, "SliceLength")
 }
 
 func (d *Decoder) asFixedSlice(rv reflect.Value, offset int, l int) (int, bool, error) {
@@ -69,7 +69,7 @@ func (d *Decoder) asFixedSlice(rv reflect.Value, offset int, l int) (int, bool, 
 	case typeUintSlice:
 		sli := make([]uint, l)
 		for i := range sli {
-			v, o, err := d.asUint(offset, k)
+			v, o, err := d.AsUint(offset, k)
 			if err != nil {
 				return 0, false, err
 			}
@@ -82,7 +82,7 @@ func (d *Decoder) asFixedSlice(rv reflect.Value, offset int, l int) (int, bool, 
 	case typeStringSlice:
 		sli := make([]string, l)
 		for i := range sli {
-			v, o, err := d.asString(offset, k)
+			v, o, err := d.AsString(offset, k)
 			if err != nil {
 				return 0, false, err
 			}
@@ -95,7 +95,7 @@ func (d *Decoder) asFixedSlice(rv reflect.Value, offset int, l int) (int, bool, 
 	case typeBoolSlice:
 		sli := make([]bool, l)
 		for i := range sli {
-			v, o, err := d.asBool(offset, k)
+			v, o, err := d.AsBool(offset, k)
 			if err != nil {
 				return 0, false, err
 			}
@@ -108,7 +108,7 @@ func (d *Decoder) asFixedSlice(rv reflect.Value, offset int, l int) (int, bool, 
 	case typeFloat32Slice:
 		sli := make([]float32, l)
 		for i := range sli {
-			v, o, err := d.asFloat32(offset, k)
+			v, o, err := d.AsFloat32(offset, k)
 			if err != nil {
 				return 0, false, err
 			}
@@ -121,7 +121,7 @@ func (d *Decoder) asFixedSlice(rv reflect.Value, offset int, l int) (int, bool, 
 	case typeFloat64Slice:
 		sli := make([]float64, l)
 		for i := range sli {
-			v, o, err := d.asFloat64(offset, k)
+			v, o, err := d.AsFloat64(offset, k)
 			if err != nil {
 				return 0, false, err
 			}
@@ -186,7 +186,7 @@ func (d *Decoder) asFixedSlice(rv reflect.Value, offset int, l int) (int, bool, 
 	case typeUint8Slice:
 		sli := make([]uint8, l)
 		for i := range sli {
-			v, o, err := d.asUint(offset, k)
+			v, o, err := d.AsUint(offset, k)
 			if err != nil {
 				return 0, false, err
 			}
@@ -199,7 +199,7 @@ func (d *Decoder) asFixedSlice(rv reflect.Value, offset int, l int) (int, bool, 
 	case typeUint16Slice:
 		sli := make([]uint16, l)
 		for i := range sli {
-			v, o, err := d.asUint(offset, k)
+			v, o, err := d.AsUint(offset, k)
 			if err != nil {
 				return 0, false, err
 			}
@@ -212,7 +212,7 @@ func (d *Decoder) asFixedSlice(rv reflect.Value, offset int, l int) (int, bool, 
 	case typeUint32Slice:
 		sli := make([]uint32, l)
 		for i := range sli {
-			v, o, err := d.asUint(offset, k)
+			v, o, err := d.AsUint(offset, k)
 			if err != nil {
 				return 0, false, err
 			}
@@ -225,7 +225,7 @@ func (d *Decoder) asFixedSlice(rv reflect.Value, offset int, l int) (int, bool, 
 	case typeUint64Slice:
 		sli := make([]uint64, l)
 		for i := range sli {
-			v, o, err := d.asUint(offset, k)
+			v, o, err := d.AsUint(offset, k)
 			if err != nil {
 				return 0, false, err
 			}

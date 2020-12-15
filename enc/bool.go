@@ -2,11 +2,11 @@ package encoding
 
 import "github.com/shamaton/msgpack/def"
 
-func (e *Encoder) calcBool() int {
+func (e *Encoder) CalcBool() int {
 	return 0
 }
 
-func (e *Encoder) writeBool(v bool, offset int) int {
+func (e *Encoder) WriteBool(v bool, offset int) int {
 	if v {
 		offset = e.setByte1Int(def.True, offset)
 	} else {

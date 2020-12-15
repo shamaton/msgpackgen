@@ -51,7 +51,7 @@ func (d *Decoder) decode(rv reflect.Value, offset int) (int, error) {
 		offset = o
 
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		v, o, err := d.asUint(offset, k)
+		v, o, err := d.AsUint(offset, k)
 		if err != nil {
 			return 0, err
 		}
@@ -59,7 +59,7 @@ func (d *Decoder) decode(rv reflect.Value, offset int) (int, error) {
 		offset = o
 
 	case reflect.Float32:
-		v, o, err := d.asFloat32(offset, k)
+		v, o, err := d.AsFloat32(offset, k)
 		if err != nil {
 			return 0, err
 		}
@@ -67,7 +67,7 @@ func (d *Decoder) decode(rv reflect.Value, offset int) (int, error) {
 		offset = o
 
 	case reflect.Float64:
-		v, o, err := d.asFloat64(offset, k)
+		v, o, err := d.AsFloat64(offset, k)
 		if err != nil {
 			return 0, err
 		}
@@ -77,14 +77,14 @@ func (d *Decoder) decode(rv reflect.Value, offset int) (int, error) {
 	case reflect.String:
 		// byte slice
 		if d.isCodeBin(d.data[offset]) {
-			v, offset, err := d.asBinString(offset, k)
+			v, offset, err := d.AsBinString(offset, k)
 			if err != nil {
 				return 0, err
 			}
 			rv.SetString(v)
 			return offset, nil
 		}
-		v, o, err := d.asString(offset, k)
+		v, o, err := d.AsString(offset, k)
 		if err != nil {
 			return 0, err
 		}
@@ -92,7 +92,7 @@ func (d *Decoder) decode(rv reflect.Value, offset int) (int, error) {
 		offset = o
 
 	case reflect.Bool:
-		v, o, err := d.asBool(offset, k)
+		v, o, err := d.AsBool(offset, k)
 		if err != nil {
 			return 0, err
 		}
@@ -107,7 +107,7 @@ func (d *Decoder) decode(rv reflect.Value, offset int) (int, error) {
 		}
 		// byte slice
 		if d.isCodeBin(d.data[offset]) {
-			bs, offset, err := d.asBin(offset, k)
+			bs, offset, err := d.AsBin(offset, k)
 			if err != nil {
 				return 0, err
 			}
@@ -116,7 +116,7 @@ func (d *Decoder) decode(rv reflect.Value, offset int) (int, error) {
 		}
 		// string to bytes
 		if d.isCodeString(d.data[offset]) {
-			l, offset, err := d.stringByteLength(offset, k)
+			l, offset, err := d.StringByteLength(offset, k)
 			if err != nil {
 				return 0, err
 			}
@@ -126,7 +126,7 @@ func (d *Decoder) decode(rv reflect.Value, offset int) (int, error) {
 		}
 
 		// get slice length
-		l, o, err := d.sliceLength(offset, k)
+		l, o, err := d.SliceLength(offset, k)
 		if err != nil {
 			return 0, err
 		}
@@ -164,7 +164,7 @@ func (d *Decoder) decode(rv reflect.Value, offset int) (int, error) {
 		}
 		// byte slice
 		if d.isCodeBin(d.data[offset]) {
-			bs, offset, err := d.asBin(offset, k)
+			bs, offset, err := d.AsBin(offset, k)
 			if err != nil {
 				return 0, err
 			}
@@ -178,7 +178,7 @@ func (d *Decoder) decode(rv reflect.Value, offset int) (int, error) {
 		}
 		// string to bytes
 		if d.isCodeString(d.data[offset]) {
-			l, offset, err := d.stringByteLength(offset, k)
+			l, offset, err := d.StringByteLength(offset, k)
 			if err != nil {
 				return 0, err
 			}
@@ -193,7 +193,7 @@ func (d *Decoder) decode(rv reflect.Value, offset int) (int, error) {
 		}
 
 		// get slice length
-		l, o, err := d.sliceLength(offset, k)
+		l, o, err := d.SliceLength(offset, k)
 		if err != nil {
 			return 0, err
 		}
@@ -219,7 +219,7 @@ func (d *Decoder) decode(rv reflect.Value, offset int) (int, error) {
 		}
 
 		// get map length
-		l, o, err := d.mapLength(offset, k)
+		l, o, err := d.MapLength(offset, k)
 		if err != nil {
 			return 0, err
 		}
@@ -288,7 +288,7 @@ func (d *Decoder) decode(rv reflect.Value, offset int) (int, error) {
 			}
 			offset = o
 		} else {
-			v, o, err := d.asInterface(offset, k)
+			v, o, err := d.AsInterface(offset, k)
 			if err != nil {
 				return 0, err
 			}

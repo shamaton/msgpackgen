@@ -16,7 +16,7 @@ func (e *Encoder) isNegativeFixInt64(v int64) bool {
 
 func (e *Encoder) CalcInt(v int64) int {
 	if v >= 0 {
-		return e.calcUint(uint64(v))
+		return e.CalcUint(uint64(v))
 	} else if e.isNegativeFixInt64(v) {
 		// format code only
 		return 0
@@ -32,7 +32,7 @@ func (e *Encoder) CalcInt(v int64) int {
 
 func (e *Encoder) WriteInt(v int64, offset int) int {
 	if v >= 0 {
-		offset = e.writeUint(uint64(v), offset)
+		offset = e.WriteUint(uint64(v), offset)
 	} else if e.isNegativeFixInt64(v) {
 		offset = e.setByte1Int64(v, offset)
 	} else if v >= math.MinInt8 {

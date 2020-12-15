@@ -2,7 +2,6 @@ package dec
 
 import (
 	"encoding/binary"
-	"reflect"
 	"unsafe"
 
 	"github.com/shamaton/msgpack/def"
@@ -16,7 +15,7 @@ func (d *Decoder) isCodeBin(v byte) bool {
 	return false
 }
 
-func (d *Decoder) asBin(offset int, k reflect.Kind) ([]byte, int, error) {
+func (d *Decoder) AsBin(offset int) ([]byte, int, error) {
 	code, offset := d.readSize1(offset)
 
 	switch code {
@@ -34,10 +33,10 @@ func (d *Decoder) asBin(offset int, k reflect.Kind) ([]byte, int, error) {
 		return d.data[offset:o], o, nil
 	}
 
-	return emptyBytes, 0, d.errorTemplate(code, "asBin")
+	return emptyBytes, 0, d.errorTemplate(code, "AsBin")
 }
 
-func (d *Decoder) asBinString(offset int, k reflect.Kind) (string, int, error) {
-	bs, offset, err := d.asBin(offset, k)
+func (d *Decoder) AsBinString(offset int) (string, int, error) {
+	bs, offset, err := d.AsBin(offset)
 	return *(*string)(unsafe.Pointer(&bs)), offset, err
 }

@@ -2,12 +2,11 @@ package dec
 
 import (
 	"encoding/binary"
-	"reflect"
 
 	"github.com/shamaton/msgpack/def"
 )
 
-func (d *Decoder) asUint(offset int, k reflect.Kind) (uint64, int, error) {
+func (d *Decoder) AsUint(offset int) (uint64, int, error) {
 
 	code := d.data[offset]
 
@@ -69,5 +68,5 @@ func (d *Decoder) asUint(offset int, k reflect.Kind) (uint64, int, error) {
 		return 0, offset, nil
 	}
 
-	return 0, 0, d.errorTemplate(code, "asUint")
+	return 0, 0, d.errorTemplate(code, "AsUint")
 }

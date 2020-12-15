@@ -55,7 +55,7 @@ func (d *Decoder) setStructFromArray(rv reflect.Value, offset int, k reflect.Kin
 
 	/*
 		// get length
-		l, o, err := d.sliceLength(offset, k)
+		l, o, err := d.SliceLength(offset, k)
 		if err != nil {
 			return 0, err
 		}
@@ -95,7 +95,7 @@ func (d *Decoder) setStructFromMap(rv reflect.Value, offset int, k reflect.Kind)
 
 	/*
 		// get length
-		l, o, err := d.mapLength(offset, k)
+		l, o, err := d.MapLength(offset, k)
 		if err != nil {
 			return 0, err
 		}
@@ -116,7 +116,7 @@ func (d *Decoder) setStructFromMap(rv reflect.Value, offset int, k reflect.Kind)
 		}
 		// set value if string correct
 		for i := 0; i < l; i++ {
-			key, o2, err := d.asString(o, k)
+			key, o2, err := d.AsString(o, k)
 			if err != nil {
 				return 0, err
 			}

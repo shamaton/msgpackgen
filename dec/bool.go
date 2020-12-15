@@ -1,12 +1,10 @@
 package dec
 
 import (
-	"reflect"
-
 	"github.com/shamaton/msgpack/def"
 )
 
-func (d *Decoder) asBool(offset int, k reflect.Kind) (bool, int, error) {
+func (d *Decoder) AsBool(offset int) (bool, int, error) {
 	code := d.data[offset]
 	offset++
 
@@ -16,5 +14,5 @@ func (d *Decoder) asBool(offset int, k reflect.Kind) (bool, int, error) {
 	case def.False:
 		return false, offset, nil
 	}
-	return false, 0, d.errorTemplate(code, "asBool")
+	return false, 0, d.errorTemplate(code, "AsBool")
 }

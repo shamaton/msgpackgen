@@ -58,7 +58,7 @@ func (d *Decoder) isFixMap(v byte) bool {
 	return def.FixMap <= v && v <= def.FixMap+0x0f
 }
 
-func (d *Decoder) mapLength(offset int, k reflect.Kind) (int, int, error) {
+func (d *Decoder) MapLength(offset int) (int, int, error) {
 	code, offset := d.readSize1(offset)
 
 	switch {
@@ -71,7 +71,7 @@ func (d *Decoder) mapLength(offset int, k reflect.Kind) (int, int, error) {
 		bs, offset := d.readSize4(offset)
 		return int(binary.BigEndian.Uint32(bs)), offset, nil
 	}
-	return 0, 0, d.errorTemplate(code, "mapLength")
+	return 0, 0, d.errorTemplate(code, "MapLength")
 }
 
 func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, error) {
@@ -84,7 +84,7 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 	case typeMapStringInt:
 		m := make(map[string]int, l)
 		for i := 0; i < l; i++ {
-			k, o, err := d.asString(offset, keyKind)
+			k, o, err := d.AsString(offset, keyKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -101,11 +101,11 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 	case typeMapStringUint:
 		m := make(map[string]uint, l)
 		for i := 0; i < l; i++ {
-			k, o, err := d.asString(offset, keyKind)
+			k, o, err := d.AsString(offset, keyKind)
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asUint(o, valueKind)
+			v, o, err := d.AsUint(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -118,11 +118,11 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 	case typeMapStringFloat32:
 		m := make(map[string]float32, l)
 		for i := 0; i < l; i++ {
-			k, o, err := d.asString(offset, keyKind)
+			k, o, err := d.AsString(offset, keyKind)
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asFloat32(o, valueKind)
+			v, o, err := d.AsFloat32(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -135,11 +135,11 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 	case typeMapStringFloat64:
 		m := make(map[string]float64, l)
 		for i := 0; i < l; i++ {
-			k, o, err := d.asString(offset, keyKind)
+			k, o, err := d.AsString(offset, keyKind)
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asFloat64(o, valueKind)
+			v, o, err := d.AsFloat64(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -152,11 +152,11 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 	case typeMapStringBool:
 		m := make(map[string]bool, l)
 		for i := 0; i < l; i++ {
-			k, o, err := d.asString(offset, keyKind)
+			k, o, err := d.AsString(offset, keyKind)
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asBool(o, valueKind)
+			v, o, err := d.AsBool(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -169,11 +169,11 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 	case typeMapStringString:
 		m := make(map[string]string, l)
 		for i := 0; i < l; i++ {
-			k, o, err := d.asString(offset, keyKind)
+			k, o, err := d.AsString(offset, keyKind)
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asString(o, valueKind)
+			v, o, err := d.AsString(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -186,7 +186,7 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 	case typeMapStringInt8:
 		m := make(map[string]int8, l)
 		for i := 0; i < l; i++ {
-			k, o, err := d.asString(offset, keyKind)
+			k, o, err := d.AsString(offset, keyKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -203,7 +203,7 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 	case typeMapStringInt16:
 		m := make(map[string]int16, l)
 		for i := 0; i < l; i++ {
-			k, o, err := d.asString(offset, keyKind)
+			k, o, err := d.AsString(offset, keyKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -220,7 +220,7 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 	case typeMapStringInt32:
 		m := make(map[string]int32, l)
 		for i := 0; i < l; i++ {
-			k, o, err := d.asString(offset, keyKind)
+			k, o, err := d.AsString(offset, keyKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -237,7 +237,7 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 	case typeMapStringInt64:
 		m := make(map[string]int64, l)
 		for i := 0; i < l; i++ {
-			k, o, err := d.asString(offset, keyKind)
+			k, o, err := d.AsString(offset, keyKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -254,11 +254,11 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 	case typeMapStringUint8:
 		m := make(map[string]uint8, l)
 		for i := 0; i < l; i++ {
-			k, o, err := d.asString(offset, keyKind)
+			k, o, err := d.AsString(offset, keyKind)
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asUint(o, valueKind)
+			v, o, err := d.AsUint(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -270,11 +270,11 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 	case typeMapStringUint16:
 		m := make(map[string]uint16, l)
 		for i := 0; i < l; i++ {
-			k, o, err := d.asString(offset, keyKind)
+			k, o, err := d.AsString(offset, keyKind)
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asUint(o, valueKind)
+			v, o, err := d.AsUint(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -287,11 +287,11 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 	case typeMapStringUint32:
 		m := make(map[string]uint32, l)
 		for i := 0; i < l; i++ {
-			k, o, err := d.asString(offset, keyKind)
+			k, o, err := d.AsString(offset, keyKind)
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asUint(o, valueKind)
+			v, o, err := d.AsUint(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -304,11 +304,11 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 	case typeMapStringUint64:
 		m := make(map[string]uint64, l)
 		for i := 0; i < l; i++ {
-			k, o, err := d.asString(offset, keyKind)
+			k, o, err := d.AsString(offset, keyKind)
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asUint(o, valueKind)
+			v, o, err := d.AsUint(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -325,7 +325,7 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asString(o, valueKind)
+			v, o, err := d.AsString(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -342,7 +342,7 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asString(o, valueKind)
+			v, o, err := d.AsString(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -359,7 +359,7 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asString(o, valueKind)
+			v, o, err := d.AsString(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -376,7 +376,7 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asString(o, valueKind)
+			v, o, err := d.AsString(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -393,7 +393,7 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asString(o, valueKind)
+			v, o, err := d.AsString(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -410,7 +410,7 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asBool(o, valueKind)
+			v, o, err := d.AsBool(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -427,7 +427,7 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asBool(o, valueKind)
+			v, o, err := d.AsBool(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -444,7 +444,7 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asBool(o, valueKind)
+			v, o, err := d.AsBool(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -461,7 +461,7 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asBool(o, valueKind)
+			v, o, err := d.AsBool(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -478,7 +478,7 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asBool(o, valueKind)
+			v, o, err := d.AsBool(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -491,11 +491,11 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 	case typeMapUintString:
 		m := make(map[uint]string, l)
 		for i := 0; i < l; i++ {
-			k, o, err := d.asUint(offset, keyKind)
+			k, o, err := d.AsUint(offset, keyKind)
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asString(o, valueKind)
+			v, o, err := d.AsString(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -508,11 +508,11 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 	case typeMapUint8String:
 		m := make(map[uint8]string, l)
 		for i := 0; i < l; i++ {
-			k, o, err := d.asUint(offset, keyKind)
+			k, o, err := d.AsUint(offset, keyKind)
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asString(o, valueKind)
+			v, o, err := d.AsString(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -525,11 +525,11 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 	case typeMapUint16String:
 		m := make(map[uint16]string, l)
 		for i := 0; i < l; i++ {
-			k, o, err := d.asUint(offset, keyKind)
+			k, o, err := d.AsUint(offset, keyKind)
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asString(o, valueKind)
+			v, o, err := d.AsString(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -542,11 +542,11 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 	case typeMapUint32String:
 		m := make(map[uint32]string, l)
 		for i := 0; i < l; i++ {
-			k, o, err := d.asUint(offset, keyKind)
+			k, o, err := d.AsUint(offset, keyKind)
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asString(o, valueKind)
+			v, o, err := d.AsString(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -559,11 +559,11 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 	case typeMapUint64String:
 		m := make(map[uint64]string, l)
 		for i := 0; i < l; i++ {
-			k, o, err := d.asUint(offset, keyKind)
+			k, o, err := d.AsUint(offset, keyKind)
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asString(o, valueKind)
+			v, o, err := d.AsString(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -576,11 +576,11 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 	case typeMapUintBool:
 		m := make(map[uint]bool, l)
 		for i := 0; i < l; i++ {
-			k, o, err := d.asUint(offset, keyKind)
+			k, o, err := d.AsUint(offset, keyKind)
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asBool(o, valueKind)
+			v, o, err := d.AsBool(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -593,11 +593,11 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 	case typeMapUint8Bool:
 		m := make(map[uint8]bool, l)
 		for i := 0; i < l; i++ {
-			k, o, err := d.asUint(offset, keyKind)
+			k, o, err := d.AsUint(offset, keyKind)
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asBool(o, valueKind)
+			v, o, err := d.AsBool(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -610,11 +610,11 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 	case typeMapUint16Bool:
 		m := make(map[uint16]bool, l)
 		for i := 0; i < l; i++ {
-			k, o, err := d.asUint(offset, keyKind)
+			k, o, err := d.AsUint(offset, keyKind)
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asBool(o, valueKind)
+			v, o, err := d.AsBool(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -627,11 +627,11 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 	case typeMapUint32Bool:
 		m := make(map[uint32]bool, l)
 		for i := 0; i < l; i++ {
-			k, o, err := d.asUint(offset, keyKind)
+			k, o, err := d.AsUint(offset, keyKind)
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asBool(o, valueKind)
+			v, o, err := d.AsBool(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -644,11 +644,11 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 	case typeMapUint64Bool:
 		m := make(map[uint64]bool, l)
 		for i := 0; i < l; i++ {
-			k, o, err := d.asUint(offset, keyKind)
+			k, o, err := d.AsUint(offset, keyKind)
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asBool(o, valueKind)
+			v, o, err := d.AsBool(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -661,11 +661,11 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 	case typeMapFloat32String:
 		m := make(map[float32]string, l)
 		for i := 0; i < l; i++ {
-			k, o, err := d.asFloat32(offset, keyKind)
+			k, o, err := d.AsFloat32(offset, keyKind)
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asString(o, valueKind)
+			v, o, err := d.AsString(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -678,11 +678,11 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 	case typeMapFloat64String:
 		m := make(map[float64]string, l)
 		for i := 0; i < l; i++ {
-			k, o, err := d.asFloat64(offset, keyKind)
+			k, o, err := d.AsFloat64(offset, keyKind)
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asString(o, valueKind)
+			v, o, err := d.AsString(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -695,11 +695,11 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 	case typeMapFloat32Bool:
 		m := make(map[float32]bool, l)
 		for i := 0; i < l; i++ {
-			k, o, err := d.asFloat32(offset, keyKind)
+			k, o, err := d.AsFloat32(offset, keyKind)
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asBool(o, valueKind)
+			v, o, err := d.AsBool(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}
@@ -712,11 +712,11 @@ func (d *Decoder) asFixedMap(rv reflect.Value, offset int, l int) (int, bool, er
 	case typeMapFloat64Bool:
 		m := make(map[float64]bool, l)
 		for i := 0; i < l; i++ {
-			k, o, err := d.asFloat64(offset, keyKind)
+			k, o, err := d.AsFloat64(offset, keyKind)
 			if err != nil {
 				return 0, false, err
 			}
-			v, o, err := d.asBool(o, valueKind)
+			v, o, err := d.AsBool(o, valueKind)
 			if err != nil {
 				return 0, false, err
 			}

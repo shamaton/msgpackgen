@@ -1,12 +1,10 @@
 package dec
 
 import (
-	"reflect"
-
 	"github.com/shamaton/msgpack/def"
 )
 
-func (d *Decoder) asInterface(offset int, k reflect.Kind) (interface{}, int, error) {
+func (d *Decoder) AsInterface(offset int) (interface{}, int, error) {
 	code := d.data[offset]
 
 	switch {
@@ -15,32 +13,32 @@ func (d *Decoder) asInterface(offset int, k reflect.Kind) (interface{}, int, err
 		return nil, offset, nil
 
 	case code == def.True, code == def.False:
-		v, offset, err := d.asBool(offset, k)
+		v, offset, err := d.AsBool(offset)
 		if err != nil {
 			return nil, 0, err
 		}
 		return v, offset, nil
 
 	case d.isPositiveFixNum(code), code == def.Uint8:
-		v, offset, err := d.asUint(offset, k)
+		v, offset, err := d.AsUint(offset)
 		if err != nil {
 			return nil, 0, err
 		}
 		return uint8(v), offset, err
 	case code == def.Uint16:
-		v, offset, err := d.asUint(offset, k)
+		v, offset, err := d.AsUint(offset)
 		if err != nil {
 			return nil, 0, err
 		}
 		return uint16(v), offset, err
 	case code == def.Uint32:
-		v, offset, err := d.asUint(offset, k)
+		v, offset, err := d.AsUint(offset)
 		if err != nil {
 			return nil, 0, err
 		}
 		return uint32(v), offset, err
 	case code == def.Uint64:
-		v, offset, err := d.asUint(offset, k)
+		v, offset, err := d.AsUint(offset)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -72,41 +70,41 @@ func (d *Decoder) asInterface(offset int, k reflect.Kind) (interface{}, int, err
 		return v, offset, err
 
 	case code == def.Float32:
-		v, offset, err := d.asFloat32(offset, k)
+		v, offset, err := d.AsFloat32(offset)
 		if err != nil {
 			return nil, 0, err
 		}
 		return v, offset, err
 	case code == def.Float64:
-		v, offset, err := d.asFloat64(offset, k)
+		v, offset, err := d.AsFloat64(offset)
 		if err != nil {
 			return nil, 0, err
 		}
 		return v, offset, err
 
 	case d.isFixString(code), code == def.Str8, code == def.Str16, code == def.Str32:
-		v, offset, err := d.asString(offset, k)
+		v, offset, err := d.AsString(offset)
 		if err != nil {
 			return nil, 0, err
 		}
 		return v, offset, err
 
 	case code == def.Bin8, code == def.Bin16, code == def.Bin32:
-		v, offset, err := d.asBin(offset, k)
+		v, offset, err := d.AsBin(offset)
 		if err != nil {
 			return nil, 0, err
 		}
 		return v, offset, err
 
 	case d.isFixSlice(code), code == def.Array16, code == def.Array32:
-		l, o, err := d.sliceLength(offset, k)
+		l, o, err := d.SliceLength(offset)
 		if err != nil {
 			return nil, 0, err
 		}
 
 		v := make([]interface{}, l)
 		for i := 0; i < l; i++ {
-			vv, o2, err := d.asInterface(o, k)
+			vv, o2, err := d.AsInterface(o)
 			if err != nil {
 				return nil, 0, err
 			}
@@ -117,17 +115,17 @@ func (d *Decoder) asInterface(offset int, k reflect.Kind) (interface{}, int, err
 		return v, offset, nil
 
 	case d.isFixMap(code), code == def.Map16, code == def.Map32:
-		l, o, err := d.mapLength(offset, k)
+		l, o, err := d.MapLength(offset)
 		if err != nil {
 			return nil, 0, err
 		}
 		v := make(map[interface{}]interface{}, l)
 		for i := 0; i < l; i++ {
-			key, o2, err := d.asInterface(o, k)
+			key, o2, err := d.AsInterface(o)
 			if err != nil {
 				return nil, 0, err
 			}
-			value, o2, err := d.asInterface(o2, k)
+			value, o2, err := d.AsInterface(o2)
 			if err != nil {
 				return nil, 0, err
 			}
@@ -159,5 +157,5 @@ func (d *Decoder) asInterface(offset int, k reflect.Kind) (interface{}, int, err
 		}
 	}
 
-	return nil, 0, d.errorTemplate(code, "asInterface")
+	return nil, 0, d.errorTemplate(code, "AsInterface")
 }

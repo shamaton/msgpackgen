@@ -96,20 +96,20 @@ func (e *Encoder) calcSize(rv reflect.Value) (int, error) {
 	switch rv.Kind() {
 	case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uint:
 		v := rv.Uint()
-		ret += e.calcUint(v)
+		ret += e.CalcUint(v)
 
 	case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Int:
 		v := rv.Int()
 		ret += e.CalcInt(int64(v))
 
 	case reflect.Float32:
-		ret += e.calcFloat32(0)
+		ret += e.CalcFloat32(0)
 
 	case reflect.Float64:
-		ret += e.calcFloat64(0)
+		ret += e.CalcFloat64(0)
 
 	case reflect.String:
-		ret += e.calcString(rv.String())
+		ret += e.CalcString(rv.String())
 
 	case reflect.Bool:
 		// do nothing
@@ -121,7 +121,7 @@ func (e *Encoder) calcSize(rv reflect.Value) (int, error) {
 		l := rv.Len()
 		// bin format
 		if e.isByteSlice(rv) {
-			r, err := e.calcByteSlice(l)
+			r, err := e.CalcByteSlice(l)
 			if err != nil {
 				return 0, err
 			}
@@ -169,7 +169,7 @@ func (e *Encoder) calcSize(rv reflect.Value) (int, error) {
 		l := rv.Len()
 		// bin format
 		if e.isByteSlice(rv) {
-			r, err := e.calcByteSlice(l)
+			r, err := e.CalcByteSlice(l)
 			if err != nil {
 				return 0, err
 			}
@@ -295,32 +295,32 @@ func (e *Encoder) create(rv reflect.Value, offset int) int {
 	switch rv.Kind() {
 	case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uint:
 		v := rv.Uint()
-		offset = e.writeUint(v, offset)
+		offset = e.WriteUint(v, offset)
 
 	case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Int:
 		v := rv.Int()
 		offset = e.WriteInt(v, offset)
 
 	case reflect.Float32:
-		offset = e.writeFloat32(rv.Float(), offset)
+		offset = e.WriteFloat32(rv.Float(), offset)
 
 	case reflect.Float64:
-		offset = e.writeFloat64(rv.Float(), offset)
+		offset = e.WriteFloat64(rv.Float(), offset)
 
 	case reflect.Bool:
-		offset = e.writeBool(rv.Bool(), offset)
+		offset = e.WriteBool(rv.Bool(), offset)
 
 	case reflect.String:
-		offset = e.writeString(rv.String(), offset)
+		offset = e.WriteString(rv.String(), offset)
 
 	case reflect.Slice:
 		if rv.IsNil() {
-			return e.writeNil(offset)
+			return e.WriteNil(offset)
 		}
 		l := rv.Len()
 		// bin format
 		if e.isByteSlice(rv) {
-			offset = e.writeByteSliceLength(l, offset)
+			offset = e.WriteByteSliceLength(l, offset)
 			offset = e.setBytes(rv.Bytes(), offset)
 			return offset
 		}
@@ -350,7 +350,7 @@ func (e *Encoder) create(rv reflect.Value, offset int) int {
 		l := rv.Len()
 		// bin format
 		if e.isByteSlice(rv) {
-			offset = e.writeByteSliceLength(l, offset)
+			offset = e.WriteByteSliceLength(l, offset)
 			// objects
 			for i := 0; i < l; i++ {
 				offset = e.setByte1Uint64(rv.Index(i).Uint(), offset)
@@ -377,7 +377,7 @@ func (e *Encoder) create(rv reflect.Value, offset int) int {
 
 	case reflect.Map:
 		if rv.IsNil() {
-			return e.writeNil(offset)
+			return e.WriteNil(offset)
 		}
 
 		l := rv.Len()
@@ -399,7 +399,7 @@ func (e *Encoder) create(rv reflect.Value, offset int) int {
 
 	case reflect.Ptr:
 		if rv.IsNil() {
-			return e.writeNil(offset)
+			return e.WriteNil(offset)
 		}
 
 		offset = e.create(rv.Elem(), offset)
@@ -408,7 +408,7 @@ func (e *Encoder) create(rv reflect.Value, offset int) int {
 		offset = e.create(rv.Elem(), offset)
 
 	case reflect.Invalid:
-		return e.writeNil(offset)
+		return e.WriteNil(offset)
 
 	}
 	return offset

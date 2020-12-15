@@ -14,7 +14,7 @@ func (e *Encoder) isByteSlice(rv reflect.Value) bool {
 	return rv.Type().Elem() == typeByte
 }
 
-func (e *Encoder) calcByteSlice(l int) (int, error) {
+func (e *Encoder) CalcByteSlice(l int) (int, error) {
 	if l <= math.MaxUint8 {
 		return def.Byte1 + l, nil
 	} else if l <= math.MaxUint16 {
@@ -26,7 +26,7 @@ func (e *Encoder) calcByteSlice(l int) (int, error) {
 	return 0, fmt.Errorf("not support this array length : %d", l)
 }
 
-func (e *Encoder) writeByteSliceLength(l int, offset int) int {
+func (e *Encoder) WriteByteSliceLength(l int, offset int) int {
 	if l <= math.MaxUint8 {
 		offset = e.setByte1Int(def.Bin8, offset)
 		offset = e.setByte1Int(l, offset)

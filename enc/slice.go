@@ -19,25 +19,25 @@ func (e *Encoder) calcFixedSlice(rv reflect.Value) (int, bool) {
 
 	case []uint:
 		for _, v := range sli {
-			size += def.Byte1 + e.calcUint(uint64(v))
+			size += def.Byte1 + e.CalcUint(uint64(v))
 		}
 		return size, true
 
 	case []string:
 		for _, v := range sli {
-			size += def.Byte1 + e.calcString(v)
+			size += def.Byte1 + e.CalcString(v)
 		}
 		return size, true
 
 	case []float32:
 		for _, v := range sli {
-			size += def.Byte1 + e.calcFloat32(float64(v))
+			size += def.Byte1 + e.CalcFloat32(float64(v))
 		}
 		return size, true
 
 	case []float64:
 		for _, v := range sli {
-			size += def.Byte1 + e.calcFloat64(v)
+			size += def.Byte1 + e.CalcFloat64(v)
 		}
 		return size, true
 
@@ -71,25 +71,25 @@ func (e *Encoder) calcFixedSlice(rv reflect.Value) (int, bool) {
 
 	case []uint8:
 		for _, v := range sli {
-			size += def.Byte1 + e.calcUint(uint64(v))
+			size += def.Byte1 + e.CalcUint(uint64(v))
 		}
 		return size, true
 
 	case []uint16:
 		for _, v := range sli {
-			size += def.Byte1 + e.calcUint(uint64(v))
+			size += def.Byte1 + e.CalcUint(uint64(v))
 		}
 		return size, true
 
 	case []uint32:
 		for _, v := range sli {
-			size += def.Byte1 + e.calcUint(uint64(v))
+			size += def.Byte1 + e.CalcUint(uint64(v))
 		}
 		return size, true
 
 	case []uint64:
 		for _, v := range sli {
-			size += def.Byte1 + e.calcUint(v)
+			size += def.Byte1 + e.CalcUint(v)
 		}
 		return size, true
 	}
@@ -122,31 +122,31 @@ func (e *Encoder) writeFixedSlice(rv reflect.Value, offset int) (int, bool) {
 
 	case []uint:
 		for _, v := range sli {
-			offset = e.writeUint(uint64(v), offset)
+			offset = e.WriteUint(uint64(v), offset)
 		}
 		return offset, true
 
 	case []string:
 		for _, v := range sli {
-			offset = e.writeString(v, offset)
+			offset = e.WriteString(v, offset)
 		}
 		return offset, true
 
 	case []float32:
 		for _, v := range sli {
-			offset = e.writeFloat32(float64(v), offset)
+			offset = e.WriteFloat32(float64(v), offset)
 		}
 		return offset, true
 
 	case []float64:
 		for _, v := range sli {
-			offset = e.writeFloat64(float64(v), offset)
+			offset = e.WriteFloat64(float64(v), offset)
 		}
 		return offset, true
 
 	case []bool:
 		for _, v := range sli {
-			offset = e.writeBool(v, offset)
+			offset = e.WriteBool(v, offset)
 		}
 		return offset, true
 
@@ -176,25 +176,25 @@ func (e *Encoder) writeFixedSlice(rv reflect.Value, offset int) (int, bool) {
 
 	case []uint8:
 		for _, v := range sli {
-			offset = e.writeUint(uint64(v), offset)
+			offset = e.WriteUint(uint64(v), offset)
 		}
 		return offset, true
 
 	case []uint16:
 		for _, v := range sli {
-			offset = e.writeUint(uint64(v), offset)
+			offset = e.WriteUint(uint64(v), offset)
 		}
 		return offset, true
 
 	case []uint32:
 		for _, v := range sli {
-			offset = e.writeUint(uint64(v), offset)
+			offset = e.WriteUint(uint64(v), offset)
 		}
 		return offset, true
 
 	case []uint64:
 		for _, v := range sli {
-			offset = e.writeUint(v, offset)
+			offset = e.WriteUint(v, offset)
 		}
 		return offset, true
 	}

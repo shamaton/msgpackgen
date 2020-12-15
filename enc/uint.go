@@ -10,7 +10,7 @@ func (e *Encoder) isPositiveFixUint64(v uint64) bool {
 	return def.PositiveFixIntMin <= v && v <= def.PositiveFixIntMax
 }
 
-func (e *Encoder) calcUint(v uint64) int {
+func (e *Encoder) CalcUint(v uint64) int {
 	if v <= math.MaxInt8 {
 		// format code only
 		return 0
@@ -24,7 +24,7 @@ func (e *Encoder) calcUint(v uint64) int {
 	return def.Byte8
 }
 
-func (e *Encoder) writeUint(v uint64, offset int) int {
+func (e *Encoder) WriteUint(v uint64, offset int) int {
 	if v <= math.MaxInt8 {
 		offset = e.setByte1Uint64(v, offset)
 	} else if v <= math.MaxUint8 {

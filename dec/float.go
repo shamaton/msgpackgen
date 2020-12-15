@@ -2,13 +2,11 @@ package dec
 
 import (
 	"encoding/binary"
-	"math"
-	"reflect"
-
 	"github.com/shamaton/msgpack/def"
+	"math"
 )
 
-func (d *Decoder) asFloat32(offset int, k reflect.Kind) (float32, int, error) {
+func (d *Decoder) AsFloat32(offset int) (float32, int, error) {
 	code := d.data[offset]
 
 	switch {
@@ -19,7 +17,7 @@ func (d *Decoder) asFloat32(offset int, k reflect.Kind) (float32, int, error) {
 		return v, offset, nil
 
 	case d.isPositiveFixNum(code), code == def.Uint8, code == def.Uint16, code == def.Uint32, code == def.Uint64:
-		v, offset, err := d.asUint(offset, k)
+		v, offset, err := d.AsUint(offset)
 		if err != nil {
 			break
 		}
@@ -36,10 +34,10 @@ func (d *Decoder) asFloat32(offset int, k reflect.Kind) (float32, int, error) {
 		offset++
 		return 0, offset, nil
 	}
-	return 0, 0, d.errorTemplate(code, "asFloat32")
+	return 0, 0, d.errorTemplate(code, "AsFloat32")
 }
 
-func (d *Decoder) asFloat64(offset int, k reflect.Kind) (float64, int, error) {
+func (d *Decoder) AsFloat64(offset int) (float64, int, error) {
 	code := d.data[offset]
 
 	switch {
@@ -56,7 +54,7 @@ func (d *Decoder) asFloat64(offset int, k reflect.Kind) (float64, int, error) {
 		return float64(v), offset, nil
 
 	case d.isPositiveFixNum(code), code == def.Uint8, code == def.Uint16, code == def.Uint32, code == def.Uint64:
-		v, offset, err := d.asUint(offset, k)
+		v, offset, err := d.AsUint(offset)
 		if err != nil {
 			break
 		}
@@ -73,5 +71,5 @@ func (d *Decoder) asFloat64(offset int, k reflect.Kind) (float64, int, error) {
 		offset++
 		return 0, offset, nil
 	}
-	return 0, 0, d.errorTemplate(code, "asFloat64")
+	return 0, 0, d.errorTemplate(code, "AsFloat64")
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/shamaton/msgpack/def"
 )
 
-func (e *Encoder) calcString(v string) int {
+func (e *Encoder) CalcString(v string) int {
 	// NOTE : unsafe
 	strBytes := *(*[]byte)(unsafe.Pointer(&v))
 	l := len(strBytes)
@@ -22,7 +22,7 @@ func (e *Encoder) calcString(v string) int {
 	// NOTE : length over uint32
 }
 
-func (e *Encoder) writeString(str string, offset int) int {
+func (e *Encoder) WriteString(str string, offset int) int {
 	// NOTE : unsafe
 	strBytes := *(*[]byte)(unsafe.Pointer(&str))
 	l := len(strBytes)

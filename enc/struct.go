@@ -170,7 +170,7 @@ func (e *Encoder) calcStructMap(rv reflect.Value) (int, error) {
 			c = &structCache{}
 			for i := 0; i < rv.NumField(); i++ {
 				if ok, name := e.CheckField(rv.Type().Field(i)); ok {
-					keySize := def.Byte1 + e.calcString(name)
+					keySize := def.Byte1 + e.CalcString(name)
 					valueSize, err := e.calcSize(rv.Field(i))
 					if err != nil {
 						return 0, err
@@ -184,7 +184,7 @@ func (e *Encoder) calcStructMap(rv reflect.Value) (int, error) {
 		} else {
 			c = cache.(*structCache)
 			for i := 0; i < len(c.indexes); i++ {
-				keySize := def.Byte1 + e.calcString(c.names[i])
+				keySize := def.Byte1 + e.CalcString(c.names[i])
 				valueSize, err := e.calcSize(rv.Field(c.indexes[i]))
 				if err != nil {
 					return 0, err
@@ -286,7 +286,7 @@ func (e *Encoder) writeStructMap(rv reflect.Value, offset int) int {
 	}
 
 	for i := 0; i < num; i++ {
-		offset = e.writeString(c.names[i], offset)
+		offset = e.WriteString(c.names[i], offset)
 		offset = e.create(rv.Field(c.indexes[i]), offset)
 	}
 	return offset
