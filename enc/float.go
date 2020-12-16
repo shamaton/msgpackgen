@@ -14,9 +14,9 @@ func (e *Encoder) CalcFloat64(v float64) int {
 	return def.Byte8
 }
 
-func (e *Encoder) WriteFloat32(v float64, offset int) int {
+func (e *Encoder) WriteFloat32(v float32, offset int) int {
 	offset = e.setByte1Int(def.Float32, offset)
-	offset = e.setByte4Uint64(uint64(math.Float32bits(float32(v))), offset)
+	offset = e.setByte4Uint64(uint64(math.Float32bits(v)), offset)
 	return offset
 }
 

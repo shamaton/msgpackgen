@@ -7,6 +7,7 @@ import (
 	"github.com/shamaton/msgpack/def"
 )
 
+// todo : can delete ??
 func (e *Encoder) calcFixedMap(rv reflect.Value) (int, bool) {
 	size := 0
 
@@ -290,7 +291,7 @@ func (e *Encoder) writeFixedMap(rv reflect.Value, offset int) (int, bool) {
 	case map[string]float32:
 		for k, v := range m {
 			offset = e.WriteString(k, offset)
-			offset = e.WriteFloat32(float64(v), offset)
+			offset = e.WriteFloat32(v, offset)
 		}
 		return offset, true
 
@@ -393,13 +394,13 @@ func (e *Encoder) writeFixedMap(rv reflect.Value, offset int) (int, bool) {
 
 	case map[float32]string:
 		for k, v := range m {
-			offset = e.WriteFloat32(float64(k), offset)
+			offset = e.WriteFloat32(k, offset)
 			offset = e.WriteString(v, offset)
 		}
 		return offset, true
 	case map[float32]bool:
 		for k, v := range m {
-			offset = e.WriteFloat32(float64(k), offset)
+			offset = e.WriteFloat32(k, offset)
 			offset = e.WriteBool(v, offset)
 		}
 		return offset, true

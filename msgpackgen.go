@@ -2,26 +2,54 @@ package msgpackgen
 
 import (
 	"github.com/shamaton/msgpack"
-	decoding "github.com/shamaton/msgpackgen/dec"
-	encoding "github.com/shamaton/msgpackgen/enc"
+)
+
+type (
+	EncResolver func(i interface{}) ([]byte, error)
+	DecResolver func(data []byte, i interface{}) (bool, error)
+)
+
+var (
+	encResolver EncResolver
+	decResolver DecResolver
 )
 
 func SetEncodingOption(asArray bool) {
 	msgpack.StructAsArray = asArray
 }
 
-func SetResolver(er encoding.EncoderResolver, dr decoding.DecodeResolver) {
-	encoding.Resolver = er
-	decoding.Resolver = dr
+func SetResolver(er EncResolver, dr DecResolver) {
+	encResolver = er
+	decResolver = dr
 }
 
 // Encode returns the MessagePack-encoded byte array of v.
 func Encode(v interface{}) ([]byte, error) {
-	return encoding.Encode(v, msgpack.StructAsArray)
+
+	if encResolver != nil {
+		if b, err := encResolver(v); err != nil {
+			return nil, err
+		} else if b != nil {
+			return b, nil
+		}
+	}
+
+	return msgpack.Encode(v)
 }
 
 // Decode analyzes the MessagePack-encoded data and stores
 // the result into the pointer of v.
 func Decode(data []byte, v interface{}) error {
-	return decoding.Decode(data, v, msgpack.StructAsArray)
+
+	if decResolver != nil {
+		b, err := decResolver(data, v)
+		if err != nil {
+			return err
+		}
+		if b {
+			return nil
+		}
+	}
+
+	return msgpack.Decode(data, v)
 }

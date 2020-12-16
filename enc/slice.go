@@ -1,12 +1,14 @@
 package encoding
 
 import (
+	"fmt"
 	"math"
 	"reflect"
 
 	"github.com/shamaton/msgpack/def"
 )
 
+// todo : can delete ??
 func (e *Encoder) calcFixedSlice(rv reflect.Value) (int, bool) {
 	size := 0
 
@@ -97,7 +99,20 @@ func (e *Encoder) calcFixedSlice(rv reflect.Value) (int, bool) {
 	return size, false
 }
 
-func (e *Encoder) writeSliceLength(l int, offset int) int {
+func (e *Encoder) CalcSliceLength(l int) (int, error) {
+
+	if l <= 0x0f {
+		// format code only
+		return 0, nil
+	} else if l <= math.MaxUint16 {
+		return def.Byte2, nil
+	} else if uint(l) <= math.MaxUint32 {
+		return def.Byte4, nil
+	}
+	return 0, fmt.Errorf("not support this array length : %d", l)
+}
+
+func (e *Encoder) WriteSliceLength(l int, offset int) int {
 	// format size
 	if l <= 0x0f {
 		offset = e.setByte1Int(def.FixArray+l, offset)
@@ -134,13 +149,13 @@ func (e *Encoder) writeFixedSlice(rv reflect.Value, offset int) (int, bool) {
 
 	case []float32:
 		for _, v := range sli {
-			offset = e.WriteFloat32(float64(v), offset)
+			offset = e.WriteFloat32(v, offset)
 		}
 		return offset, true
 
 	case []float64:
 		for _, v := range sli {
-			offset = e.WriteFloat64(float64(v), offset)
+			offset = e.WriteFloat64(v, offset)
 		}
 		return offset, true
 
