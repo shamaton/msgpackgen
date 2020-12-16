@@ -14,6 +14,8 @@ import (
 	encoding "github.com/shamaton/msgpackgen/enc"
 )
 
+// todo : extまわりの対応、time.Timeとか
+
 type structTest struct {
 	A        int
 	B        float32
@@ -43,11 +45,11 @@ type Item struct {
 	Num    uint
 }
 
-func TestA(t *testing.T) {
+func _TestA(t *testing.T) {
 	e := func(interface{}) ([]byte, error) { return nil, nil }
 	d := func([]byte, interface{}) (bool, error) { return false, nil }
 	add()
-	msgpackgen.SetEncodingOption(false)
+	msgpackgen.SetEncodingOption(true)
 
 	msgpackgen.SetResolver(e, d)
 	check(t)
@@ -201,6 +203,18 @@ func calcSizestructTest(v structTest, encoder *encoding.Encoder) (int, error) {
 	}
 	size += s
 
+	// todo : タグが設定されているパターン
+	if !msgpack.StructAsArray {
+		size += encoder.CalcString("A")
+		size += encoder.CalcString("B")
+		size += encoder.CalcString("String")
+		size += encoder.CalcString("Bool")
+		size += encoder.CalcString("Uint64")
+		size += encoder.CalcString("Slice")
+		size += encoder.CalcString("ItemData")
+		size += encoder.CalcString("Items")
+	}
+
 	size += def.Byte1
 	size += encoder.CalcInt(int64(v.A))
 
@@ -285,6 +299,17 @@ func encodestructTest(v structTest, encoder *encoding.Encoder, offset int) ([]by
 }
 
 func decodestructTest(v *structTest, decoder *dec.Decoder, offset int) (int, error) {
+
+	// todo : mapの場合はここでstringをみてswitchする
+
+	a := "abc"
+	switch a {
+	case "abc":
+		fmt.Println("correct")
+
+	case "b":
+		fmt.Println("wrong")
+	}
 
 	offset, err := decoder.CheckStruct(num, 0)
 	if err != nil {
