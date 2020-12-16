@@ -14,8 +14,12 @@ var (
 	decResolver DecResolver
 )
 
-func SetEncodingOption(asArray bool) {
-	msgpack.StructAsArray = asArray
+func SetStructAsArray(on bool) {
+	msgpack.StructAsArray = on
+}
+
+func StructAsArray() bool {
+	return msgpack.StructAsArray
 }
 
 func SetResolver(er EncResolver, dr DecResolver) {

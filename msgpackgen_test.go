@@ -49,7 +49,7 @@ func _TestA(t *testing.T) {
 	e := func(interface{}) ([]byte, error) { return nil, nil }
 	d := func([]byte, interface{}) (bool, error) { return false, nil }
 	add()
-	msgpackgen.SetEncodingOption(true)
+	msgpackgen.SetStructAsArray(true)
 
 	msgpackgen.SetResolver(e, d)
 	check(t)

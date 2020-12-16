@@ -22,6 +22,7 @@ func TestGenerate(t *testing.T) {
 }
 
 func jen() {
+	packageName := "msgpackgen"
 
 	f := NewFilePath("a.b/c")
 	f.Func().Id("init").Params().Block(
@@ -30,8 +31,48 @@ func jen() {
 		Qual("g.h/f", "Baz").Call().Comment("Colliding package name is renamed."),
 	)
 
-	f.Func().Id("decode").Params(Id("data").Index().Byte(), Id("i").Interface()).Params(Bool(), Error()).Block()
+	decodeTopTemplate("decode", f).Block(
+		// todo : Qual
+		If(Id(packageName + ".StructAsArray").Call()).Block(
+			Return(Id("decodeAsArray").Call(Id("data"), Id("i"))),
+		).Else().Block(
+			Return(Id("decodeAsMap").Call(Id("data"), Id("i"))),
+		),
+	)
+
+	decodeTopTemplate("decodeAsArray", f).Block(
+		Switch(Id("v").Op(":=").Id("i").Assert(Type())).Block(
+			cases()...,
+		),
+		Return(Nil(), Nil()),
+	)
+
+	decodeTopTemplate("decodeAsMap", f).Block(
+		Return(Nil(), Nil()),
+	)
+
+	f.Func().Id("encode").Params(Id("i").Interface()).Params(Id("data").Index().Byte(), Error()).Block(
+		If(Id(packageName + ".StructAsArray").Call()).Block(
+			Return(Id("encodeAsArray").Call(Id("i"))),
+		).Else().Block(
+			Return(Id("encodeAsMap").Call(Id("i"))),
+		),
+	)
+
 	fmt.Printf("%#v", f)
+}
+
+func decodeTopTemplate(name string, f *File) *Statement {
+	return f.Func().Id(name).Params(Id("data").Index().Byte(), Id("i").Interface()).Params(Bool(), Error())
+}
+
+func cases() []Code {
+	var states []Code
+	for _, v := range analyzedStructs {
+		states = append(states, Case(Id(v.Name)).Block(
+			Return(Id("_"), Err())))
+	}
+	return states
 }
 
 func findStructs(fileName string) (string, error) {
@@ -86,11 +127,25 @@ func findStructs(fileName string) (string, error) {
 		}
 		return true
 	})
-	aaa(packageName, name, fset, f)
+	a := aaa(packageName, name, fset, f)
+	analyzedStructs = append(analyzedStructs, a)
+	fmt.Println(analyzedStructs)
 	return name, nil
 }
 
-func aaa(packageName, structName string, fset *token.FileSet, file *ast.File) {
+var analyzedStructs []analyzedStruct
+
+type analyzedStruct struct {
+	Name   string
+	Fields []analyzedField
+}
+
+type analyzedField struct {
+	Name string
+	Type types.Type
+}
+
+func aaa(packageName, structName string, fset *token.FileSet, file *ast.File) analyzedStruct {
 
 	conf := types.Config{
 		Importer: importer.Default(),
@@ -104,14 +159,31 @@ func aaa(packageName, structName string, fset *token.FileSet, file *ast.File) {
 		fmt.Println(err)
 	}
 
+	// todo : FullNameとかQual使って重複を回避する必要がある
+
 	S := pkg.Scope().Lookup(structName)
 	internal := S.Type().Underlying().(*types.Struct)
 
+	analyzed := analyzedStruct{Name: structName}
+
 	for i := 0; i < internal.NumFields(); i++ {
-		tag, found := reflect.StructTag(internal.Tag(i)).Lookup("msgpack")
 		field := internal.Field(i)
-		fmt.Printf("%v (exported=%t, tag=%s, found=%t)\n", field, field.Exported(), tag, found)
+
+		//fmt.Println(field.Id(), field.Type().Underlying(), field.IsField())
+
+		if field.IsField() && field.Exported() {
+			name, _ := reflect.StructTag(internal.Tag(i)).Lookup("msgpack")
+			if len(name) < 1 {
+				name = field.Id()
+			}
+
+			analyzed.Fields = append(analyzed.Fields, analyzedField{
+				Name: name,
+				Type: field.Type(),
+			})
+		}
 	}
 
 	// todo : msgpackresolverとして出力
+	return analyzed
 }
