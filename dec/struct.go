@@ -24,7 +24,7 @@ var mapSCTA = sync.Map{}
 func (d *Decoder) setStruct(rv reflect.Value, offset int, k reflect.Kind) (int, error) {
 	/*
 		if d.isDateTime(offset) {
-			dt, offset, err := d.asDateTime(offset, k)
+			dt, offset, err := d.AsDateTime(offset, k)
 			if err != nil {
 				return 0, err
 			}

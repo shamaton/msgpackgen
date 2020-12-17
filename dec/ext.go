@@ -65,7 +65,7 @@ func (d *Decoder) isDateTime(offset int) bool {
 	return false
 }
 
-func (d *Decoder) asDateTime(offset int, k reflect.Kind) (time.Time, int, error) {
+func (d *Decoder) AsDateTime(offset int, k reflect.Kind) (time.Time, int, error) {
 	code, offset := d.readSize1(offset)
 
 	switch code {

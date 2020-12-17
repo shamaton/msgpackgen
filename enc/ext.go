@@ -57,7 +57,7 @@ func (e *Encoder) isDateTime(value reflect.Value) (bool, time.Time) {
 	return false, now
 }
 
-func (e *Encoder) calcTime(t time.Time) int {
+func (e *Encoder) CalcTime(t time.Time) int {
 	secs := uint64(t.Unix())
 	if secs>>34 == 0 {
 		data := uint64(t.Nanosecond())<<34 | secs
@@ -70,7 +70,7 @@ func (e *Encoder) calcTime(t time.Time) int {
 	return def.Byte1 + def.Byte1 + def.Byte4 + def.Byte8
 }
 
-func (e *Encoder) writeTime(t time.Time, offset int) int {
+func (e *Encoder) WriteTime(t time.Time, offset int) int {
 	secs := uint64(t.Unix())
 	if secs>>34 == 0 {
 		data := uint64(t.Nanosecond())<<34 | secs

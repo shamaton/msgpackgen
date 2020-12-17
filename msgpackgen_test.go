@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"testing"
+	"time"
 
 	"github.com/shamaton/msgpack"
 
@@ -22,10 +23,12 @@ type structTest struct {
 	String string
 	Bool   bool
 	Uint64 uint64
+	Now    time.Time
 	Slice  []uint
 	Map    map[string]float64
 	//ItemData Item
 	//Items    []Item
+	//Interface interface{}
 }
 
 var v = structTest{
@@ -34,11 +37,13 @@ var v = structTest{
 	String: "my name is msgpack gen.",
 	Bool:   true,
 	Uint64: math.MaxUint32 * 2,
+	Now:    time.Now(),
 	Slice:  []uint{1, 100, 10000, 1000000},
 	Map:    map[string]float64{"a": 1.23, "b": 2.34, "c": 3.45},
 	//ItemData: Item{ID: 1, Name: "abc", Effect: 7.89, Num: 999},
+	//Interface: "interface is not supported",
 }
-var num = 7
+var num = 8
 
 type Item struct {
 	ID     int
@@ -292,6 +297,8 @@ func calcArraySizestructTest(v structTest, encoder *encoding.Encoder) (int, erro
 
 	size += encoder.CalcUint(v.Uint64)
 
+	size += encoder.CalcTime(v.Now)
+
 	// todo : nilのパターン
 	{
 		s, err := encoder.CalcSliceLength(len(v.Slice))
@@ -369,6 +376,9 @@ func calcMapSizestructTest(v structTest, encoder *encoding.Encoder) (int, error)
 	size += encoder.CalcString("Uint64")
 	size += encoder.CalcUint(v.Uint64)
 
+	size += encoder.CalcString("Now")
+	size += encoder.CalcTime(v.Now)
+
 	// todo : nilのパターン
 	{
 		size += encoder.CalcString("Slice")
@@ -432,6 +442,7 @@ func encodeArraystructTest(v structTest, encoder *encoding.Encoder, offset int) 
 	offset = encoder.WriteString(v.String, offset)
 	offset = encoder.WriteBool(v.Bool, offset)
 	offset = encoder.WriteUint(v.Uint64, offset)
+	offset = encoder.WriteTime(v.Now, offset)
 
 	// todo : nilのパターン
 	offset = encoder.WriteSliceLength(len(v.Slice), offset)
@@ -483,6 +494,9 @@ func encodeMapstructTest(v structTest, encoder *encoding.Encoder, offset int) ([
 
 	offset = encoder.WriteString("Uint64", offset)
 	offset = encoder.WriteUint(v.Uint64, offset)
+
+	offset = encoder.WriteString("Now", offset)
+	offset = encoder.WriteTime(v.Now, offset)
 
 	// todo : nilのパターン
 	offset = encoder.WriteString("Slice", offset)
@@ -563,6 +577,14 @@ func decodeArraystructTest(v *structTest, decoder *dec.Decoder, offset int) (int
 			return 0, err
 		}
 		v.Uint64 = vv
+	}
+	{
+		var vv time.Time
+		vv, offset, err = decoder.AsDateTime(offset)
+		if err != nil {
+			return 0, err
+		}
+		v.Now = vv
 	}
 	{
 		// todo : nilのパターン
@@ -706,6 +728,15 @@ func decodeMapstructTest(v *structTest, decoder *dec.Decoder, offset int) (int, 
 					return 0, err
 				}
 				v.Uint64 = vv
+			}
+		case "Now":
+			{
+				var vv time.Time
+				vv, offset, err = decoder.AsDateTime(offset)
+				if err != nil {
+					return 0, err
+				}
+				v.Now = vv
 			}
 		case "Slice":
 			{

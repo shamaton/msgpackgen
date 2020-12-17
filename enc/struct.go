@@ -91,7 +91,7 @@ func (e *Encoder) WriteStruct(num, offset int) int {
 func (e *Encoder) calcStruct(rv reflect.Value) (int, error) {
 
 	//if isTime, tm := e.isDateTime(rv); isTime {
-	//	size := e.calcTime(tm)
+	//	size := e.CalcTime(tm)
 	//	return size, nil
 	//}
 
@@ -229,7 +229,7 @@ func (e *Encoder) getStructWriter(typ reflect.Type) structWriteFunc {
 func (e *Encoder) writeStruct(rv reflect.Value, offset int) int {
 	/*
 		if isTime, tm := e.isDateTime(rv); isTime {
-			return e.writeTime(tm, offset)
+			return e.WriteTime(tm, offset)
 		}
 	*/
 
