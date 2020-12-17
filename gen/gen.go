@@ -59,6 +59,10 @@ func GenerateCode() {
 		Return(Nil(), Nil()),
 	)
 
+	for _, st := range analyzedStructs {
+		calcFunction(st, f)
+	}
+
 	fmt.Printf("%#v", f)
 }
 
@@ -83,4 +87,7 @@ func cases() []Code {
 
 func calcFunction(st analyzedStruct, f *File) {
 
+	f.Func().Id("calcArraySize"+st.Name).Params(Id("v").Id(st.Name), Id("encoder").Op("*").Qual("github.com/shamaton/msgpackgen/enc", "Encoder")).Params(Int(), Error()).Block(
+		Id("size").Op(":=").Lit(0),
+	)
 }

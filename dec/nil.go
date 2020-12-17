@@ -2,6 +2,6 @@ package dec
 
 import "github.com/shamaton/msgpack/def"
 
-func (d *Decoder) isCodeNil(v byte) bool {
-	return def.Nil == v
+func (d *Decoder) IsCodeNil(offset int) bool {
+	return def.Nil == d.data[offset]
 }

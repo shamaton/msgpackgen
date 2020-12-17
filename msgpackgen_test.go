@@ -38,7 +38,7 @@ var v = structTest{
 	Bool:   true,
 	Uint64: math.MaxUint32 * 2,
 	Now:    time.Now(),
-	Slice:  []uint{1, 100, 10000, 1000000},
+	Slice:  nil, // []uint{1, 100, 10000, 1000000},
 	Map:    map[string]float64{"a": 1.23, "b": 2.34, "c": 3.45},
 	//ItemData: Item{ID: 1, Name: "abc", Effect: 7.89, Num: 999},
 	//Interface: "interface is not supported",
@@ -300,7 +300,7 @@ func calcArraySizestructTest(v structTest, encoder *encoding.Encoder) (int, erro
 	size += encoder.CalcTime(v.Now)
 
 	// todo : nilのパターン
-	{
+	if v.Slice != nil {
 		s, err := encoder.CalcSliceLength(len(v.Slice))
 		if err != nil {
 			return 0, err
@@ -309,10 +309,12 @@ func calcArraySizestructTest(v structTest, encoder *encoding.Encoder) (int, erro
 		for _, v := range v.Slice {
 			size += encoder.CalcUint(uint64(v))
 		}
+	} else {
+		size += encoder.CalcNil()
 	}
 
 	// todo : nilのパターン
-	{
+	if v.Map != nil {
 		s, err := encoder.CalcMapLength(len(v.Map))
 		if err != nil {
 			return 0, err
@@ -322,6 +324,8 @@ func calcArraySizestructTest(v structTest, encoder *encoding.Encoder) (int, erro
 			size += encoder.CalcString(k)
 			size += encoder.CalcFloat64(v)
 		}
+	} else {
+		size += encoder.CalcNil()
 	}
 
 	/*
@@ -380,8 +384,8 @@ func calcMapSizestructTest(v structTest, encoder *encoding.Encoder) (int, error)
 	size += encoder.CalcTime(v.Now)
 
 	// todo : nilのパターン
-	{
-		size += encoder.CalcString("Slice")
+	size += encoder.CalcString("Slice")
+	if v.Slice != nil {
 		s, err := encoder.CalcSliceLength(len(v.Slice))
 		if err != nil {
 			return 0, err
@@ -390,11 +394,13 @@ func calcMapSizestructTest(v structTest, encoder *encoding.Encoder) (int, error)
 		for _, v := range v.Slice {
 			size += encoder.CalcUint(uint64(v))
 		}
+	} else {
+		size += encoder.CalcNil()
 	}
 
 	// todo : nilのパターン
-	{
-		size += encoder.CalcString("Map")
+	size += encoder.CalcString("Map")
+	if v.Map != nil {
 		s, err := encoder.CalcMapLength(len(v.Map))
 		if err != nil {
 			return 0, err
@@ -404,6 +410,8 @@ func calcMapSizestructTest(v structTest, encoder *encoding.Encoder) (int, error)
 			size += encoder.CalcString(k)
 			size += encoder.CalcFloat64(v)
 		}
+	} else {
+		size += encoder.CalcNil()
 	}
 
 	/*
@@ -445,16 +453,24 @@ func encodeArraystructTest(v structTest, encoder *encoding.Encoder, offset int) 
 	offset = encoder.WriteTime(v.Now, offset)
 
 	// todo : nilのパターン
-	offset = encoder.WriteSliceLength(len(v.Slice), offset)
-	for _, vv := range v.Slice {
-		offset = encoder.WriteUint(uint64(vv), offset)
+	if v.Slice != nil {
+		offset = encoder.WriteSliceLength(len(v.Slice), offset)
+		for _, vv := range v.Slice {
+			offset = encoder.WriteUint(uint64(vv), offset)
+		}
+	} else {
+		offset = encoder.WriteNil(offset)
 	}
 
 	// todo : nilのパターン
-	offset = encoder.WriteMapLength(len(v.Map), offset)
-	for kk, vv := range v.Map {
-		offset = encoder.WriteString(kk, offset)
-		offset = encoder.WriteFloat64(vv, offset)
+	if v.Map != nil {
+		offset = encoder.WriteMapLength(len(v.Map), offset)
+		for kk, vv := range v.Map {
+			offset = encoder.WriteString(kk, offset)
+			offset = encoder.WriteFloat64(vv, offset)
+		}
+	} else {
+		offset = encoder.WriteNil(offset)
 	}
 
 	/*
@@ -500,17 +516,25 @@ func encodeMapstructTest(v structTest, encoder *encoding.Encoder, offset int) ([
 
 	// todo : nilのパターン
 	offset = encoder.WriteString("Slice", offset)
-	offset = encoder.WriteSliceLength(len(v.Slice), offset)
-	for _, vv := range v.Slice {
-		offset = encoder.WriteUint(uint64(vv), offset)
+	if v.Slice != nil {
+		offset = encoder.WriteSliceLength(len(v.Slice), offset)
+		for _, vv := range v.Slice {
+			offset = encoder.WriteUint(uint64(vv), offset)
+		}
+	} else {
+		offset = encoder.WriteNil(offset)
 	}
 
 	// todo : nilのパターン
 	offset = encoder.WriteString("Map", offset)
-	offset = encoder.WriteMapLength(len(v.Map), offset)
-	for kk, vv := range v.Map {
-		offset = encoder.WriteString(kk, offset)
-		offset = encoder.WriteFloat64(vv, offset)
+	if v.Map != nil {
+		offset = encoder.WriteMapLength(len(v.Map), offset)
+		for kk, vv := range v.Map {
+			offset = encoder.WriteString(kk, offset)
+			offset = encoder.WriteFloat64(vv, offset)
+		}
+	} else {
+		offset = encoder.WriteNil(offset)
 	}
 
 	/*
@@ -586,8 +610,8 @@ func decodeArraystructTest(v *structTest, decoder *dec.Decoder, offset int) (int
 		}
 		v.Now = vv
 	}
-	{
-		// todo : nilのパターン
+	if !decoder.IsCodeNil(offset) {
+
 		var vv []uint
 		l, o, err := decoder.SliceLength(offset)
 		if err != nil {
@@ -605,8 +629,11 @@ func decodeArraystructTest(v *structTest, decoder *dec.Decoder, offset int) (int
 		}
 		offset = o
 		v.Slice = vv
+	} else {
+		offset++
 	}
-	{
+
+	if !decoder.IsCodeNil(offset) {
 		// todo : nilのパターン
 		var vv map[string]float64
 		l, o, err := decoder.MapLength(offset)
@@ -631,6 +658,8 @@ func decodeArraystructTest(v *structTest, decoder *dec.Decoder, offset int) (int
 		}
 		offset = o
 		v.Map = vv
+	} else {
+		offset++
 	}
 	/*
 		{
@@ -739,7 +768,7 @@ func decodeMapstructTest(v *structTest, decoder *dec.Decoder, offset int) (int, 
 				v.Now = vv
 			}
 		case "Slice":
-			{
+			if !decoder.IsCodeNil(offset) {
 				// todo : nilのパターン
 				var vv []uint
 				l, o, err := decoder.SliceLength(offset)
@@ -758,10 +787,12 @@ func decodeMapstructTest(v *structTest, decoder *dec.Decoder, offset int) (int, 
 				}
 				offset = o
 				v.Slice = vv
+			} else {
+				offset++
 			}
 
 		case "Map":
-			{
+			if !decoder.IsCodeNil(offset) {
 				// todo : nilのパターン
 				var vv map[string]float64
 				l, o, err := decoder.MapLength(offset)
@@ -786,6 +817,8 @@ func decodeMapstructTest(v *structTest, decoder *dec.Decoder, offset int) (int, 
 				}
 				offset = o
 				v.Map = vv
+			} else {
+				offset++
 			}
 
 		default:
