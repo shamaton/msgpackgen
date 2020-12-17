@@ -13,15 +13,15 @@ func (e *Encoder) isPositiveFixUint64(v uint64) bool {
 func (e *Encoder) CalcUint(v uint64) int {
 	if v <= math.MaxInt8 {
 		// format code only
-		return 0
-	} else if v <= math.MaxUint8 {
 		return def.Byte1
+	} else if v <= math.MaxUint8 {
+		return def.Byte1 + def.Byte1
 	} else if v <= math.MaxUint16 {
-		return def.Byte2
+		return def.Byte1 + def.Byte2
 	} else if v <= math.MaxUint32 {
-		return def.Byte4
+		return def.Byte1 + def.Byte4
 	}
-	return def.Byte8
+	return def.Byte1 + def.Byte8
 }
 
 func (e *Encoder) WriteUint(v uint64, offset int) int {

@@ -35,7 +35,7 @@ func (e *Encoder) getStructCalc(typ reflect.Type) structCalcFunc {
 }
 
 func (e *Encoder) CalcStruct(num int) (int, error) {
-	ret := 0
+	ret := def.Byte1
 	if e.asArray {
 		if num <= 0x0f {
 			// format code only

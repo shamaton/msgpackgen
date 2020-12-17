@@ -103,11 +103,11 @@ func (e *Encoder) CalcSliceLength(l int) (int, error) {
 
 	if l <= 0x0f {
 		// format code only
-		return 0, nil
+		return def.Byte1, nil
 	} else if l <= math.MaxUint16 {
-		return def.Byte2, nil
+		return def.Byte1 + def.Byte2, nil
 	} else if uint(l) <= math.MaxUint32 {
-		return def.Byte4, nil
+		return def.Byte1 + def.Byte4, nil
 	}
 	return 0, fmt.Errorf("not support this array length : %d", l)
 }

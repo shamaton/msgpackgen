@@ -7,11 +7,11 @@ import (
 )
 
 func (e *Encoder) CalcFloat32(v float64) int {
-	return def.Byte4
+	return def.Byte1 + def.Byte4
 }
 
 func (e *Encoder) CalcFloat64(v float64) int {
-	return def.Byte8
+	return def.Byte1 + def.Byte8
 }
 
 func (e *Encoder) WriteFloat32(v float32, offset int) int {

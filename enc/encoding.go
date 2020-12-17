@@ -116,7 +116,7 @@ func (e *Encoder) create(rv reflect.Value, offset int) int {
 			}
 
 			l := rv.Len()
-			offset = e.writeMapLength(l, offset)
+			offset = e.WriteMapLength(l, offset)
 
 			if offset, find := e.writeFixedMap(rv, offset); find {
 				return offset

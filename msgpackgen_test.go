@@ -23,6 +23,7 @@ type structTest struct {
 	Bool   bool
 	Uint64 uint64
 	Slice  []uint
+	Map    map[string]float64
 	//ItemData Item
 	//Items    []Item
 }
@@ -34,9 +35,10 @@ var v = structTest{
 	Bool:   true,
 	Uint64: math.MaxUint32 * 2,
 	Slice:  []uint{1, 100, 10000, 1000000},
+	Map:    map[string]float64{"a": 1.23, "b": 2.34, "c": 3.45},
 	//ItemData: Item{ID: 1, Name: "abc", Effect: 7.89, Num: 999},
 }
-var num = 6
+var num = 7
 
 type Item struct {
 	ID     int
@@ -49,7 +51,7 @@ func TestA(t *testing.T) {
 	e := func(interface{}) ([]byte, error) { return nil, nil }
 	d := func([]byte, interface{}) (bool, error) { return false, nil }
 	add()
-	msgpackgen.SetStructAsArray(false)
+	msgpackgen.SetStructAsArray(true)
 
 	msgpackgen.SetResolver(e, d)
 	check(t)
@@ -271,38 +273,48 @@ func encodeAsMap(i interface{}) ([]byte, error) {
 }
 
 func calcArraySizestructTest(v structTest, encoder *encoding.Encoder) (int, error) {
-	size := def.Byte1
-	s, err := encoder.CalcStruct(num)
-	if err != nil {
-		return 0, err
+	size := 0
+	{
+		s, err := encoder.CalcStruct(num)
+		if err != nil {
+			return 0, err
+		}
+		size += s
 	}
-	size += s
 
-	size += def.Byte1
 	size += encoder.CalcInt(int64(v.A))
 
-	size += def.Byte1
 	size += encoder.CalcFloat32(float64(v.B))
 
-	size += def.Byte1
 	size += encoder.CalcString(v.String)
 
-	size += def.Byte1
 	size += encoder.CalcBool()
 
-	size += def.Byte1
 	size += encoder.CalcUint(v.Uint64)
 
 	// todo : nilのパターン
-	size += def.Byte1
-	s, err = encoder.CalcSliceLength(len(v.Slice))
-	if err != nil {
-		return 0, err
+	{
+		s, err := encoder.CalcSliceLength(len(v.Slice))
+		if err != nil {
+			return 0, err
+		}
+		size += s
+		for _, v := range v.Slice {
+			size += encoder.CalcUint(uint64(v))
+		}
 	}
-	size += s
-	for _, v := range v.Slice {
-		size += def.Byte1
-		size += encoder.CalcUint(uint64(v))
+
+	// todo : nilのパターン
+	{
+		s, err := encoder.CalcMapLength(len(v.Map))
+		if err != nil {
+			return 0, err
+		}
+		size += s
+		for k, v := range v.Map {
+			size += encoder.CalcString(k)
+			size += encoder.CalcFloat64(v)
+		}
 	}
 
 	/*
@@ -333,50 +345,55 @@ func calcArraySizestructTest(v structTest, encoder *encoding.Encoder) (int, erro
 }
 
 func calcMapSizestructTest(v structTest, encoder *encoding.Encoder) (int, error) {
-	size := def.Byte1
-	s, err := encoder.CalcStruct(num)
-	if err != nil {
-		return 0, err
+	size := 0
+	{
+		s, err := encoder.CalcStruct(num)
+		if err != nil {
+			return 0, err
+		}
+		size += s
 	}
-	size += s
 
-	size += def.Byte1
 	size += encoder.CalcString("A")
-	size += def.Byte1
 	size += encoder.CalcInt(int64(v.A))
 
-	size += def.Byte1
 	size += encoder.CalcString("B")
-	size += def.Byte1
 	size += encoder.CalcFloat32(float64(v.B))
 
-	size += def.Byte1
 	size += encoder.CalcString("String")
-	size += def.Byte1
 	size += encoder.CalcString(v.String)
 
-	size += def.Byte1
 	size += encoder.CalcString("Bool")
-	size += def.Byte1
 	size += encoder.CalcBool()
 
-	size += def.Byte1
 	size += encoder.CalcString("Uint64")
-	size += def.Byte1
 	size += encoder.CalcUint(v.Uint64)
 
-	size += def.Byte1
-	size += encoder.CalcString("Slice")
 	// todo : nilのパターン
-	size += def.Byte1
-	s, err = encoder.CalcSliceLength(len(v.Slice))
-	if err != nil {
-		return 0, err
+	{
+		size += encoder.CalcString("Slice")
+		s, err := encoder.CalcSliceLength(len(v.Slice))
+		if err != nil {
+			return 0, err
+		}
+		size += s
+		for _, v := range v.Slice {
+			size += encoder.CalcUint(uint64(v))
+		}
 	}
-	size += s
-	for _, v := range v.Slice {
-		size += def.Byte1
-		size += encoder.CalcUint(uint64(v))
+
+	// todo : nilのパターン
+	{
+		size += encoder.CalcString("Map")
+		s, err := encoder.CalcMapLength(len(v.Map))
+		if err != nil {
+			return 0, err
+		}
+		size += s
+		for k, v := range v.Map {
+			size += encoder.CalcString(k)
+			size += encoder.CalcFloat64(v)
+		}
 	}
 
 	/*
@@ -422,6 +439,13 @@ func encodeArraystructTest(v structTest, encoder *encoding.Encoder, offset int) 
 		offset = encoder.WriteUint(uint64(vv), offset)
 	}
 
+	// todo : nilのパターン
+	offset = encoder.WriteMapLength(len(v.Map), offset)
+	for kk, vv := range v.Map {
+		offset = encoder.WriteString(kk, offset)
+		offset = encoder.WriteFloat64(vv, offset)
+	}
+
 	/*
 		_, offset, err = encodeItem(v.ItemData, encoder, offset)
 		if err != nil {
@@ -460,11 +484,19 @@ func encodeMapstructTest(v structTest, encoder *encoding.Encoder, offset int) ([
 	offset = encoder.WriteString("Uint64", offset)
 	offset = encoder.WriteUint(v.Uint64, offset)
 
-	offset = encoder.WriteString("Slice", offset)
 	// todo : nilのパターン
+	offset = encoder.WriteString("Slice", offset)
 	offset = encoder.WriteSliceLength(len(v.Slice), offset)
 	for _, vv := range v.Slice {
 		offset = encoder.WriteUint(uint64(vv), offset)
+	}
+
+	// todo : nilのパターン
+	offset = encoder.WriteString("Map", offset)
+	offset = encoder.WriteMapLength(len(v.Map), offset)
+	for kk, vv := range v.Map {
+		offset = encoder.WriteString(kk, offset)
+		offset = encoder.WriteFloat64(vv, offset)
 	}
 
 	/*
@@ -551,6 +583,32 @@ func decodeArraystructTest(v *structTest, decoder *dec.Decoder, offset int) (int
 		}
 		offset = o
 		v.Slice = vv
+	}
+	{
+		// todo : nilのパターン
+		var vv map[string]float64
+		l, o, err := decoder.MapLength(offset)
+		if err != nil {
+			return 0, err
+		}
+
+		vv = make(map[string]float64, l)
+		for i := 0; i < l; i++ {
+			vvv, oo, err := decoder.AsString(o)
+			if err != nil {
+				return 0, err
+			}
+			o = oo
+
+			vvvv, oo, err := decoder.AsFloat64(o)
+			if err != nil {
+				return 0, err
+			}
+			o = oo
+			vv[vvv] = vvvv
+		}
+		offset = o
+		v.Map = vv
 	}
 	/*
 		{
@@ -669,6 +727,34 @@ func decodeMapstructTest(v *structTest, decoder *dec.Decoder, offset int) (int, 
 				}
 				offset = o
 				v.Slice = vv
+			}
+
+		case "Map":
+			{
+				// todo : nilのパターン
+				var vv map[string]float64
+				l, o, err := decoder.MapLength(offset)
+				if err != nil {
+					return 0, err
+				}
+
+				vv = make(map[string]float64, l)
+				for i := 0; i < l; i++ {
+					vvv, oo, err := decoder.AsString(o)
+					if err != nil {
+						return 0, err
+					}
+					o = oo
+
+					vvvv, oo, err := decoder.AsFloat64(o)
+					if err != nil {
+						return 0, err
+					}
+					o = oo
+					vv[vvv] = vvvv
+				}
+				offset = o
+				v.Map = vv
 			}
 
 		default:

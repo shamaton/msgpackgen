@@ -3,7 +3,7 @@ package encoding
 import "github.com/shamaton/msgpack/def"
 
 func (e *Encoder) CalcBool() int {
-	return 0
+	return def.Byte1
 }
 
 func (e *Encoder) WriteBool(v bool, offset int) int {

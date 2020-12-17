@@ -19,15 +19,15 @@ func (e *Encoder) CalcInt(v int64) int {
 		return e.CalcUint(uint64(v))
 	} else if e.isNegativeFixInt64(v) {
 		// format code only
-		return 0
-	} else if v >= math.MinInt8 {
 		return def.Byte1
+	} else if v >= math.MinInt8 {
+		return def.Byte1 + def.Byte1
 	} else if v >= math.MinInt16 {
-		return def.Byte2
+		return def.Byte1 + def.Byte2
 	} else if v >= math.MinInt32 {
-		return def.Byte4
+		return def.Byte1 + def.Byte4
 	}
-	return def.Byte8
+	return def.Byte1 + def.Byte8
 }
 
 func (e *Encoder) WriteInt(v int64, offset int) int {

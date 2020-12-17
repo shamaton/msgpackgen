@@ -1,6 +1,7 @@
 package encoding
 
 import (
+	"fmt"
 	"math"
 	"reflect"
 
@@ -257,7 +258,23 @@ func (e *Encoder) calcFixedMap(rv reflect.Value) (int, bool) {
 	return size, false
 }
 
-func (e *Encoder) writeMapLength(l int, offset int) int {
+func (e *Encoder) CalcMapLength(l int) (int, error) {
+	ret := def.Byte1
+
+	if l <= 0x0f {
+		// do nothing
+	} else if l <= math.MaxUint16 {
+		ret += def.Byte2
+	} else if uint(l) <= math.MaxUint32 {
+		ret += def.Byte4
+	} else {
+		// not supported error
+		return 0, fmt.Errorf("not support this map length : %d", l)
+	}
+	return ret, nil
+}
+
+func (e *Encoder) WriteMapLength(l int, offset int) int {
 
 	// format
 	if l <= 0x0f {
