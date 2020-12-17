@@ -82,7 +82,7 @@ func (d *Decoder) setStructFromArray(rv reflect.Value, offset int, k reflect.Kin
 					return 0, err
 				}
 			} else {
-				o = d.jumpOffset(o)
+				o = d.JumpOffset(o)
 			}
 		}
 		return o, nil
@@ -126,7 +126,7 @@ func (d *Decoder) setStructFromMap(rv reflect.Value, offset int, k reflect.Kind)
 					return 0, err
 				}
 			} else {
-				o2 = d.jumpOffset(o2)
+				o2 = d.JumpOffset(o2)
 			}
 			o = o2
 		}
@@ -169,7 +169,7 @@ func (d *Decoder) CheckStruct(num, offset int) (int, error) {
 	return offset, nil
 }
 
-func (d *Decoder) jumpOffset(offset int) int {
+func (d *Decoder) JumpOffset(offset int) int {
 	code, offset := d.readSize1(offset)
 	switch {
 	case code == def.True, code == def.False, code == def.Nil:
@@ -204,40 +204,40 @@ func (d *Decoder) jumpOffset(offset int) int {
 	case d.isFixSlice(code):
 		l := int(code - def.FixArray)
 		for i := 0; i < l; i++ {
-			offset = d.jumpOffset(offset)
+			offset = d.JumpOffset(offset)
 		}
 	case code == def.Array16:
 		bs, o := d.readSize2(offset)
 		l := int(binary.BigEndian.Uint16(bs))
 		for i := 0; i < l; i++ {
-			o = d.jumpOffset(o)
+			o = d.JumpOffset(o)
 		}
 		offset = o
 	case code == def.Array32:
 		bs, o := d.readSize4(offset)
 		l := int(binary.BigEndian.Uint32(bs))
 		for i := 0; i < l; i++ {
-			o = d.jumpOffset(o)
+			o = d.JumpOffset(o)
 		}
 		offset = o
 
 	case d.isFixMap(code):
 		l := int(code - def.FixMap)
 		for i := 0; i < l*2; i++ {
-			offset = d.jumpOffset(offset)
+			offset = d.JumpOffset(offset)
 		}
 	case code == def.Map16:
 		bs, o := d.readSize2(offset)
 		l := int(binary.BigEndian.Uint16(bs))
 		for i := 0; i < l*2; i++ {
-			o = d.jumpOffset(o)
+			o = d.JumpOffset(o)
 		}
 		offset = o
 	case code == def.Map32:
 		bs, o := d.readSize4(offset)
 		l := int(binary.BigEndian.Uint32(bs))
 		for i := 0; i < l*2; i++ {
-			o = d.jumpOffset(o)
+			o = d.JumpOffset(o)
 		}
 		offset = o
 

@@ -16,6 +16,8 @@ func NewDecoder(data []byte) *Decoder {
 	return &Decoder{data: data, asArray: msgpack.StructAsArray}
 }
 
+func (d *Decoder) Len() int { return len(d.data) }
+
 func (d *Decoder) errorTemplate(code byte, str string) error {
 	return fmt.Errorf("msgpack : invalid code %x decoding %s", code, str)
 }

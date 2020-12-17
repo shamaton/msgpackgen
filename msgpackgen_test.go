@@ -17,26 +17,26 @@ import (
 // todo : extまわりの対応、time.Timeとか
 
 type structTest struct {
-	A        int
-	B        float32
-	String   string
-	Bool     bool
-	Uint64   uint64
-	Slice    []uint
-	ItemData Item
-	Items    []Item
+	A      int
+	B      float32
+	String string
+	Bool   bool
+	Uint64 uint64
+	Slice  []uint
+	//ItemData Item
+	//Items    []Item
 }
 
 var v = structTest{
-	A:        123456789,
-	B:        12.34,
-	String:   "my name is msgpack gen.",
-	Bool:     true,
-	Uint64:   math.MaxUint32 * 2,
-	Slice:    []uint{1, 100, 10000, 1000000},
-	ItemData: Item{ID: 1, Name: "abc", Effect: 7.89, Num: 999},
+	A:      123456789,
+	B:      12.34,
+	String: "my name is msgpack gen.",
+	Bool:   true,
+	Uint64: math.MaxUint32 * 2,
+	Slice:  []uint{1, 100, 10000, 1000000},
+	//ItemData: Item{ID: 1, Name: "abc", Effect: 7.89, Num: 999},
 }
-var num = 8
+var num = 6
 
 type Item struct {
 	ID     int
@@ -45,11 +45,11 @@ type Item struct {
 	Num    uint
 }
 
-func _TestA(t *testing.T) {
+func TestA(t *testing.T) {
 	e := func(interface{}) ([]byte, error) { return nil, nil }
 	d := func([]byte, interface{}) (bool, error) { return false, nil }
 	add()
-	msgpackgen.SetStructAsArray(true)
+	msgpackgen.SetStructAsArray(false)
 
 	msgpackgen.SetResolver(e, d)
 	check(t)
@@ -74,22 +74,22 @@ func check(t *testing.T) {
 }
 
 func add() {
-	if v.Items != nil {
-		return
-	}
-
-	n := 1
-	v.Items = make([]Item, n)
-	for i := 0; i < n; i++ {
-		name := "item" + fmt.Sprint(i)
-		item := Item{
-			ID:     i,
-			Name:   name,
-			Effect: float32(i*i) / 3.0,
-			Num:    uint(i * i * i * i),
-		}
-		v.Items[i] = item
-	}
+	//if v.Items != nil {
+	//	return
+	//}
+	//
+	//n := 1
+	//v.Items = make([]Item, n)
+	//for i := 0; i < n; i++ {
+	//	name := "item" + fmt.Sprint(i)
+	//	item := Item{
+	//		ID:     i,
+	//		Name:   name,
+	//		Effect: float32(i*i) / 3.0,
+	//		Num:    uint(i * i * i * i),
+	//	}
+	//	v.Items[i] = item
+	//}
 }
 
 func BenchmarkMsgGenEncShamaton(b *testing.B) {
@@ -153,13 +153,30 @@ func BenchmarkMsgDecShamaton(b *testing.B) {
 // todo : auto generate
 func decode(data []byte, i interface{}) (bool, error) {
 
+	if msgpackgen.StructAsArray() {
+		return decodeAsArray(data, i)
+	} else {
+		return decodeAsMap(data, i)
+	}
+}
+
+func decodeAsArray(data []byte, i interface{}) (bool, error) {
+
 	switch v := i.(type) {
 	case *structTest:
-		_, err := decodestructTest(v, dec.NewDecoder(data), 0)
+		_, err := decodeArraystructTest(v, dec.NewDecoder(data), 0)
 		return true, err
 
 	case *Item:
 		_, err := decodeItem(v, dec.NewDecoder(data), 0)
+		return true, err
+
+	case **structTest:
+		_, err := decodeArraystructTest(*v, dec.NewDecoder(data), 0)
+		return true, err
+
+	case **Item:
+		_, err := decodeItem(*v, dec.NewDecoder(data), 0)
 		return true, err
 
 	}
@@ -167,18 +184,49 @@ func decode(data []byte, i interface{}) (bool, error) {
 	return false, nil
 }
 
+func decodeAsMap(data []byte, i interface{}) (bool, error) {
+
+	switch v := i.(type) {
+	case *structTest:
+		_, err := decodeMapstructTest(v, dec.NewDecoder(data), 0)
+		return true, err
+
+	case *Item:
+		_, err := decodeItem(v, dec.NewDecoder(data), 0)
+		return true, err
+
+	case **structTest:
+		_, err := decodeMapstructTest(*v, dec.NewDecoder(data), 0)
+		return true, err
+
+	case **Item:
+		_, err := decodeItem(*v, dec.NewDecoder(data), 0)
+		return true, err
+
+	}
+	return false, nil
+}
+
 // todo : auto generate
 func encode(i interface{}) ([]byte, error) {
+	if msgpackgen.StructAsArray() {
+		return encodeAsArray(i)
+	} else {
+		return encodeAsMap(i)
+	}
+
+}
+func encodeAsArray(i interface{}) ([]byte, error) {
 
 	switch v := i.(type) {
 	case structTest:
 		e := encoding.NewEncoder()
-		size, err := calcSizestructTest(v, e)
+		size, err := calcArraySizestructTest(v, e)
 		if err != nil {
 			return nil, err
 		}
 		e.MakeBytes(size)
-		b, _, err := encodestructTest(v, e, 0)
+		b, _, err := encodeArraystructTest(v, e, 0)
 		return b, err
 
 	case Item:
@@ -195,25 +243,40 @@ func encode(i interface{}) ([]byte, error) {
 	return nil, nil
 }
 
-func calcSizestructTest(v structTest, encoder *encoding.Encoder) (int, error) {
+func encodeAsMap(i interface{}) ([]byte, error) {
+
+	switch v := i.(type) {
+	case structTest:
+		e := encoding.NewEncoder()
+		size, err := calcMapSizestructTest(v, e)
+		if err != nil {
+			return nil, err
+		}
+		e.MakeBytes(size)
+		b, _, err := encodeMapstructTest(v, e, 0)
+		return b, err
+
+	case Item:
+		e := encoding.NewEncoder()
+		size, err := calcSizeItem(v, e)
+		if err != nil {
+			return nil, err
+		}
+		e.MakeBytes(size)
+		b, _, err := encodeItem(v, e, 0)
+		return b, err
+
+	}
+	return nil, nil
+}
+
+func calcArraySizestructTest(v structTest, encoder *encoding.Encoder) (int, error) {
 	size := def.Byte1
 	s, err := encoder.CalcStruct(num)
 	if err != nil {
 		return 0, err
 	}
 	size += s
-
-	// todo : タグが設定されているパターン
-	if !msgpack.StructAsArray {
-		size += encoder.CalcString("A")
-		size += encoder.CalcString("B")
-		size += encoder.CalcString("String")
-		size += encoder.CalcString("Bool")
-		size += encoder.CalcString("Uint64")
-		size += encoder.CalcString("Slice")
-		size += encoder.CalcString("ItemData")
-		size += encoder.CalcString("Items")
-	}
 
 	size += def.Byte1
 	size += encoder.CalcInt(int64(v.A))
@@ -242,31 +305,108 @@ func calcSizestructTest(v structTest, encoder *encoding.Encoder) (int, error) {
 		size += encoder.CalcUint(uint64(v))
 	}
 
-	s, err = calcSizeItem(v.ItemData, encoder)
-	if err != nil {
-		return 0, err
-	}
-	size += s
-
-	// todo : nilのパターン
-	size += def.Byte1
-	s, err = encoder.CalcSliceLength(len(v.Items))
-	if err != nil {
-		return 0, err
-	}
-	size += s
-	for _, v := range v.Items {
-		s, err = calcSizeItem(v, encoder)
+	/*
+		s, err = calcSizeItem(v.ItemData, encoder)
 		if err != nil {
 			return 0, err
 		}
 		size += s
-	}
+
+		// todo : nilのパターン
+		size += def.Byte1
+		s, err = encoder.CalcSliceLength(len(v.Items))
+		if err != nil {
+			return 0, err
+		}
+		size += s
+		for _, v := range v.Items {
+			s, err = calcSizeItem(v, encoder)
+			if err != nil {
+				return 0, err
+			}
+			size += s
+		}
+
+	*/
 
 	return size, nil
 }
 
-func encodestructTest(v structTest, encoder *encoding.Encoder, offset int) ([]byte, int, error) {
+func calcMapSizestructTest(v structTest, encoder *encoding.Encoder) (int, error) {
+	size := def.Byte1
+	s, err := encoder.CalcStruct(num)
+	if err != nil {
+		return 0, err
+	}
+	size += s
+
+	size += def.Byte1
+	size += encoder.CalcString("A")
+	size += def.Byte1
+	size += encoder.CalcInt(int64(v.A))
+
+	size += def.Byte1
+	size += encoder.CalcString("B")
+	size += def.Byte1
+	size += encoder.CalcFloat32(float64(v.B))
+
+	size += def.Byte1
+	size += encoder.CalcString("String")
+	size += def.Byte1
+	size += encoder.CalcString(v.String)
+
+	size += def.Byte1
+	size += encoder.CalcString("Bool")
+	size += def.Byte1
+	size += encoder.CalcBool()
+
+	size += def.Byte1
+	size += encoder.CalcString("Uint64")
+	size += def.Byte1
+	size += encoder.CalcUint(v.Uint64)
+
+	size += def.Byte1
+	size += encoder.CalcString("Slice")
+	// todo : nilのパターン
+	size += def.Byte1
+	s, err = encoder.CalcSliceLength(len(v.Slice))
+	if err != nil {
+		return 0, err
+	}
+	size += s
+	for _, v := range v.Slice {
+		size += def.Byte1
+		size += encoder.CalcUint(uint64(v))
+	}
+
+	/*
+		s, err = calcSizeItem(v.ItemData, encoder)
+		if err != nil {
+			return 0, err
+		}
+		size += s
+
+		// todo : nilのパターン
+		size += def.Byte1
+		s, err = encoder.CalcSliceLength(len(v.Items))
+		if err != nil {
+			return 0, err
+		}
+		size += s
+		for _, v := range v.Items {
+			s, err = calcSizeItem(v, encoder)
+			if err != nil {
+				return 0, err
+			}
+			size += s
+		}
+
+	*/
+
+	return size, nil
+}
+
+func encodeArraystructTest(v structTest, encoder *encoding.Encoder, offset int) ([]byte, int, error) {
 	var err error
 	offset = encoder.WriteStruct(num, offset)
 
@@ -282,34 +422,71 @@ func encodestructTest(v structTest, encoder *encoding.Encoder, offset int) ([]by
 		offset = encoder.WriteUint(uint64(vv), offset)
 	}
 
-	_, offset, err = encodeItem(v.ItemData, encoder, offset)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	// todo : nilのパターン
-	offset = encoder.WriteSliceLength(len(v.Items), offset)
-	for _, vv := range v.Items {
-		_, offset, err = encodeItem(vv, encoder, offset)
+	/*
+		_, offset, err = encodeItem(v.ItemData, encoder, offset)
 		if err != nil {
 			return nil, 0, err
 		}
-	}
-	return encoder.EncodedBytes(), offset, nil
+
+		// todo : nilのパターン
+		offset = encoder.WriteSliceLength(len(v.Items), offset)
+		for _, vv := range v.Items {
+			_, offset, err = encodeItem(vv, encoder, offset)
+			if err != nil {
+				return nil, 0, err
+			}
+		}
+
+	*/
+	return encoder.EncodedBytes(), offset, err
 }
 
-func decodestructTest(v *structTest, decoder *dec.Decoder, offset int) (int, error) {
+func encodeMapstructTest(v structTest, encoder *encoding.Encoder, offset int) ([]byte, int, error) {
+	var err error
+	offset = encoder.WriteStruct(num, offset)
 
-	// todo : mapの場合はここでstringをみてswitchする
+	offset = encoder.WriteString("A", offset)
+	offset = encoder.WriteInt(int64(v.A), offset)
 
-	a := "abc"
-	switch a {
-	case "abc":
-		fmt.Println("correct")
+	offset = encoder.WriteString("B", offset)
+	offset = encoder.WriteFloat32(v.B, offset)
 
-	case "b":
-		fmt.Println("wrong")
+	offset = encoder.WriteString("String", offset)
+	offset = encoder.WriteString(v.String, offset)
+
+	offset = encoder.WriteString("Bool", offset)
+	offset = encoder.WriteBool(v.Bool, offset)
+
+	offset = encoder.WriteString("Uint64", offset)
+	offset = encoder.WriteUint(v.Uint64, offset)
+
+	offset = encoder.WriteString("Slice", offset)
+	// todo : nilのパターン
+	offset = encoder.WriteSliceLength(len(v.Slice), offset)
+	for _, vv := range v.Slice {
+		offset = encoder.WriteUint(uint64(vv), offset)
 	}
+
+	/*
+		_, offset, err = encodeItem(v.ItemData, encoder, offset)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		// todo : nilのパターン
+		offset = encoder.WriteSliceLength(len(v.Items), offset)
+		for _, vv := range v.Items {
+			_, offset, err = encodeItem(vv, encoder, offset)
+			if err != nil {
+				return nil, 0, err
+			}
+		}
+
+	*/
+	return encoder.EncodedBytes(), offset, err
+}
+
+func decodeArraystructTest(v *structTest, decoder *dec.Decoder, offset int) (int, error) {
 
 	offset, err := decoder.CheckStruct(num, 0)
 	if err != nil {
@@ -375,36 +552,302 @@ func decodestructTest(v *structTest, decoder *dec.Decoder, offset int) (int, err
 		offset = o
 		v.Slice = vv
 	}
-	{
-		var vv Item
-		offset, err = decodeItem(&vv, decoder, offset)
-		if err != nil {
-			return 0, err
-		}
-		v.ItemData = vv
-	}
-	{
-		// todo : nilのパターン
-		var vv []Item
-		l, o, err := decoder.SliceLength(offset)
-		if err != nil {
-			return 0, err
-		}
-
-		vv = make([]Item, l)
-		for i := range vv {
-			var vvv Item
-			oo, err := decodeItem(&vvv, decoder, o)
+	/*
+		{
+			var vv Item
+			offset, err = decodeItem(&vv, decoder, offset)
 			if err != nil {
 				return 0, err
 			}
-			vv[i] = vvv
-			o = oo
+			v.ItemData = vv
+		}
+		{
+			// todo : nilのパターン
+			var vv []Item
+			l, o, err := decoder.SliceLength(offset)
+			if err != nil {
+				return 0, err
+			}
+
+			vv = make([]Item, l)
+			for i := range vv {
+				var vvv Item
+				oo, err := decodeItem(&vvv, decoder, o)
+				if err != nil {
+					return 0, err
+				}
+				vv[i] = vvv
+				o = oo
+			}
+			offset = o
+			v.Items = vv
+		}
+
+	*/
+	return offset, err
+}
+
+func decodeMapstructTest(v *structTest, decoder *dec.Decoder, offset int) (int, error) {
+
+	// todo : mapの場合はここでstringをみてswitchする
+	offset, err := decoder.CheckStruct(num, 0)
+	if err != nil {
+		return 0, err
+	}
+
+	dataLen := decoder.Len()
+	for offset < dataLen {
+		s, o, err := decoder.AsString(offset)
+		if err != nil {
+			return 0, err
 		}
 		offset = o
-		v.Items = vv
+
+		switch s {
+		case "A":
+			{
+				var vv int64
+				vv, offset, err = decoder.AsInt(offset)
+				if err != nil {
+					return 0, err
+				}
+				v.A = int(vv)
+			}
+		case "B":
+			{
+				var vv float32
+				vv, offset, err = decoder.AsFloat32(offset)
+				if err != nil {
+					return 0, err
+				}
+				v.B = vv
+			}
+		case "String":
+			{
+				var vv string
+				vv, offset, err = decoder.AsString(offset)
+				if err != nil {
+					return 0, err
+				}
+				v.String = vv
+			}
+		case "Bool":
+			{
+				var vv bool
+				vv, offset, err = decoder.AsBool(offset)
+				if err != nil {
+					return 0, err
+				}
+				v.Bool = vv
+			}
+		case "Uint64":
+			{
+				var vv uint64
+				vv, offset, err = decoder.AsUint(offset)
+				if err != nil {
+					return 0, err
+				}
+				v.Uint64 = vv
+			}
+		case "Slice":
+			{
+				// todo : nilのパターン
+				var vv []uint
+				l, o, err := decoder.SliceLength(offset)
+				if err != nil {
+					return 0, err
+				}
+
+				vv = make([]uint, l)
+				for i := range vv {
+					vvv, oo, err := decoder.AsUint(o)
+					if err != nil {
+						return 0, err
+					}
+					vv[i] = uint(vvv)
+					o = oo
+				}
+				offset = o
+				v.Slice = vv
+			}
+
+		default:
+			offset = decoder.JumpOffset(offset)
+		}
 	}
-	return offset, nil
+
+	if offset != dataLen {
+		return 0, fmt.Errorf("structure check failed %d : %d", offset, dataLen)
+	}
+
+	/*
+		{
+			var vv Item
+			offset, err = decodeItem(&vv, decoder, offset)
+			if err != nil {
+				return 0, err
+			}
+			v.ItemData = vv
+		}
+		{
+			// todo : nilのパターン
+			var vv []Item
+			l, o, err := decoder.SliceLength(offset)
+			if err != nil {
+				return 0, err
+			}
+
+			vv = make([]Item, l)
+			for i := range vv {
+				var vvv Item
+				oo, err := decodeItem(&vvv, decoder, o)
+				if err != nil {
+					return 0, err
+				}
+				vv[i] = vvv
+				o = oo
+			}
+			offset = o
+			v.Items = vv
+		}
+
+	*/
+	return offset, err
+}
+
+func _decodeMapstructTest(v *structTest, decoder *dec.Decoder, offset int) (int, error) {
+
+	// todo : mapの場合はここでstringをみてswitchする
+	offset, err := decoder.CheckStruct(num, 0)
+	if err != nil {
+		return 0, err
+	}
+
+	// 最初に文字列情報を受取る
+	fields := make(map[string]int, num)
+
+	fieldOffset := offset
+	dataLen := decoder.Len()
+	index := 0
+
+	// けつまでいったら終わり
+	for fieldOffset < dataLen && index < num {
+		s, o, err := decoder.AsString(fieldOffset)
+		if err != nil {
+			return 0, err
+		}
+		fields[s] = o
+		fieldOffset = decoder.JumpOffset(o)
+		index++
+	}
+	if fieldOffset != dataLen {
+		return 0, fmt.Errorf("structure check failed %d : %d", fieldOffset, dataLen)
+	}
+
+	for field, off := range fields {
+		switch field {
+		case "A":
+			{
+				var vv int64
+				vv, offset, err = decoder.AsInt(off)
+				if err != nil {
+					return 0, err
+				}
+				v.A = int(vv)
+			}
+		case "B":
+			{
+				var vv float32
+				vv, offset, err = decoder.AsFloat32(off)
+				if err != nil {
+					return 0, err
+				}
+				v.B = vv
+			}
+		case "String":
+			{
+				var vv string
+				vv, offset, err = decoder.AsString(off)
+				if err != nil {
+					return 0, err
+				}
+				v.String = vv
+			}
+		case "Bool":
+			{
+				var vv bool
+				vv, offset, err = decoder.AsBool(off)
+				if err != nil {
+					return 0, err
+				}
+				v.Bool = vv
+			}
+		case "Uint64":
+			{
+				var vv uint64
+				vv, offset, err = decoder.AsUint(off)
+				if err != nil {
+					return 0, err
+				}
+				v.Uint64 = vv
+			}
+		case "Slice":
+			{
+				// todo : nilのパターン
+				var vv []uint
+				l, o, err := decoder.SliceLength(off)
+				if err != nil {
+					return 0, err
+				}
+
+				vv = make([]uint, l)
+				for i := range vv {
+					vvv, oo, err := decoder.AsUint(o)
+					if err != nil {
+						return 0, err
+					}
+					vv[i] = uint(vvv)
+					o = oo
+				}
+				offset = o
+				v.Slice = vv
+			}
+		}
+	}
+
+	/*
+		{
+			var vv Item
+			offset, err = decodeItem(&vv, decoder, offset)
+			if err != nil {
+				return 0, err
+			}
+			v.ItemData = vv
+		}
+		{
+			// todo : nilのパターン
+			var vv []Item
+			l, o, err := decoder.SliceLength(offset)
+			if err != nil {
+				return 0, err
+			}
+
+			vv = make([]Item, l)
+			for i := range vv {
+				var vvv Item
+				oo, err := decodeItem(&vvv, decoder, o)
+				if err != nil {
+					return 0, err
+				}
+				vv[i] = vvv
+				o = oo
+			}
+			offset = o
+			v.Items = vv
+		}
+
+	*/
+	return offset, err
 }
 
 ///////////////////////////////
@@ -429,7 +872,7 @@ func calcSizeItem(v Item, encoder *encoding.Encoder) (int, error) {
 	size += def.Byte1
 	size += encoder.CalcUint(uint64(v.Num))
 
-	return size, nil
+	return size, err
 }
 
 func encodeItem(v Item, encoder *encoding.Encoder, offset int) ([]byte, int, error) {
