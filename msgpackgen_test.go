@@ -15,23 +15,7 @@ import (
 	"github.com/shamaton/msgpackgen/enc"
 )
 
-// todo : extまわりの対応、time.Timeとか
-
-type structTest struct {
-	A      int
-	B      float32
-	String string
-	Bool   bool
-	Uint64 uint64
-	Now    time.Time
-	Slice  []uint
-	Map    map[string]float64
-	//ItemData Item
-	//Items    []Item
-	//Interface interface{}
-}
-
-var v = structTest{
+var v = msgpackgen.StructTest{
 	A:      123456789,
 	B:      12.34,
 	String: "my name is msgpack gen.",
@@ -71,7 +55,7 @@ func check(t *testing.T) {
 		t.Error(err)
 	}
 
-	var vv structTest
+	var vv msgpackgen.StructTest
 	err = msgpackgen.Decode(b, &vv)
 	if err != nil {
 		t.Error(err)
@@ -131,7 +115,7 @@ func BenchmarkMsgGenDecShamaton(b *testing.B) {
 	msgpackgen.SetResolver(encode, decode)
 
 	d, _ := msgpack.Encode(v)
-	var vv structTest
+	var vv msgpackgen.StructTest
 
 	for i := 0; i < b.N; i++ {
 		err := msgpackgen.Decode(d, &vv)
@@ -147,7 +131,7 @@ func BenchmarkMsgDecShamaton(b *testing.B) {
 	add()
 
 	d, _ := msgpack.Encode(v)
-	var vv structTest
+	var vv msgpackgen.StructTest
 
 	for i := 0; i < b.N; i++ {
 		err := msgpack.Decode(d, &vv)
@@ -170,7 +154,7 @@ func decode(data []byte, i interface{}) (bool, error) {
 func decodeAsArray(data []byte, i interface{}) (bool, error) {
 
 	switch v := i.(type) {
-	case *structTest:
+	case *msgpackgen.StructTest:
 		_, err := decodeArraystructTest(v, dec.NewDecoder(data), 0)
 		return true, err
 
@@ -178,7 +162,7 @@ func decodeAsArray(data []byte, i interface{}) (bool, error) {
 		_, err := decodeItem(v, dec.NewDecoder(data), 0)
 		return true, err
 
-	case **structTest:
+	case **msgpackgen.StructTest:
 		_, err := decodeArraystructTest(*v, dec.NewDecoder(data), 0)
 		return true, err
 
@@ -194,7 +178,7 @@ func decodeAsArray(data []byte, i interface{}) (bool, error) {
 func decodeAsMap(data []byte, i interface{}) (bool, error) {
 
 	switch v := i.(type) {
-	case *structTest:
+	case *msgpackgen.StructTest:
 		_, err := decodeMapstructTest(v, dec.NewDecoder(data), 0)
 		return true, err
 
@@ -202,7 +186,7 @@ func decodeAsMap(data []byte, i interface{}) (bool, error) {
 		_, err := decodeItem(v, dec.NewDecoder(data), 0)
 		return true, err
 
-	case **structTest:
+	case **msgpackgen.StructTest:
 		_, err := decodeMapstructTest(*v, dec.NewDecoder(data), 0)
 		return true, err
 
@@ -226,7 +210,7 @@ func encode(i interface{}) ([]byte, error) {
 func encodeAsArray(i interface{}) ([]byte, error) {
 
 	switch v := i.(type) {
-	case structTest:
+	case msgpackgen.StructTest:
 		e := enc.NewEncoder()
 		size, err := calcArraySizestructTest(v, e)
 		if err != nil {
@@ -253,7 +237,7 @@ func encodeAsArray(i interface{}) ([]byte, error) {
 func encodeAsMap(i interface{}) ([]byte, error) {
 
 	switch v := i.(type) {
-	case structTest:
+	case msgpackgen.StructTest:
 		e := enc.NewEncoder()
 		size, err := calcMapSizestructTest(v, e)
 		if err != nil {
@@ -277,7 +261,7 @@ func encodeAsMap(i interface{}) ([]byte, error) {
 	return nil, nil
 }
 
-func calcArraySizestructTest(v structTest, encoder *enc.Encoder) (int, error) {
+func calcArraySizestructTest(v msgpackgen.StructTest, encoder *enc.Encoder) (int, error) {
 	size := 0
 	{
 		s, err := encoder.CalcStructHeader(num)
@@ -355,7 +339,7 @@ func calcArraySizestructTest(v structTest, encoder *enc.Encoder) (int, error) {
 	return size, nil
 }
 
-func calcMapSizestructTest(v structTest, encoder *enc.Encoder) (int, error) {
+func calcMapSizestructTest(v msgpackgen.StructTest, encoder *enc.Encoder) (int, error) {
 	size := 0
 	{
 		s, err := encoder.CalcStructHeader(num)
@@ -441,7 +425,7 @@ func calcMapSizestructTest(v structTest, encoder *enc.Encoder) (int, error) {
 	return size, nil
 }
 
-func encodeArraystructTest(v structTest, encoder *enc.Encoder, offset int) ([]byte, int, error) {
+func encodeArraystructTest(v msgpackgen.StructTest, encoder *enc.Encoder, offset int) ([]byte, int, error) {
 	var err error
 	offset = encoder.WriteStructHeader(num, offset)
 
@@ -492,7 +476,7 @@ func encodeArraystructTest(v structTest, encoder *enc.Encoder, offset int) ([]by
 	return encoder.EncodedBytes(), offset, err
 }
 
-func encodeMapstructTest(v structTest, encoder *enc.Encoder, offset int) ([]byte, int, error) {
+func encodeMapstructTest(v msgpackgen.StructTest, encoder *enc.Encoder, offset int) ([]byte, int, error) {
 	var err error
 	offset = encoder.WriteStructHeader(num, offset)
 
@@ -556,7 +540,7 @@ func encodeMapstructTest(v structTest, encoder *enc.Encoder, offset int) ([]byte
 	return encoder.EncodedBytes(), offset, err
 }
 
-func decodeArraystructTest(v *structTest, decoder *dec.Decoder, offset int) (int, error) {
+func decodeArraystructTest(v *msgpackgen.StructTest, decoder *dec.Decoder, offset int) (int, error) {
 
 	offset, err := decoder.CheckStructHeader(num, 0)
 	if err != nil {
@@ -696,7 +680,7 @@ func decodeArraystructTest(v *structTest, decoder *dec.Decoder, offset int) (int
 	return offset, err
 }
 
-func decodeMapstructTest(v *structTest, decoder *dec.Decoder, offset int) (int, error) {
+func decodeMapstructTest(v *msgpackgen.StructTest, decoder *dec.Decoder, offset int) (int, error) {
 
 	// todo : mapの場合はここでstringをみてswitchする
 	offset, err := decoder.CheckStructHeader(num, 0)
@@ -865,7 +849,7 @@ func decodeMapstructTest(v *structTest, decoder *dec.Decoder, offset int) (int, 
 	return offset, err
 }
 
-func _decodeMapstructTest(v *structTest, decoder *dec.Decoder, offset int) (int, error) {
+func _decodeMapstructTest(v *msgpackgen.StructTest, decoder *dec.Decoder, offset int) (int, error) {
 
 	// todo : mapの場合はここでstringをみてswitchする
 	offset, err := decoder.CheckStructHeader(num, 0)

@@ -7,10 +7,20 @@ import (
 	"go/parser"
 	"go/token"
 	"go/types"
+	"path/filepath"
 	"reflect"
+	"strings"
 )
 
 func findStructs(fileName string) error {
+	dir := filepath.Dir(fileName)
+	paths := strings.SplitN(dir, "src/", 2)
+	if len(paths) != 2 {
+		return fmt.Errorf("error...")
+	}
+
+	prefix := paths[1]
+
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, fileName, nil, 0)
 	if err != nil {
@@ -24,7 +34,7 @@ func findStructs(fileName string) error {
 		switch x := n.(type) {
 		case *ast.File:
 			packageName = x.Name.String()
-			fmt.Println(x.Name)
+			//fmt.Println(x.Name)
 		}
 
 		x, ok := n.(*ast.TypeSpec)
@@ -61,14 +71,16 @@ func findStructs(fileName string) error {
 
 	for _, name := range structNames {
 		analyzedSt := aaa(packageName, name, fset, f)
+		analyzedSt.PackageName = prefix + "/" + packageName
 		analyzedStructs = append(analyzedStructs, analyzedSt)
 	}
 	return nil
 }
 
 type analyzedStruct struct {
-	Name   string
-	Fields []analyzedField
+	PackageName string
+	Name        string
+	Fields      []analyzedField
 }
 
 type analyzedField struct {
@@ -81,7 +93,7 @@ func aaa(packageName, structName string, fset *token.FileSet, file *ast.File) an
 	conf := types.Config{
 		Importer: importer.Default(),
 		Error: func(err error) {
-			fmt.Printf("!!! %#v\n", err)
+			//fmt.Printf("!!! %#v\n", err)
 		},
 	}
 
@@ -95,18 +107,27 @@ func aaa(packageName, structName string, fset *token.FileSet, file *ast.File) an
 	S := pkg.Scope().Lookup(structName)
 	internal := S.Type().Underlying().(*types.Struct)
 
-	analyzed := analyzedStruct{Name: structName}
+	analyzed := analyzedStruct{
+		PackageName: packageName,
+		Name:        structName,
+	}
 
 	for i := 0; i < internal.NumFields(); i++ {
 		field := internal.Field(i)
 
-		//fmt.Println(field.Id(), field.Type().Underlying(), field.IsField())
+		fmt.Println(field.Id(), field.Type().Underlying(), field.IsField())
 
 		if field.IsField() && field.Exported() {
-			name, _ := reflect.StructTag(internal.Tag(i)).Lookup("msgpack")
-			if len(name) < 1 {
-				name = field.Id()
+			tagName, _ := reflect.StructTag(internal.Tag(i)).Lookup("msgpack")
+			if tagName == "ignore" {
+				continue
 			}
+			name := field.Id()
+			if len(tagName) > 0 {
+				name = tagName
+			}
+
+			fmt.Println("hogehoge", reflect.TypeOf(field.Type()))
 
 			analyzed.Fields = append(analyzed.Fields, analyzedField{
 				Name: name,
