@@ -187,10 +187,40 @@ func createFieldCode(fieldType types.Type, fieldName string, isRoot bool) (cArra
 
 		cArray = append(cArray, If(Id(name).Op("!=").Nil()).Block(
 			statements...,
+		).Else().Block(
+			addSizePattern1("CalcNil"),
 		))
 
 	case reflect.TypeOf(&types.Map{}):
+		mp := fieldType.(*types.Map)
+		key := mp.Key()
+		value := mp.Elem()
 		fmt.Println("map", fieldName, fieldType)
+		fmt.Println(key, value)
+
+		name, childKey, childValue := "", "", ""
+		if isRoot {
+			name = "v." + fieldName
+			childKey = "kk"
+			childValue = "vv"
+		} else {
+			childKey = fieldName + "k"
+			childValue = fieldName + "v"
+		}
+
+		caKey, _, _, _, _, _, _ := createFieldCode(key, childKey, false)
+		caValue, _, _, _, _, _, _ := createFieldCode(value, childValue, false)
+
+		statements := addSizePattern2("CalcMapLength", Id(fmt.Sprintf("len(%s)", name)))
+		statements = append(statements, For(List(Id(childKey), Id(childValue)).Op(":=").Range().Id(name)).Block(
+			append(caKey, caValue...)...,
+		))
+
+		cArray = append(cArray, If(Id(name).Op("!=").Nil()).Block(
+			statements...,
+		).Else().Block(
+			addSizePattern1("CalcNil"),
+		))
 
 	case reflect.TypeOf(&types.Named{}):
 		fmt.Println("named", fieldName, fieldType)
@@ -222,6 +252,11 @@ func createBasicCode(fieldType types.Type, fieldName string) (cArray []Code, cMa
 	case isType(types.Uint):
 		cArray = append(cArray, addSizePattern1("CalcUint", Id("uint64").Call(Id("v").Dot(fieldName))))
 
+	case isType(types.String):
+		cArray = append(cArray, addSizePattern1("CalcString", Id("uint64").Call(Id("v").Dot(fieldName))))
+
+	case isType(types.Float64):
+		cArray = append(cArray, addSizePattern1("CalcFloat64", Id("float64").Call(Id("v").Dot(fieldName))))
 	default:
 		// todo error
 
