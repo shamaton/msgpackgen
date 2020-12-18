@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/types"
 	"path/filepath"
+	"reflect"
 
 	. "github.com/dave/jennifer/jen"
 )
@@ -14,6 +15,9 @@ const (
 	pkTop = "github.com/shamaton/msgpackgen"
 	pkEnc = "github.com/shamaton/msgpackgen/enc"
 	pkDec = "github.com/shamaton/msgpackgen/dec"
+
+	idEncoder = "encoder"
+	idDecoder = "decoder"
 )
 
 func main() {
@@ -99,45 +103,77 @@ func cases() []Code {
 
 func calcFunction(st analyzedStruct, f *File) {
 	v := "v"
-	enc := "encoder"
-
-	errTemplate := If(Err().Op("!=").Nil()).Block(
-		Return(Lit(0), Err()),
-	)
-
-	addSizePattern1 := func(funcName string, params ...Code) Code {
-		return Id("size").Op("+=").Id(enc).Dot(funcName).Call(params...)
-	}
-
-	addSizePattern2 := func(funcName string, params ...Code) []Code {
-		return []Code{
-			List(Id("s"), Err()).Op(":=").Id(enc).Dot(funcName).Call(params...),
-			errTemplate,
-			Id("size").Op("+=").Id("s"),
-		}
-
-	}
 
 	codes := make([]Code, 0)
 	codes = append(codes, Id("size").Op(":=").Lit(0))
 	codes = append(codes, Block(addSizePattern2("CalcStructHeader", Lit(len(st.Fields)))...))
 
-	for _, field := range st.Fields {
-		switch {
-		case types.Identical(types.Typ[types.Int], field.Type):
-			codes = append(codes, addSizePattern1("CalcInt", Id("int64").Call(Id("v").Dot(field.Name))))
+	//for _, field := range st.Fields {
+	//	switch {
+	//	case types.Identical(types.Typ[types.Int], field.Type):
+	//		codes = append(codes, addSizePattern1("CalcInt", Id("int64").Call(Id("v").Dot(field.Name))))
+	//
+	//		//case types.Identical(types.Typ[types.], field.Type):
+	//
+	//	}
+	//}
 
-			//case types.Identical(types.Typ[types.], field.Type):
+	for _, field := range st.Fields {
+		switch reflect.TypeOf(field.Type) {
+		case reflect.TypeOf(&types.Basic{}):
+			fmt.Println("basic", field.Name, field.Type)
+			eee, _, _, _, _ := createBasicCode(field)
+			codes = append(codes, eee)
+
+		case reflect.TypeOf(&types.Slice{}):
+			fmt.Println("slice", field.Name, field.Type)
+
+		case reflect.TypeOf(&types.Map{}):
+			fmt.Println("map", field.Name, field.Type)
+
+		case reflect.TypeOf(&types.Named{}):
+			fmt.Println("named", field.Name, field.Type)
+
+		default:
+			// todo : error
 
 		}
 	}
 
-	f.Func().Id("calcArraySize"+st.Name).Params(Id(v).Qual(st.PackageName, st.Name), Id(enc).Op("*").Qual(pkEnc, "Encoder")).Params(Int(), Error()).Block(
+	f.Func().Id("calcArraySize"+st.Name).Params(Id(v).Qual(st.PackageName, st.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder")).Params(Int(), Error()).Block(
 		codes...,
 	)
 }
 
-type int struct {
+func createBasicCode(field analyzedField) (eArray Code, eMap []Code, dArray Code, dMap []Code, err error) {
+	isType := func(kind types.BasicKind) bool {
+		return types.Identical(types.Typ[kind], field.Type)
+	}
+	switch {
+	case isType(types.Int):
+		eArray = addSizePattern1("CalcInt", Id("int64").Call(Id("v").Dot(field.Name)))
+
+		eMap = append(eMap, addSizePattern1("CalcString", Lit(field.Name)))
+		eMap = append(eMap, addSizePattern1("CalcInt", Id("int64").Call(Id("v").Dot(field.Name))))
+
+	default:
+		// todo error
+
+	}
+	return eArray, eMap, dArray, dMap, err
 }
 
-var a int
+func addSizePattern1(funcName string, params ...Code) Code {
+	return Id("size").Op("+=").Id(idEncoder).Dot(funcName).Call(params...)
+}
+
+func addSizePattern2(funcName string, params ...Code) []Code {
+	return []Code{
+		List(Id("s"), Err()).Op(":=").Id(idEncoder).Dot(funcName).Call(params...),
+		If(Err().Op("!=").Nil()).Block(
+			Return(Lit(0), Err()),
+		),
+		Id("size").Op("+=").Id("s"),
+	}
+
+}
