@@ -164,7 +164,7 @@ func createFieldCode(fieldType types.Type, fieldName string, isRoot bool) (cArra
 	switch reflect.TypeOf(fieldType) {
 	case reflect.TypeOf(&types.Basic{}):
 		fmt.Println("basic", fieldName, fieldType)
-		return createBasicCode(fieldType, fieldName)
+		return createBasicCode(fieldType, fieldName, isRoot)
 
 	case reflect.TypeOf(&types.Slice{}):
 		fmt.Println("slice", fieldName, fieldType)
@@ -233,30 +233,35 @@ func createFieldCode(fieldType types.Type, fieldName string, isRoot bool) (cArra
 	return cArray, cMap, eArray, eMap, dArray, dMap, err
 }
 
-func createBasicCode(fieldType types.Type, fieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
+func createBasicCode(fieldType types.Type, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
 	isType := func(kind types.BasicKind) bool {
 		return types.Identical(types.Typ[kind], fieldType)
 	}
 	offset := "offset"
 
+	fieldValue := Id(fieldName)
+	if isRoot {
+		fieldValue = Id("v").Dot(fieldName)
+	}
+
 	switch {
 	case isType(types.Int):
-		cArray = append(cArray, addSizePattern1("CalcInt", Id("int64").Call(Id("v").Dot(fieldName))))
-		eArray = append(eArray, addSizePattern1("WriteInt", Id("int64").Call(Id("v").Dot(fieldName)), Id(offset)))
+		cArray = append(cArray, addSizePattern1("CalcInt", Id("int64").Call(fieldValue)))
+		eArray = append(eArray, addSizePattern1("WriteInt", Id("int64").Call(fieldValue), Id(offset)))
 
 		cMap = append(cMap, addSizePattern1("CalcString", Lit(fieldName)))
-		cMap = append(cMap, addSizePattern1("CalcInt", Id("int64").Call(Id("v").Dot(fieldName))))
+		cMap = append(cMap, addSizePattern1("CalcInt", Id("int64").Call(fieldValue)))
 		eMap = append(eMap, addSizePattern1("WriteString", Lit(fieldName), Id(offset)))
-		eMap = append(eMap, addSizePattern1("WriteInt", Id("int64").Call(Id("v").Dot(fieldName)), Id(offset)))
+		eMap = append(eMap, addSizePattern1("WriteInt", Id("int64").Call(fieldValue), Id(offset)))
 
 	case isType(types.Uint):
-		cArray = append(cArray, addSizePattern1("CalcUint", Id("uint64").Call(Id("v").Dot(fieldName))))
+		cArray = append(cArray, addSizePattern1("CalcUint", Id("uint64").Call(fieldValue)))
 
 	case isType(types.String):
-		cArray = append(cArray, addSizePattern1("CalcString", Id("uint64").Call(Id("v").Dot(fieldName))))
+		cArray = append(cArray, addSizePattern1("CalcString", fieldValue))
 
 	case isType(types.Float64):
-		cArray = append(cArray, addSizePattern1("CalcFloat64", Id("float64").Call(Id("v").Dot(fieldName))))
+		cArray = append(cArray, addSizePattern1("CalcFloat64", fieldValue))
 	default:
 		// todo error
 
