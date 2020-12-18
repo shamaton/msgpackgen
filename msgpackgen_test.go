@@ -280,7 +280,7 @@ func encodeAsMap(i interface{}) ([]byte, error) {
 func calcArraySizestructTest(v structTest, encoder *enc.Encoder) (int, error) {
 	size := 0
 	{
-		s, err := encoder.CalcStruct(num)
+		s, err := encoder.CalcStructHeader(num)
 		if err != nil {
 			return 0, err
 		}
@@ -358,7 +358,7 @@ func calcArraySizestructTest(v structTest, encoder *enc.Encoder) (int, error) {
 func calcMapSizestructTest(v structTest, encoder *enc.Encoder) (int, error) {
 	size := 0
 	{
-		s, err := encoder.CalcStruct(num)
+		s, err := encoder.CalcStructHeader(num)
 		if err != nil {
 			return 0, err
 		}
@@ -443,7 +443,7 @@ func calcMapSizestructTest(v structTest, encoder *enc.Encoder) (int, error) {
 
 func encodeArraystructTest(v structTest, encoder *enc.Encoder, offset int) ([]byte, int, error) {
 	var err error
-	offset = encoder.WriteStruct(num, offset)
+	offset = encoder.WriteStructHeader(num, offset)
 
 	offset = encoder.WriteInt(int64(v.A), offset)
 	offset = encoder.WriteFloat32(v.B, offset)
@@ -494,7 +494,7 @@ func encodeArraystructTest(v structTest, encoder *enc.Encoder, offset int) ([]by
 
 func encodeMapstructTest(v structTest, encoder *enc.Encoder, offset int) ([]byte, int, error) {
 	var err error
-	offset = encoder.WriteStruct(num, offset)
+	offset = encoder.WriteStructHeader(num, offset)
 
 	offset = encoder.WriteString("A", offset)
 	offset = encoder.WriteInt(int64(v.A), offset)
@@ -558,7 +558,7 @@ func encodeMapstructTest(v structTest, encoder *enc.Encoder, offset int) ([]byte
 
 func decodeArraystructTest(v *structTest, decoder *dec.Decoder, offset int) (int, error) {
 
-	offset, err := decoder.CheckStruct(num, 0)
+	offset, err := decoder.CheckStructHeader(num, 0)
 	if err != nil {
 		return 0, err
 	}
@@ -699,7 +699,7 @@ func decodeArraystructTest(v *structTest, decoder *dec.Decoder, offset int) (int
 func decodeMapstructTest(v *structTest, decoder *dec.Decoder, offset int) (int, error) {
 
 	// todo : mapの場合はここでstringをみてswitchする
-	offset, err := decoder.CheckStruct(num, 0)
+	offset, err := decoder.CheckStructHeader(num, 0)
 	if err != nil {
 		return 0, err
 	}
@@ -868,7 +868,7 @@ func decodeMapstructTest(v *structTest, decoder *dec.Decoder, offset int) (int, 
 func _decodeMapstructTest(v *structTest, decoder *dec.Decoder, offset int) (int, error) {
 
 	// todo : mapの場合はここでstringをみてswitchする
-	offset, err := decoder.CheckStruct(num, 0)
+	offset, err := decoder.CheckStructHeader(num, 0)
 	if err != nil {
 		return 0, err
 	}
@@ -1004,7 +1004,7 @@ func _decodeMapstructTest(v *structTest, decoder *dec.Decoder, offset int) (int,
 
 func calcSizeItem(v Item, encoder *enc.Encoder) (int, error) {
 	size := def.Byte1
-	s, err := encoder.CalcStruct(4)
+	s, err := encoder.CalcStructHeader(4)
 	if err != nil {
 		return 0, err
 	}
@@ -1026,7 +1026,7 @@ func calcSizeItem(v Item, encoder *enc.Encoder) (int, error) {
 }
 
 func encodeItem(v Item, encoder *enc.Encoder, offset int) ([]byte, int, error) {
-	offset = encoder.WriteStruct(4, offset)
+	offset = encoder.WriteStructHeader(4, offset)
 	offset = encoder.WriteInt(int64(v.ID), offset)
 	offset = encoder.WriteString(v.Name, offset)
 	offset = encoder.WriteFloat32(v.Effect, offset)
@@ -1036,7 +1036,7 @@ func encodeItem(v Item, encoder *enc.Encoder, offset int) ([]byte, int, error) {
 
 func decodeItem(v *Item, decoder *dec.Decoder, offset int) (int, error) {
 
-	offset, err := decoder.CheckStruct(4, offset)
+	offset, err := decoder.CheckStructHeader(4, offset)
 	if err != nil {
 		return 0, err
 	}

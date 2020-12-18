@@ -3,139 +3,11 @@ package dec
 import (
 	"encoding/binary"
 	"fmt"
-	"reflect"
-	"sync"
 
 	"github.com/shamaton/msgpack/def"
 )
 
-type structCacheTypeMap struct {
-	m map[string]int
-}
-
-type structCacheTypeArray struct {
-	m []int
-}
-
-// struct cache map
-var mapSCTM = sync.Map{}
-var mapSCTA = sync.Map{}
-
-func (d *Decoder) setStruct(rv reflect.Value, offset int, k reflect.Kind) (int, error) {
-	/*
-		if d.isDateTime(offset) {
-			dt, offset, err := d.AsDateTime(offset, k)
-			if err != nil {
-				return 0, err
-			}
-			rv.Set(reflect.ValueOf(dt))
-			return offset, nil
-		}
-	*/
-
-	for i := range extCoders {
-		if extCoders[i].IsType(offset, &d.data) {
-			v, offset, err := extCoders[i].AsValue(offset, k, &d.data)
-			if err != nil {
-				return 0, err
-			}
-			rv.Set(reflect.ValueOf(v))
-			return offset, nil
-		}
-	}
-
-	if d.asArray {
-		return d.setStructFromArray(rv, offset, k)
-	}
-	return d.setStructFromMap(rv, offset, k)
-}
-
-func (d *Decoder) setStructFromArray(rv reflect.Value, offset int, k reflect.Kind) (int, error) {
-	return 0, nil
-
-	/*
-		// get length
-		l, o, err := d.SliceLength(offset, k)
-		if err != nil {
-			return 0, err
-		}
-
-		// find or create reference
-		var scta *structCacheTypeArray
-		cache, findCache := mapSCTA.Load(rv.Type())
-		if !findCache {
-			scta = &structCacheTypeArray{}
-			for i := 0; i < rv.NumField(); i++ {
-				if ok, _ := d.CheckField(rv.Type().Field(i)); ok {
-					scta.m = append(scta.m, i)
-				}
-			}
-			mapSCTA.Store(rv.Type(), scta)
-		} else {
-			scta = cache.(*structCacheTypeArray)
-		}
-		// set value
-		for i := 0; i < l; i++ {
-			if i < len(scta.m) {
-				o, err = d.decode(rv.Field(scta.m[i]), o)
-				if err != nil {
-					return 0, err
-				}
-			} else {
-				o = d.JumpOffset(o)
-			}
-		}
-		return o, nil
-
-	*/
-}
-
-func (d *Decoder) setStructFromMap(rv reflect.Value, offset int, k reflect.Kind) (int, error) {
-	return 0, nil
-
-	/*
-		// get length
-		l, o, err := d.MapLength(offset, k)
-		if err != nil {
-			return 0, err
-		}
-
-		// find or create reference
-		var sctm *structCacheTypeMap
-		cache, cacheFind := mapSCTM.Load(rv.Type())
-		if !cacheFind {
-			sctm = &structCacheTypeMap{m: map[string]int{}}
-			for i := 0; i < rv.NumField(); i++ {
-				if ok, name := d.CheckField(rv.Type().Field(i)); ok {
-					sctm.m[name] = i
-				}
-			}
-			mapSCTM.Store(rv.Type(), sctm)
-		} else {
-			sctm = cache.(*structCacheTypeMap)
-		}
-		// set value if string correct
-		for i := 0; i < l; i++ {
-			key, o2, err := d.AsString(o, k)
-			if err != nil {
-				return 0, err
-			}
-			if _, ok := sctm.m[key]; ok {
-				o2, err = d.decode(rv.Field(sctm.m[key]), o2)
-				if err != nil {
-					return 0, err
-				}
-			} else {
-				o2 = d.JumpOffset(o2)
-			}
-			o = o2
-		}
-
-		return o, nil
-	*/
-}
-
-func (d *Decoder) CheckStruct(num, offset int) (int, error) {
+func (d *Decoder) CheckStructHeader(fieldNum, offset int) (int, error) {
 	code, offset := d.readSize1(offset)
 	var l int
 	switch {
@@ -163,8 +35,8 @@ func (d *Decoder) CheckStruct(num, offset int) (int, error) {
 		offset = o
 	}
 
-	if num != l {
-		return 0, fmt.Errorf("data length wrong %d : %d", num, l)
+	if fieldNum != l {
+		return 0, fmt.Errorf("data length wrong %d : %d", fieldNum, l)
 	}
 	return offset, nil
 }
