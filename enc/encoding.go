@@ -1,4 +1,4 @@
-package encoding
+package enc
 
 import (
 	"reflect"

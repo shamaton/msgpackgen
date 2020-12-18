@@ -1,4 +1,4 @@
-package encoding
+package enc
 
 func (e *Encoder) setByte1Int64(value int64, offset int) int {
 	e.d[offset] = byte(value)

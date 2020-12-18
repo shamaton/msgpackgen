@@ -1,4 +1,4 @@
-package encoding
+package enc
 
 import "github.com/shamaton/msgpack/def"
 

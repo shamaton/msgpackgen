@@ -12,7 +12,7 @@ import (
 
 	"github.com/shamaton/msgpackgen"
 	"github.com/shamaton/msgpackgen/dec"
-	encoding "github.com/shamaton/msgpackgen/enc"
+	"github.com/shamaton/msgpackgen/enc"
 )
 
 // todo : extまわりの対応、time.Timeとか
@@ -227,7 +227,7 @@ func encodeAsArray(i interface{}) ([]byte, error) {
 
 	switch v := i.(type) {
 	case structTest:
-		e := encoding.NewEncoder()
+		e := enc.NewEncoder()
 		size, err := calcArraySizestructTest(v, e)
 		if err != nil {
 			return nil, err
@@ -237,7 +237,7 @@ func encodeAsArray(i interface{}) ([]byte, error) {
 		return b, err
 
 	case Item:
-		e := encoding.NewEncoder()
+		e := enc.NewEncoder()
 		size, err := calcSizeItem(v, e)
 		if err != nil {
 			return nil, err
@@ -254,7 +254,7 @@ func encodeAsMap(i interface{}) ([]byte, error) {
 
 	switch v := i.(type) {
 	case structTest:
-		e := encoding.NewEncoder()
+		e := enc.NewEncoder()
 		size, err := calcMapSizestructTest(v, e)
 		if err != nil {
 			return nil, err
@@ -264,7 +264,7 @@ func encodeAsMap(i interface{}) ([]byte, error) {
 		return b, err
 
 	case Item:
-		e := encoding.NewEncoder()
+		e := enc.NewEncoder()
 		size, err := calcSizeItem(v, e)
 		if err != nil {
 			return nil, err
@@ -277,7 +277,7 @@ func encodeAsMap(i interface{}) ([]byte, error) {
 	return nil, nil
 }
 
-func calcArraySizestructTest(v structTest, encoder *encoding.Encoder) (int, error) {
+func calcArraySizestructTest(v structTest, encoder *enc.Encoder) (int, error) {
 	size := 0
 	{
 		s, err := encoder.CalcStruct(num)
@@ -355,7 +355,7 @@ func calcArraySizestructTest(v structTest, encoder *encoding.Encoder) (int, erro
 	return size, nil
 }
 
-func calcMapSizestructTest(v structTest, encoder *encoding.Encoder) (int, error) {
+func calcMapSizestructTest(v structTest, encoder *enc.Encoder) (int, error) {
 	size := 0
 	{
 		s, err := encoder.CalcStruct(num)
@@ -441,7 +441,7 @@ func calcMapSizestructTest(v structTest, encoder *encoding.Encoder) (int, error)
 	return size, nil
 }
 
-func encodeArraystructTest(v structTest, encoder *encoding.Encoder, offset int) ([]byte, int, error) {
+func encodeArraystructTest(v structTest, encoder *enc.Encoder, offset int) ([]byte, int, error) {
 	var err error
 	offset = encoder.WriteStruct(num, offset)
 
@@ -492,7 +492,7 @@ func encodeArraystructTest(v structTest, encoder *encoding.Encoder, offset int) 
 	return encoder.EncodedBytes(), offset, err
 }
 
-func encodeMapstructTest(v structTest, encoder *encoding.Encoder, offset int) ([]byte, int, error) {
+func encodeMapstructTest(v structTest, encoder *enc.Encoder, offset int) ([]byte, int, error) {
 	var err error
 	offset = encoder.WriteStruct(num, offset)
 
@@ -1002,7 +1002,7 @@ func _decodeMapstructTest(v *structTest, decoder *dec.Decoder, offset int) (int,
 
 ///////////////////////////////
 
-func calcSizeItem(v Item, encoder *encoding.Encoder) (int, error) {
+func calcSizeItem(v Item, encoder *enc.Encoder) (int, error) {
 	size := def.Byte1
 	s, err := encoder.CalcStruct(4)
 	if err != nil {
@@ -1025,7 +1025,7 @@ func calcSizeItem(v Item, encoder *encoding.Encoder) (int, error) {
 	return size, err
 }
 
-func encodeItem(v Item, encoder *encoding.Encoder, offset int) ([]byte, int, error) {
+func encodeItem(v Item, encoder *enc.Encoder, offset int) ([]byte, int, error) {
 	offset = encoder.WriteStruct(4, offset)
 	offset = encoder.WriteInt(int64(v.ID), offset)
 	offset = encoder.WriteString(v.Name, offset)
