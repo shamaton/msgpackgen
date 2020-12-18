@@ -104,14 +104,18 @@ func cases() []Code {
 func calcFunction(st analyzedStruct, f *File) {
 	v := "v"
 
-	codes := make([]Code, 0)
-	codes = append(codes, Id("size").Op(":=").Lit(0))
-	codes = append(codes, Block(addSizePattern2("CalcStructHeader", Lit(len(st.Fields)))...))
+	calcArraySizeCodes := make([]Code, 0)
+	calcArraySizeCodes = append(calcArraySizeCodes, Id("size").Op(":=").Lit(0))
+	calcArraySizeCodes = append(calcArraySizeCodes, Block(addSizePattern2("CalcStructHeader", Lit(len(st.Fields)))...))
+
+	calcMapSizeCodes := make([]Code, 0)
+	calcMapSizeCodes = append(calcMapSizeCodes, Id("size").Op(":=").Lit(0))
+	calcMapSizeCodes = append(calcMapSizeCodes, Block(addSizePattern2("CalcStructHeader", Lit(len(st.Fields)))...))
 
 	//for _, field := range st.Fields {
 	//	switch {
 	//	case types.Identical(types.Typ[types.Int], field.Type):
-	//		codes = append(codes, addSizePattern1("CalcInt", Id("int64").Call(Id("v").Dot(field.Name))))
+	//		calcArraySizeCodes = append(calcArraySizeCodes, addSizePattern1("CalcInt", Id("int64").Call(Id("v").Dot(field.Name))))
 	//
 	//		//case types.Identical(types.Typ[types.], field.Type):
 	//
@@ -119,48 +123,88 @@ func calcFunction(st analyzedStruct, f *File) {
 	//}
 
 	for _, field := range st.Fields {
-		switch reflect.TypeOf(field.Type) {
-		case reflect.TypeOf(&types.Basic{}):
-			fmt.Println("basic", field.Name, field.Type)
-			eee, _, _, _, _ := createBasicCode(field)
-			codes = append(codes, eee)
+		cArray, cMap, _, _, _, _, _ := createFieldCode(field.Type, field.Name)
+		calcArraySizeCodes = append(calcArraySizeCodes, cArray...)
+		calcMapSizeCodes = append(calcMapSizeCodes, cMap...)
 
-		case reflect.TypeOf(&types.Slice{}):
-			fmt.Println("slice", field.Name, field.Type)
-
-		case reflect.TypeOf(&types.Map{}):
-			fmt.Println("map", field.Name, field.Type)
-
-		case reflect.TypeOf(&types.Named{}):
-			fmt.Println("named", field.Name, field.Type)
-
-		default:
-			// todo : error
-
-		}
+		//switch reflect.TypeOf(field.Type) {
+		//case reflect.TypeOf(&types.Basic{}):
+		//	fmt.Println("basic", field.Name, field.Type)
+		//	cArray, cMap, _, _, _, _, _ := createBasicCode(field)
+		//	calcArraySizeCodes = append(calcArraySizeCodes, cArray)
+		//	calcMapSizeCodes = append(calcMapSizeCodes, cMap...)
+		//
+		//case reflect.TypeOf(&types.Slice{}):
+		//	fmt.Println("slice", field.Name, field.Type)
+		//	fmt.Println(field.Type.(*types.Slice).Elem().)
+		//
+		//case reflect.TypeOf(&types.Map{}):
+		//	fmt.Println("map", field.Name, field.Type)
+		//
+		//case reflect.TypeOf(&types.Named{}):
+		//	fmt.Println("named", field.Name, field.Type)
+		//
+		//default:
+		//	// todo : error
+		//
+		//}
 	}
 
 	f.Func().Id("calcArraySize"+st.Name).Params(Id(v).Qual(st.PackageName, st.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder")).Params(Int(), Error()).Block(
-		codes...,
+		calcArraySizeCodes...,
+	)
+
+	f.Func().Id("calcMapSize"+st.Name).Params(Id(v).Qual(st.PackageName, st.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder")).Params(Int(), Error()).Block(
+		calcMapSizeCodes...,
 	)
 }
 
-func createBasicCode(field analyzedField) (eArray Code, eMap []Code, dArray Code, dMap []Code, err error) {
-	isType := func(kind types.BasicKind) bool {
-		return types.Identical(types.Typ[kind], field.Type)
+func createFieldCode(fieldType types.Type, fieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
+
+	switch reflect.TypeOf(fieldType) {
+	case reflect.TypeOf(&types.Basic{}):
+		fmt.Println("basic", fieldName, fieldType)
+		return createBasicCode(fieldType, fieldName)
+
+	case reflect.TypeOf(&types.Slice{}):
+		fmt.Println("slice", fieldName, fieldType)
+		fmt.Println(fieldType.(*types.Slice).Elem())
+
+	case reflect.TypeOf(&types.Map{}):
+		fmt.Println("map", fieldName, fieldType)
+
+	case reflect.TypeOf(&types.Named{}):
+		fmt.Println("named", fieldName, fieldType)
+
+	default:
+		// todo : error
+
 	}
+
+	return nil, nil, nil, nil, nil, nil, nil
+}
+
+func createBasicCode(fieldType types.Type, fieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
+	isType := func(kind types.BasicKind) bool {
+		return types.Identical(types.Typ[kind], fieldType)
+	}
+	offset := "offset"
+
 	switch {
 	case isType(types.Int):
-		eArray = addSizePattern1("CalcInt", Id("int64").Call(Id("v").Dot(field.Name)))
+		cArray = append(cArray, addSizePattern1("CalcInt", Id("int64").Call(Id("v").Dot(fieldName))))
+		eArray = append(eArray, addSizePattern1("WriteInt", Id("int64").Call(Id("v").Dot(fieldName)), Id(offset)))
 
-		eMap = append(eMap, addSizePattern1("CalcString", Lit(field.Name)))
-		eMap = append(eMap, addSizePattern1("CalcInt", Id("int64").Call(Id("v").Dot(field.Name))))
+		cMap = append(cMap, addSizePattern1("CalcString", Lit(fieldName)))
+		cMap = append(cMap, addSizePattern1("CalcInt", Id("int64").Call(Id("v").Dot(fieldName))))
+		eMap = append(eMap, addSizePattern1("WriteString", Lit(fieldName), Id(offset)))
+		eMap = append(eMap, addSizePattern1("WriteInt", Id("int64").Call(Id("v").Dot(fieldName)), Id(offset)))
 
 	default:
 		// todo error
 
 	}
-	return eArray, eMap, dArray, dMap, err
+	return cArray, cMap, eArray, eMap, dArray, dMap, err
 }
 
 func addSizePattern1(funcName string, params ...Code) Code {
