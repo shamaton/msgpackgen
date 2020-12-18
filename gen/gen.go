@@ -123,7 +123,7 @@ func calcFunction(st analyzedStruct, f *File) {
 	//}
 
 	for _, field := range st.Fields {
-		cArray, cMap, _, _, _, _, _ := createFieldCode(field.Type, field.Name)
+		cArray, cMap, _, _, _, _, _ := createFieldCode(field.Type, field.Name, true)
 		calcArraySizeCodes = append(calcArraySizeCodes, cArray...)
 		calcMapSizeCodes = append(calcMapSizeCodes, cMap...)
 
@@ -159,7 +159,7 @@ func calcFunction(st analyzedStruct, f *File) {
 	)
 }
 
-func createFieldCode(fieldType types.Type, fieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
+func createFieldCode(fieldType types.Type, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
 
 	switch reflect.TypeOf(fieldType) {
 	case reflect.TypeOf(&types.Basic{}):
@@ -168,7 +168,26 @@ func createFieldCode(fieldType types.Type, fieldName string) (cArray []Code, cMa
 
 	case reflect.TypeOf(&types.Slice{}):
 		fmt.Println("slice", fieldName, fieldType)
-		fmt.Println(fieldType.(*types.Slice).Elem())
+		child := fieldType.(*types.Slice).Elem()
+
+		name, childName := "", ""
+		if isRoot {
+			name = "v." + fieldName
+			childName = "vv"
+		} else {
+			childName = fieldName + "v"
+		}
+
+		ca, _, _, _, _, _, _ := createFieldCode(child, childName, false)
+
+		statements := addSizePattern2("CalcSliceLength", Id(fmt.Sprintf("len(%s)", name)))
+		statements = append(statements, For(List(Id("_"), Id(childName)).Op(":=").Range().Id(name)).Block(
+			ca...,
+		))
+
+		cArray = append(cArray, If(Id(name).Op("!=").Nil()).Block(
+			statements...,
+		))
 
 	case reflect.TypeOf(&types.Map{}):
 		fmt.Println("map", fieldName, fieldType)
@@ -181,7 +200,7 @@ func createFieldCode(fieldType types.Type, fieldName string) (cArray []Code, cMa
 
 	}
 
-	return nil, nil, nil, nil, nil, nil, nil
+	return cArray, cMap, eArray, eMap, dArray, dMap, err
 }
 
 func createBasicCode(fieldType types.Type, fieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
@@ -199,6 +218,9 @@ func createBasicCode(fieldType types.Type, fieldName string) (cArray []Code, cMa
 		cMap = append(cMap, addSizePattern1("CalcInt", Id("int64").Call(Id("v").Dot(fieldName))))
 		eMap = append(eMap, addSizePattern1("WriteString", Lit(fieldName), Id(offset)))
 		eMap = append(eMap, addSizePattern1("WriteInt", Id("int64").Call(Id("v").Dot(fieldName)), Id(offset)))
+
+	case isType(types.Uint):
+		cArray = append(cArray, addSizePattern1("CalcUint", Id("uint64").Call(Id("v").Dot(fieldName))))
 
 	default:
 		// todo error
