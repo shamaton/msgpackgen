@@ -118,6 +118,7 @@ func calcFunction(st analyzedStruct, f *File) {
 		Return(Lit(0), Err()),
 	))
 
+	decMapCodeSwitchCases := make([]Code, 0)
 	//for _, field := range st.Fields {
 	//	switch {
 	//	case types.Identical(types.Typ[types.Int], field.Type):
@@ -129,10 +130,12 @@ func calcFunction(st analyzedStruct, f *File) {
 	//}
 
 	for _, field := range st.Fields {
-		cArray, cMap, _, _, dArray, _, _ := createFieldCode(field.Type, field.Name, true)
+		cArray, cMap, _, _, dArray, dMap, _ := createFieldCode(field.Type, field.Name, true)
 		calcArraySizeCodes = append(calcArraySizeCodes, cArray...)
 		calcMapSizeCodes = append(calcMapSizeCodes, cMap...)
 		decArrayCodes = append(decArrayCodes, dArray...)
+
+		decMapCodeSwitchCases = append(decMapCodeSwitchCases, Case(Lit(field.Name)).Block(dMap...))
 
 		//switch reflect.TypeOf(field.Type) {
 		//case reflect.TypeOf(&types.Basic{}):
@@ -157,6 +160,25 @@ func calcFunction(st analyzedStruct, f *File) {
 		//}
 	}
 
+	decMapCodeSwitchCases = append(decMapCodeSwitchCases, Default().Block(Id("offset").Op("=").Id(idDecoder).Dot("JumpOffset").Call(Id("offset"))))
+
+	decMapCodes := make([]Code, 0)
+	decMapCodes = append(decMapCodes, List(Id("offset"), Err()).Op(":=").Id(idDecoder).Dot("CheckStructHeader").Call(Lit(len(st.Fields)), Lit(0)))
+	decMapCodes = append(decMapCodes, If(Err().Op("!=").Nil()).Block(
+		Return(Lit(0), Err()),
+	))
+	decMapCodes = append(decMapCodes, Id("dataLen").Op(":=").Id(idDecoder).Dot("Len").Call())
+	decMapCodes = append(decMapCodes, For(Id("offset").Op("<").Id("dataLen").Block(
+		Var().Id("s").String(),
+		List(Id("s"), Id("offset"), Err()).Op("=").Id(idDecoder).Dot("AsString").Call(Id("offset")),
+		If(Err().Op("!=").Nil()).Block(
+			Return(Lit(0), Err()),
+		),
+		Switch(Id("s")).Block(
+			decMapCodeSwitchCases...,
+		),
+	)))
+
 	f.Func().Id("calcArraySize"+st.Name).Params(Id(v).Qual(st.PackageName, st.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder")).Params(Int(), Error()).Block(
 		calcArraySizeCodes...,
 	)
@@ -167,6 +189,10 @@ func calcFunction(st analyzedStruct, f *File) {
 
 	f.Func().Id("decodeArray"+st.Name).Params(Id(v).Op("*").Qual(st.PackageName, st.Name), Id(idDecoder).Op("*").Qual(pkDec, "Decoder"), Id("offset").Int()).Params(Int(), Error()).Block(
 		decArrayCodes...,
+	)
+
+	f.Func().Id("decodeMap"+st.Name).Params(Id(v).Op("*").Qual(st.PackageName, st.Name), Id(idDecoder).Op("*").Qual(pkDec, "Decoder"), Id("offset").Int()).Params(Int(), Error()).Block(
+		decMapCodes...,
 	)
 }
 
@@ -267,6 +293,7 @@ func createBasicCode(fieldType types.Type, fieldName string, isRoot bool) (cArra
 		eMap = append(eMap, addSizePattern1("WriteInt", Id("int64").Call(fieldValue), Id(offset)))
 
 		dArray = append(dArray, decodeBasicPattern(fieldType, fieldName, offset, "int64", "AsInt", isRoot)...)
+		dMap = append(dMap, decodeBasicPattern(fieldType, fieldName, offset, "int64", "AsInt", isRoot)...)
 
 	case isType(types.Uint):
 		cArray = append(cArray, addSizePattern1("CalcUint", Id("uint64").Call(fieldValue)))
