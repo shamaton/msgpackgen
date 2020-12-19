@@ -13,8 +13,8 @@ type StructTest struct {
 	Map    map[string]float64
 	//ItemData Item
 	//Items    []Item
-	Interface interface{}
-	Piyo      Hoge
+	//Interface interface{}
+	//Piyo      Hoge
 }
 
 type Hoge struct {

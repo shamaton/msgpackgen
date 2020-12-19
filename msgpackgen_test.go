@@ -22,7 +22,7 @@ var v = msgpackgen.StructTest{
 	Bool:   true,
 	Uint64: math.MaxUint32 * 2,
 	Now:    time.Now(),
-	Slice:  nil, // []uint{1, 100, 10000, 1000000},
+	Slice:  []uint{1, 100, 10000, 1000000},
 	Map:    map[string]float64{"a": 1.23, "b": 2.34, "c": 3.45},
 	//ItemData: Item{ID: 1, Name: "abc", Effect: 7.89, Num: 999},
 	//Interface: "interface is not supported",
@@ -604,12 +604,14 @@ func decodeArraystructTest(v *msgpackgen.StructTest, decoder *dec.Decoder, offse
 
 		vv = make([]uint, l)
 		for i := range vv {
-			vvv, oo, err := decoder.AsUint(o)
-			if err != nil {
-				return 0, err
+			{
+				var vvv uint64
+				vvv, o, err = decoder.AsUint(o)
+				if err != nil {
+					return 0, err
+				}
+				vv[i] = uint(vvv)
 			}
-			vv[i] = uint(vvv)
-			o = oo
 		}
 		offset = o
 		v.Slice = vv
@@ -762,12 +764,14 @@ func decodeMapstructTest(v *msgpackgen.StructTest, decoder *dec.Decoder, offset 
 
 				vv = make([]uint, l)
 				for i := range vv {
-					vvv, oo, err := decoder.AsUint(o)
-					if err != nil {
-						return 0, err
+					{
+						var vvv uint64
+						vvv, o, err = decoder.AsUint(o)
+						if err != nil {
+							return 0, err
+						}
+						vv[i] = uint(vvv)
 					}
-					vv[i] = uint(vvv)
-					o = oo
 				}
 				offset = o
 				v.Slice = vv

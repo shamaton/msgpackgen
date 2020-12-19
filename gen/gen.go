@@ -112,6 +112,12 @@ func calcFunction(st analyzedStruct, f *File) {
 	calcMapSizeCodes = append(calcMapSizeCodes, Id("size").Op(":=").Lit(0))
 	calcMapSizeCodes = append(calcMapSizeCodes, Block(addSizePattern2("CalcStructHeader", Lit(len(st.Fields)))...))
 
+	decArrayCodes := make([]Code, 0)
+	decArrayCodes = append(decArrayCodes, List(Id("offset"), Err()).Op(":=").Id(idDecoder).Dot("CheckStructHeader").Call(Lit(len(st.Fields)), Lit(0)))
+	decArrayCodes = append(decArrayCodes, If(Err().Op("!=").Nil()).Block(
+		Return(Lit(0), Err()),
+	))
+
 	//for _, field := range st.Fields {
 	//	switch {
 	//	case types.Identical(types.Typ[types.Int], field.Type):
@@ -123,9 +129,10 @@ func calcFunction(st analyzedStruct, f *File) {
 	//}
 
 	for _, field := range st.Fields {
-		cArray, cMap, _, _, _, _, _ := createFieldCode(field.Type, field.Name, true)
+		cArray, cMap, _, _, dArray, _, _ := createFieldCode(field.Type, field.Name, true)
 		calcArraySizeCodes = append(calcArraySizeCodes, cArray...)
 		calcMapSizeCodes = append(calcMapSizeCodes, cMap...)
+		decArrayCodes = append(decArrayCodes, dArray...)
 
 		//switch reflect.TypeOf(field.Type) {
 		//case reflect.TypeOf(&types.Basic{}):
@@ -156,6 +163,10 @@ func calcFunction(st analyzedStruct, f *File) {
 
 	f.Func().Id("calcMapSize"+st.Name).Params(Id(v).Qual(st.PackageName, st.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder")).Params(Int(), Error()).Block(
 		calcMapSizeCodes...,
+	)
+
+	f.Func().Id("decodeArray"+st.Name).Params(Id(v).Op("*").Qual(st.PackageName, st.Name), Id(idDecoder).Op("*").Qual(pkDec, "Decoder"), Id("offset").Int()).Params(Int(), Error()).Block(
+		decArrayCodes...,
 	)
 }
 
@@ -234,9 +245,7 @@ func createFieldCode(fieldType types.Type, fieldName string, isRoot bool) (cArra
 }
 
 func createBasicCode(fieldType types.Type, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
-	isType := func(kind types.BasicKind) bool {
-		return types.Identical(types.Typ[kind], fieldType)
-	}
+
 	offset := "offset"
 
 	fieldValue := Id(fieldName)
@@ -245,7 +254,7 @@ func createBasicCode(fieldType types.Type, fieldName string, isRoot bool) (cArra
 	}
 
 	switch {
-	case isType(types.Int):
+	case isBasicType(types.Int, fieldType):
 		cArray = append(cArray, addSizePattern1("CalcInt", Id("int64").Call(fieldValue)))
 		eArray = append(eArray, addSizePattern1("WriteInt", Id("int64").Call(fieldValue), Id(offset)))
 
@@ -254,13 +263,15 @@ func createBasicCode(fieldType types.Type, fieldName string, isRoot bool) (cArra
 		eMap = append(eMap, addSizePattern1("WriteString", Lit(fieldName), Id(offset)))
 		eMap = append(eMap, addSizePattern1("WriteInt", Id("int64").Call(fieldValue), Id(offset)))
 
-	case isType(types.Uint):
+		dArray = append(dArray, decodeBasicPattern(fieldType, fieldName, offset, isRoot)...)
+
+	case isBasicType(types.Uint, fieldType):
 		cArray = append(cArray, addSizePattern1("CalcUint", Id("uint64").Call(fieldValue)))
 
-	case isType(types.String):
+	case isBasicType(types.String, fieldType):
 		cArray = append(cArray, addSizePattern1("CalcString", fieldValue))
 
-	case isType(types.Float64):
+	case isBasicType(types.Float64, fieldType):
 		cArray = append(cArray, addSizePattern1("CalcFloat64", fieldValue))
 	default:
 		// todo error
@@ -282,4 +293,38 @@ func addSizePattern2(funcName string, params ...Code) []Code {
 		Id("size").Op("+=").Id("s"),
 	}
 
+}
+
+func decodeBasicPattern(fieldType types.Type, fieldName, offsetName string, isRoot bool) []Code {
+
+	vName := "vv"
+	setName := "v." + fieldName
+	if !isRoot {
+		vName = fieldName + "v"
+		setName = fieldName
+	}
+
+	typeName := ""
+	decoderFuncName := ""
+
+	switch {
+	case isBasicType(types.Int, fieldType):
+		typeName = "int64"
+		decoderFuncName = "AsInt"
+	default:
+		//todo:error
+	}
+
+	return []Code{Block(
+		Var().Id(vName).Id(typeName),
+		List(Id(vName), Id(offsetName), Err()).Op("=").Id(idDecoder).Dot(decoderFuncName).Call(Id(offsetName)),
+		If(Err().Op("!=").Nil()).Block(
+			Return(Lit(0), Err()),
+		),
+		Id(setName).Op("=").Id(fieldType.String()).Call(Id(vName)),
+	)}
+}
+
+func isBasicType(kind types.BasicKind, fieldType types.Type) bool {
+	return types.Identical(types.Typ[kind], fieldType)
 }
