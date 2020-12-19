@@ -245,6 +245,9 @@ func createFieldCode(fieldType types.Type, fieldName string, isRoot bool) (cArra
 }
 
 func createBasicCode(fieldType types.Type, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
+	isType := func(kind types.BasicKind) bool {
+		return types.Identical(types.Typ[kind], fieldType)
+	}
 
 	offset := "offset"
 
@@ -254,7 +257,7 @@ func createBasicCode(fieldType types.Type, fieldName string, isRoot bool) (cArra
 	}
 
 	switch {
-	case isBasicType(types.Int, fieldType):
+	case isType(types.Int):
 		cArray = append(cArray, addSizePattern1("CalcInt", Id("int64").Call(fieldValue)))
 		eArray = append(eArray, addSizePattern1("WriteInt", Id("int64").Call(fieldValue), Id(offset)))
 
@@ -263,15 +266,15 @@ func createBasicCode(fieldType types.Type, fieldName string, isRoot bool) (cArra
 		eMap = append(eMap, addSizePattern1("WriteString", Lit(fieldName), Id(offset)))
 		eMap = append(eMap, addSizePattern1("WriteInt", Id("int64").Call(fieldValue), Id(offset)))
 
-		dArray = append(dArray, decodeBasicPattern(fieldType, fieldName, offset, isRoot)...)
+		dArray = append(dArray, decodeBasicPattern(fieldType, fieldName, offset, "int64", "AsInt", isRoot)...)
 
-	case isBasicType(types.Uint, fieldType):
+	case isType(types.Uint):
 		cArray = append(cArray, addSizePattern1("CalcUint", Id("uint64").Call(fieldValue)))
 
-	case isBasicType(types.String, fieldType):
+	case isType(types.String):
 		cArray = append(cArray, addSizePattern1("CalcString", fieldValue))
 
-	case isBasicType(types.Float64, fieldType):
+	case isType(types.Float64):
 		cArray = append(cArray, addSizePattern1("CalcFloat64", fieldValue))
 	default:
 		// todo error
@@ -295,7 +298,7 @@ func addSizePattern2(funcName string, params ...Code) []Code {
 
 }
 
-func decodeBasicPattern(fieldType types.Type, fieldName, offsetName string, isRoot bool) []Code {
+func decodeBasicPattern(fieldType types.Type, fieldName, offsetName, varTypeName, decoderFuncName string, isRoot bool) []Code {
 
 	vName := "vv"
 	setName := "v." + fieldName
@@ -304,27 +307,12 @@ func decodeBasicPattern(fieldType types.Type, fieldName, offsetName string, isRo
 		setName = fieldName
 	}
 
-	typeName := ""
-	decoderFuncName := ""
-
-	switch {
-	case isBasicType(types.Int, fieldType):
-		typeName = "int64"
-		decoderFuncName = "AsInt"
-	default:
-		//todo:error
-	}
-
 	return []Code{Block(
-		Var().Id(vName).Id(typeName),
+		Var().Id(vName).Id(varTypeName),
 		List(Id(vName), Id(offsetName), Err()).Op("=").Id(idDecoder).Dot(decoderFuncName).Call(Id(offsetName)),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Lit(0), Err()),
 		),
 		Id(setName).Op("=").Id(fieldType.String()).Call(Id(vName)),
 	)}
-}
-
-func isBasicType(kind types.BasicKind, fieldType types.Type) bool {
-	return types.Identical(types.Typ[kind], fieldType)
 }

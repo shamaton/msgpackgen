@@ -597,7 +597,8 @@ func decodeArraystructTest(v *msgpackgen.StructTest, decoder *dec.Decoder, offse
 	if !decoder.IsCodeNil(offset) {
 
 		var vv []uint
-		l, o, err := decoder.SliceLength(offset)
+		var l int
+		l, offset, err = decoder.SliceLength(offset)
 		if err != nil {
 			return 0, err
 		}
@@ -606,14 +607,13 @@ func decodeArraystructTest(v *msgpackgen.StructTest, decoder *dec.Decoder, offse
 		for i := range vv {
 			{
 				var vvv uint64
-				vvv, o, err = decoder.AsUint(o)
+				vvv, offset, err = decoder.AsUint(offset)
 				if err != nil {
 					return 0, err
 				}
 				vv[i] = uint(vvv)
 			}
 		}
-		offset = o
 		v.Slice = vv
 	} else {
 		offset++
@@ -756,8 +756,9 @@ func decodeMapstructTest(v *msgpackgen.StructTest, decoder *dec.Decoder, offset 
 		case "Slice":
 			if !decoder.IsCodeNil(offset) {
 				// todo : nilのパターン
+				var l int
 				var vv []uint
-				l, o, err := decoder.SliceLength(offset)
+				l, offset, err = decoder.SliceLength(offset)
 				if err != nil {
 					return 0, err
 				}
@@ -766,14 +767,13 @@ func decodeMapstructTest(v *msgpackgen.StructTest, decoder *dec.Decoder, offset 
 				for i := range vv {
 					{
 						var vvv uint64
-						vvv, o, err = decoder.AsUint(o)
+						vvv, offset, err = decoder.AsUint(offset)
 						if err != nil {
 							return 0, err
 						}
 						vv[i] = uint(vvv)
 					}
 				}
-				offset = o
 				v.Slice = vv
 			} else {
 				offset++
