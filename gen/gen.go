@@ -5,6 +5,7 @@ import (
 	"go/types"
 	"path/filepath"
 	"reflect"
+	"strings"
 
 	. "github.com/dave/jennifer/jen"
 )
@@ -127,19 +128,10 @@ func calcFunction(st analyzedStruct, f *File) {
 	))
 
 	decMapCodeSwitchCases := make([]Code, 0)
-	//for _, field := range st.Fields {
-	//	switch {
-	//	case types.Identical(types.Typ[types.Int], field.Type):
-	//		calcArraySizeCodes = append(calcArraySizeCodes, addSizePattern1("CalcInt", Id("int64").Call(Id("v").Dot(field.Name))))
-	//
-	//		//case types.Identical(types.Typ[types.], field.Type):
-	//
-	//	}
-	//}
 
 	for _, field := range st.Fields {
 		calcMapSizeCodes = append(calcMapSizeCodes, addSizePattern1("CalcString", Lit(field.Name)))
-		encMapCodes = append(encMapCodes, addSizePattern1("WriteString", Lit(field.Name), Id("offset")))
+		encMapCodes = append(encMapCodes, encPattern1("WriteString", Lit(field.Name), Id("offset")))
 
 		cArray, cMap, eArray, eMap, dArray, dMap, _ := createFieldCode(field.Type, field.Name, true)
 		calcArraySizeCodes = append(calcArraySizeCodes, cArray...)
@@ -263,6 +255,24 @@ func createFieldCode(fieldType types.Type, fieldName string, isRoot bool) (cArra
 		))
 
 	case reflect.TypeOf(&types.Named{}):
+		if fieldType.String() == "time.Time" {
+
+			fieldValue := Id(fieldName)
+			if isRoot {
+				fieldValue = Id("v").Dot(fieldName)
+			}
+			cArray = append(cArray, addSizePattern1("CalcTime", fieldValue))
+			eArray = append(eArray, encPattern1("WriteTime", fieldValue, Id("offset")))
+
+			cMap = append(cMap, addSizePattern1("CalcTime", fieldValue))
+			eMap = append(eMap, encPattern1("WriteTime", fieldValue, Id("offset")))
+
+			dArray = append(dArray, decodeBasicPattern(fieldType, fieldName, "offset", "time.Time", "AsDateTime", isRoot)...)
+			dMap = append(dMap, decodeBasicPattern(fieldType, fieldName, "offset", "time.Time", "AsDateTime", isRoot)...)
+		} else if strings.HasPrefix(fieldType.String(), "github") {
+			// todo : 対象のパッケージかどうかをちゃんと判断する
+		}
+		//if (types.Identical(types.Struct{}, fieldType))
 		fmt.Println("named", fieldName, fieldType)
 
 	default:
@@ -288,10 +298,10 @@ func createBasicCode(fieldType types.Type, fieldName string, isRoot bool) (cArra
 	switch {
 	case isType(types.Int):
 		cArray = append(cArray, addSizePattern1("CalcInt", Id("int64").Call(fieldValue)))
-		eArray = append(eArray, addSizePattern1("WriteInt", Id("int64").Call(fieldValue), Id(offset)))
+		eArray = append(eArray, encPattern1("WriteInt", Id("int64").Call(fieldValue), Id(offset)))
 
 		cMap = append(cMap, addSizePattern1("CalcInt", Id("int64").Call(fieldValue)))
-		eMap = append(eMap, addSizePattern1("WriteInt", Id("int64").Call(fieldValue), Id(offset)))
+		eMap = append(eMap, encPattern1("WriteInt", Id("int64").Call(fieldValue), Id(offset)))
 
 		dArray = append(dArray, decodeBasicPattern(fieldType, fieldName, offset, "int64", "AsInt", isRoot)...)
 		dMap = append(dMap, decodeBasicPattern(fieldType, fieldName, offset, "int64", "AsInt", isRoot)...)
@@ -324,6 +334,10 @@ func addSizePattern2(funcName string, params ...Code) []Code {
 		Id("size").Op("+=").Id("s"),
 	}
 
+}
+
+func encPattern1(funcName string, params ...Code) Code {
+	return Id("offset").Op("=").Id(idEncoder).Dot(funcName).Call(params...)
 }
 
 func decodeBasicPattern(fieldType types.Type, fieldName, offsetName, varTypeName, decoderFuncName string, isRoot bool) []Code {

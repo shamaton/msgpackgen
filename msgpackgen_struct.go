@@ -1,6 +1,6 @@
 package msgpackgen
 
-import "time"
+import goTime "time"
 
 type StructTest struct {
 	A      int
@@ -8,13 +8,13 @@ type StructTest struct {
 	String string
 	Bool   bool
 	Uint64 uint64
-	Now    time.Time
+	Now    goTime.Time
 	Slice  []uint
 	Map    map[string]float64
 	//ItemData Item
 	//Items    []Item
 	//Interface interface{}
-	//Piyo      Hoge
+	Piyo Hoge
 }
 
 type Hoge struct {
