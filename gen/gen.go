@@ -138,8 +138,12 @@ func calcFunction(st analyzedStruct, f *File) {
 	//}
 
 	for _, field := range st.Fields {
+		calcMapSizeCodes = append(calcMapSizeCodes, addSizePattern1("CalcString", Lit(field.Name)))
+		encMapCodes = append(encMapCodes, addSizePattern1("WriteString", Lit(field.Name), Id("offset")))
+
 		cArray, cMap, eArray, eMap, dArray, dMap, _ := createFieldCode(field.Type, field.Name, true)
 		calcArraySizeCodes = append(calcArraySizeCodes, cArray...)
+
 		calcMapSizeCodes = append(calcMapSizeCodes, cMap...)
 
 		encArrayCodes = append(encArrayCodes, eArray...)
@@ -149,27 +153,6 @@ func calcFunction(st analyzedStruct, f *File) {
 
 		decMapCodeSwitchCases = append(decMapCodeSwitchCases, Case(Lit(field.Name)).Block(dMap...))
 
-		//switch reflect.TypeOf(field.Type) {
-		//case reflect.TypeOf(&types.Basic{}):
-		//	fmt.Println("basic", field.Name, field.Type)
-		//	cArray, cMap, _, _, _, _, _ := createBasicCode(field)
-		//	calcArraySizeCodes = append(calcArraySizeCodes, cArray)
-		//	calcMapSizeCodes = append(calcMapSizeCodes, cMap...)
-		//
-		//case reflect.TypeOf(&types.Slice{}):
-		//	fmt.Println("slice", field.Name, field.Type)
-		//	fmt.Println(field.Type.(*types.Slice).Elem().)
-		//
-		//case reflect.TypeOf(&types.Map{}):
-		//	fmt.Println("map", field.Name, field.Type)
-		//
-		//case reflect.TypeOf(&types.Named{}):
-		//	fmt.Println("named", field.Name, field.Type)
-		//
-		//default:
-		//	// todo : error
-		//
-		//}
 	}
 
 	decMapCodeSwitchCases = append(decMapCodeSwitchCases, Default().Block(Id("offset").Op("=").Id(idDecoder).Dot("JumpOffset").Call(Id("offset"))))
@@ -307,9 +290,7 @@ func createBasicCode(fieldType types.Type, fieldName string, isRoot bool) (cArra
 		cArray = append(cArray, addSizePattern1("CalcInt", Id("int64").Call(fieldValue)))
 		eArray = append(eArray, addSizePattern1("WriteInt", Id("int64").Call(fieldValue), Id(offset)))
 
-		cMap = append(cMap, addSizePattern1("CalcString", Lit(fieldName)))
 		cMap = append(cMap, addSizePattern1("CalcInt", Id("int64").Call(fieldValue)))
-		eMap = append(eMap, addSizePattern1("WriteString", Lit(fieldName), Id(offset)))
 		eMap = append(eMap, addSizePattern1("WriteInt", Id("int64").Call(fieldValue), Id(offset)))
 
 		dArray = append(dArray, decodeBasicPattern(fieldType, fieldName, offset, "int64", "AsInt", isRoot)...)
