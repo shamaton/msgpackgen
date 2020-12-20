@@ -112,6 +112,14 @@ func calcFunction(st analyzedStruct, f *File) {
 	calcMapSizeCodes = append(calcMapSizeCodes, Id("size").Op(":=").Lit(0))
 	calcMapSizeCodes = append(calcMapSizeCodes, Block(addSizePattern2("CalcStructHeader", Lit(len(st.Fields)))...))
 
+	encArrayCodes := make([]Code, 0)
+	encArrayCodes = append(encArrayCodes, Var().Err().Error())
+	encArrayCodes = append(encArrayCodes, Id("offset").Op("=").Id(idEncoder).Dot("WriteStructHeader").Call(Lit(len(st.Fields)), Id("offset")))
+
+	encMapCodes := make([]Code, 0)
+	encMapCodes = append(encMapCodes, Var().Err().Error())
+	encMapCodes = append(encMapCodes, Id("offset").Op("=").Id(idEncoder).Dot("WriteStructHeader").Call(Lit(len(st.Fields)), Id("offset")))
+
 	decArrayCodes := make([]Code, 0)
 	decArrayCodes = append(decArrayCodes, List(Id("offset"), Err()).Op(":=").Id(idDecoder).Dot("CheckStructHeader").Call(Lit(len(st.Fields)), Lit(0)))
 	decArrayCodes = append(decArrayCodes, If(Err().Op("!=").Nil()).Block(
@@ -130,9 +138,13 @@ func calcFunction(st analyzedStruct, f *File) {
 	//}
 
 	for _, field := range st.Fields {
-		cArray, cMap, _, _, dArray, dMap, _ := createFieldCode(field.Type, field.Name, true)
+		cArray, cMap, eArray, eMap, dArray, dMap, _ := createFieldCode(field.Type, field.Name, true)
 		calcArraySizeCodes = append(calcArraySizeCodes, cArray...)
 		calcMapSizeCodes = append(calcMapSizeCodes, cMap...)
+
+		encArrayCodes = append(encArrayCodes, eArray...)
+		encMapCodes = append(encMapCodes, eMap...)
+
 		decArrayCodes = append(decArrayCodes, dArray...)
 
 		decMapCodeSwitchCases = append(decMapCodeSwitchCases, Case(Lit(field.Name)).Block(dMap...))
@@ -185,6 +197,14 @@ func calcFunction(st analyzedStruct, f *File) {
 
 	f.Func().Id("calcMapSize"+st.Name).Params(Id(v).Qual(st.PackageName, st.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder")).Params(Int(), Error()).Block(
 		calcMapSizeCodes...,
+	)
+
+	f.Func().Id("encodeArray"+st.Name).Params(Id(v).Qual(st.PackageName, st.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder"), Id("offset").Int()).Params(Index().Byte(), Int(), Error()).Block(
+		encArrayCodes...,
+	)
+
+	f.Func().Id("encodeMap"+st.Name).Params(Id(v).Qual(st.PackageName, st.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder"), Id("offset").Int()).Params(Index().Byte(), Int(), Error()).Block(
+		encMapCodes...,
 	)
 
 	f.Func().Id("decodeArray"+st.Name).Params(Id(v).Op("*").Qual(st.PackageName, st.Name), Id(idDecoder).Op("*").Qual(pkDec, "Decoder"), Id("offset").Int()).Params(Int(), Error()).Block(
