@@ -255,12 +255,13 @@ func createFieldCode(fieldType types.Type, fieldName string, isRoot bool) (cArra
 		))
 
 	case reflect.TypeOf(&types.Named{}):
+		fieldValue := Id(fieldName)
+		if isRoot {
+			fieldValue = Id("v").Dot(fieldName)
+		}
+
 		if fieldType.String() == "time.Time" {
 
-			fieldValue := Id(fieldName)
-			if isRoot {
-				fieldValue = Id("v").Dot(fieldName)
-			}
 			cArray = append(cArray, addSizePattern1("CalcTime", fieldValue))
 			eArray = append(eArray, encPattern1("WriteTime", fieldValue, Id("offset")))
 
@@ -271,6 +272,7 @@ func createFieldCode(fieldType types.Type, fieldName string, isRoot bool) (cArra
 			dMap = append(dMap, decodeBasicPattern(fieldType, fieldName, "offset", "time.Time", "AsDateTime", isRoot)...)
 		} else if strings.HasPrefix(fieldType.String(), "github") {
 			// todo : 対象のパッケージかどうかをちゃんと判断する
+			createNamedCode()
 		}
 		//if (types.Identical(types.Struct{}, fieldType))
 		fmt.Println("named", fieldName, fieldType)
@@ -357,4 +359,17 @@ func decodeBasicPattern(fieldType types.Type, fieldName, offsetName, varTypeName
 		),
 		Id(setName).Op("=").Id(fieldType.String()).Call(Id(vName)),
 	)}
+}
+
+func createNamedCode(fieldName string, fieldValue Code, isRoot bool) []Code {
+
+	return []Code{
+		List(Id(fieldName+"Size"), Err()).
+			Op(":=").
+			Id("calcArraySize"+"StructName").Call(fieldValue, Id(idEncoder)),
+		If(Err().Op("!=").Nil()).Block(
+			Return(Lit(0), Err()),
+		),
+		Id("size").Op("+=").Id(fieldName + "Size"),
+	}
 }
