@@ -203,29 +203,51 @@ func (as *analyzedStruct) createBasicCode(fieldType types.Type, fieldName string
 		fieldValue = Id("v").Dot(fieldName)
 	}
 
+	var (
+		castName   = ""
+		funcSuffix = ""
+	)
+
+	// todo : byte
+
 	switch {
-	case isType(types.Int):
-		cArray = append(cArray, as.addSizePattern1("CalcInt", Id("int64").Call(fieldValue)))
-		eArray = append(eArray, as.encPattern1("WriteInt", Id("int64").Call(fieldValue), Id(offset)))
+	case isType(types.Int), isType(types.Int8), isType(types.Int16), isType(types.Int32), isType(types.Int64):
+		castName = "int64"
+		funcSuffix = "Int"
 
-		cMap = append(cMap, as.addSizePattern1("CalcInt", Id("int64").Call(fieldValue)))
-		eMap = append(eMap, as.encPattern1("WriteInt", Id("int64").Call(fieldValue), Id(offset)))
-
-		dArray = append(dArray, as.decodeBasicPattern(fieldType, fieldName, offset, "int64", "AsInt", isRoot)...)
-		dMap = append(dMap, as.decodeBasicPattern(fieldType, fieldName, offset, "int64", "AsInt", isRoot)...)
-
-	case isType(types.Uint):
-		cArray = append(cArray, as.addSizePattern1("CalcUint", Id("uint64").Call(fieldValue)))
+	case isType(types.Uint), isType(types.Uint8), isType(types.Uint16), isType(types.Uint32), isType(types.Uint64):
+		castName = "uint64"
+		funcSuffix = "Uint"
 
 	case isType(types.String):
-		cArray = append(cArray, as.addSizePattern1("CalcString", fieldValue))
+		castName = "string"
+		funcSuffix = "String"
+
+	case isType(types.Float32):
+		castName = "float32"
+		funcSuffix = "Float32"
 
 	case isType(types.Float64):
-		cArray = append(cArray, as.addSizePattern1("CalcFloat64", fieldValue))
+		castName = "float64"
+		funcSuffix = "Float64"
+
+	case isType(types.Bool):
+		castName = "bool"
+		funcSuffix = "Bool"
 	default:
 		// todo error
 
 	}
+
+	cArray = append(cArray, as.addSizePattern1("Calc"+funcSuffix, Id(castName).Call(fieldValue)))
+	eArray = append(eArray, as.encPattern1("Write"+funcSuffix, Id(castName).Call(fieldValue), Id(offset)))
+
+	cMap = append(cMap, as.addSizePattern1("Calc"+funcSuffix, Id(castName).Call(fieldValue)))
+	eMap = append(eMap, as.encPattern1("Write"+funcSuffix, Id(castName).Call(fieldValue), Id(offset)))
+
+	dArray = append(dArray, as.decodeBasicPattern(fieldType, fieldName, offset, castName, "As"+funcSuffix, isRoot)...)
+	dMap = append(dMap, as.decodeBasicPattern(fieldType, fieldName, offset, castName, "As"+funcSuffix, isRoot)...)
+
 	return cArray, cMap, eArray, eMap, dArray, dMap, err
 }
 
