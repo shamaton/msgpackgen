@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-func findStructs(fileName string) error {
+func (g *generator) findStructs(fileName string) error {
 	dir := filepath.Dir(fileName)
 	paths := strings.SplitN(dir, "src/", 2)
 	if len(paths) != 2 {
@@ -75,17 +75,6 @@ func findStructs(fileName string) error {
 		analyzedStructs = append(analyzedStructs, analyzedSt)
 	}
 	return nil
-}
-
-type analyzedStruct struct {
-	PackageName string
-	Name        string
-	Fields      []analyzedField
-}
-
-type analyzedField struct {
-	Name string
-	Type types.Type
 }
 
 func aaa(packageName, structName string, fset *token.FileSet, file *ast.File) analyzedStruct {
