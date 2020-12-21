@@ -178,8 +178,7 @@ func (as *analyzedStruct) createFieldCode(fieldType types.Type, fieldName string
 			dMap = append(dMap, as.decodeBasicPattern(fieldType, fieldName, "offset", "time.Time", "AsDateTime", isRoot)...)
 		} else {
 			// todo : 対象のパッケージかどうかをちゃんと判断する
-			a := as.createNamedCode(fieldName, fieldValue, isRoot)
-			cArray = append(cArray, a...)
+			cArray, cMap, eArray, eMap, dArray, dMap = as.createNamedCode(fieldName, fieldValue, isRoot)
 		}
 		//if (types.Identical(types.Struct{}, fieldType))
 		fmt.Println("named", fieldName, fieldType, as.PackageName)
@@ -251,27 +250,22 @@ func (as *analyzedStruct) encPattern1(funcName string, params ...Code) Code {
 
 func (as *analyzedStruct) decodeBasicPattern(fieldType types.Type, fieldName, offsetName, varTypeName, decoderFuncName string, isRoot bool) []Code {
 
-	vName := "vv"
-	setName := "v." + fieldName
-	if !isRoot {
-		vName = fieldName + "v"
-		setName = fieldName
-	}
+	varName, setVarName := as.decodeVarPattern(fieldName, isRoot)
 
 	return []Code{Block(
-		Var().Id(vName).Id(varTypeName),
-		List(Id(vName), Id(offsetName), Err()).Op("=").Id(idDecoder).Dot(decoderFuncName).Call(Id(offsetName)),
+		Var().Id(varName).Id(varTypeName),
+		List(Id(varName), Id(offsetName), Err()).Op("=").Id(idDecoder).Dot(decoderFuncName).Call(Id(offsetName)),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Lit(0), Err()),
 		),
-		Id(setName).Op("=").Id(fieldType.String()).Call(Id(vName)),
+		Id(setVarName).Op("=").Id(fieldType.String()).Call(Id(varName)),
 	)}
 }
 
-func (as *analyzedStruct) createNamedCode(fieldName string, fieldValue Code, isRoot bool) []Code {
+func (as *analyzedStruct) createNamedCode(fieldName string, fieldValue Code, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code) {
 
-	return []Code{
-		List(Id(fieldName+"Size"), Err()).
+	cArray = []Code{
+		List(Id("size"+fieldName), Err()).
 			Op(":=").
 			Id(as.calcArraySizeFuncName()).Call(fieldValue, Id(idEncoder)),
 		If(Err().Op("!=").Nil()).Block(
@@ -279,4 +273,69 @@ func (as *analyzedStruct) createNamedCode(fieldName string, fieldValue Code, isR
 		),
 		Id("size").Op("+=").Id(fieldName + "Size"),
 	}
+
+	cMap = []Code{
+		List(Id("size"+fieldName), Err()).
+			Op(":=").
+			Id(as.calcMapSizeFuncName()).Call(fieldValue, Id(idEncoder)),
+		If(Err().Op("!=").Nil()).Block(
+			Return(Lit(0), Err()),
+		),
+		Id("size").Op("+=").Id(fieldName + "Size"),
+	}
+
+	eArray = []Code{
+		List(Id("_"), Id("offset"), Err()).
+			Op("=").
+			Id(as.encodeArrayFuncName()).Call(fieldValue, Id(idEncoder)),
+		If(Err().Op("!=").Nil()).Block(
+			Return(Nil(), Lit(0), Err()),
+		),
+	}
+
+	eMap = []Code{
+		List(Id("_"), Id("offset"), Err()).
+			Op("=").
+			Id(as.encodeMapFuncName()).Call(fieldValue, Id(idEncoder)),
+		If(Err().Op("!=").Nil()).Block(
+			Return(Nil(), Lit(0), Err()),
+		),
+	}
+
+	varName, setVarName := as.decodeVarPattern(fieldName, isRoot)
+
+	dArray = []Code{
+		Block(
+			Var().Id(varName).Qual(as.PackageName, as.Name),
+			List(Id("offset"), Err()).Op("=").Id(as.decodeArrayFuncName()).Call(Op("&").Id(varName), Id(idDecoder), Id("offset")),
+			If(Err().Op("!=").Nil()).Block(
+				Return(Lit(0), Err()),
+			),
+			Id(setVarName).Op("=").Id(varName),
+		),
+	}
+
+	// dArrayと一緒
+	dMap = []Code{
+		Block(
+			Var().Id(varName).Qual(as.PackageName, as.Name),
+			List(Id("offset"), Err()).Op("=").Id(as.decodeArrayFuncName()).Call(Op("&").Id(varName), Id(idDecoder), Id("offset")),
+			If(Err().Op("!=").Nil()).Block(
+				Return(Lit(0), Err()),
+			),
+			Id(setVarName).Op("=").Id(varName),
+		),
+	}
+	return
+}
+
+func (as *analyzedStruct) decodeVarPattern(fieldName string, isRoot bool) (varName string, setVarName string) {
+
+	varName = "vv"
+	setVarName = "v." + fieldName
+	if !isRoot {
+		varName = fieldName + "v"
+		setVarName = fieldName
+	}
+	return
 }
