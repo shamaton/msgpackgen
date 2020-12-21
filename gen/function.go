@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"go/types"
 	"reflect"
-	"strings"
 
 	. "github.com/dave/jennifer/jen"
 )
@@ -177,7 +176,7 @@ func (as *analyzedStruct) createFieldCode(fieldType types.Type, fieldName string
 
 			dArray = append(dArray, as.decodeBasicPattern(fieldType, fieldName, "offset", "time.Time", "AsDateTime", isRoot)...)
 			dMap = append(dMap, as.decodeBasicPattern(fieldType, fieldName, "offset", "time.Time", "AsDateTime", isRoot)...)
-		} else if strings.HasPrefix(fieldType.String(), "github") {
+		} else {
 			// todo : 対象のパッケージかどうかをちゃんと判断する
 			a := as.createNamedCode(fieldName, fieldValue, isRoot)
 			cArray = append(cArray, a...)
@@ -274,7 +273,7 @@ func (as *analyzedStruct) createNamedCode(fieldName string, fieldValue Code, isR
 	return []Code{
 		List(Id(fieldName+"Size"), Err()).
 			Op(":=").
-			Id("calcArraySize"+"StructName").Call(fieldValue, Id(idEncoder)),
+			Id(as.calcArraySizeFuncName()).Call(fieldValue, Id(idEncoder)),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Lit(0), Err()),
 		),

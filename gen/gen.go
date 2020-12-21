@@ -1,13 +1,12 @@
 package main
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"go/types"
 	"path/filepath"
-	"strings"
 
 	. "github.com/dave/jennifer/jen"
-	"github.com/google/uuid"
 )
 
 var analyzedStructs []analyzedStruct
@@ -57,11 +56,7 @@ func main() {
 func (g *generator) generate() {
 
 	for _, st := range analyzedStructs {
-		id := uuid.New().String()
-		if len(id) < 1 {
-			// todo : error
-		}
-		funcIdMap[st.PackageName] = strings.ReplaceAll(id, "-", "")
+		funcIdMap[st.PackageName] = fmt.Sprintf("%x", sha256.Sum256([]byte(st.PackageName)))
 	}
 
 	fmt.Println(funcIdMap)
@@ -125,9 +120,33 @@ func encodeTopTemplate(name string, f *File) *Statement {
 func cases() []Code {
 	var states []Code
 	for _, v := range analyzedStructs {
-		states = append(states, Case(Id("*"+v.Name)).Block(
-			List(Id("_"), Err()).Op(":=").Id("decode"+v.Name).Call(Id("v"), Qual(pkDec, "NewDecoder").Call(Id("data")), Id("0")),
+		states = append(states, Case(Op("*").Qual(v.PackageName, v.Name)).Block(
+			List(Id("_"), Err()).Op(":=").Id(v.decodeArrayFuncName()).Call(Id("v"), Qual(pkDec, "NewDecoder").Call(Id("data")), Id("0")),
 			Return(True(), Err())))
 	}
 	return states
+}
+
+func (as *analyzedStruct) calcArraySizeFuncName() string {
+	return fmt.Sprintf("decodeArray%s_%s", as.Name, funcIdMap[as.PackageName])
+}
+
+func (as *analyzedStruct) calcMapSizeFuncName() string {
+	return fmt.Sprintf("decodeMap%s_%s", as.Name, funcIdMap[as.PackageName])
+}
+
+func (as *analyzedStruct) encodeArrayFuncName() string {
+	return fmt.Sprintf("encodeArray%s_%s", as.Name, funcIdMap[as.PackageName])
+}
+
+func (as *analyzedStruct) encodeMapFuncName() string {
+	return fmt.Sprintf("encodeMap%s_%s", as.Name, funcIdMap[as.PackageName])
+}
+
+func (as *analyzedStruct) decodeArrayFuncName() string {
+	return fmt.Sprintf("decodeArray%s_%s", as.Name, funcIdMap[as.PackageName])
+}
+
+func (as *analyzedStruct) decodeMapFuncName() string {
+	return fmt.Sprintf("decodeMap%s_%s", as.Name, funcIdMap[as.PackageName])
 }

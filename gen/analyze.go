@@ -118,6 +118,8 @@ func aaa(packageName, structName string, fset *token.FileSet, file *ast.File) an
 
 			fmt.Println("hogehoge", reflect.TypeOf(field.Type()))
 
+			// todo : type.Namedの場合、解析対象に含まれてないものがあったら、スキップする？
+
 			analyzed.Fields = append(analyzed.Fields, analyzedField{
 				Name: name,
 				Type: field.Type(),
