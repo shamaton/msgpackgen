@@ -3,7 +3,10 @@ package main
 import (
 	"crypto/sha256"
 	"fmt"
+	"go/parser"
+	"go/token"
 	"go/types"
+	"io/ioutil"
 	"path/filepath"
 
 	. "github.com/dave/jennifer/jen"
@@ -25,7 +28,6 @@ const (
 var funcIdMap = map[string]string{}
 
 type generator struct {
-	FullPath string
 }
 
 type analyzedStruct struct {
@@ -40,17 +42,47 @@ type analyzedField struct {
 }
 
 func main() {
+	files := dirwalk("../tetest/example")
+
+	for _, file := range files {
+		fset := token.NewFileSet()
+		f, err := parser.ParseFile(fset, file, nil, 0)
+		if err != nil {
+			return
+		}
+		parseFiles = append(parseFiles, f)
+	}
+
 	g := new(generator)
 	// todo : ここで対象のフォルダを再帰的に見て、収集
-	fileName := "msgpackgen_struct.go"
-	path, err := filepath.Abs(fileName)
-	if err != nil {
-		fmt.Println(err)
-		return
+	for _, fileName := range files {
+		path, err := filepath.Abs(fileName)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		g.findStructs(path)
 	}
-	g.FullPath = path
-	g.findStructs(path)
+	return
 	g.generate()
+}
+
+func dirwalk(dir string) []string {
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		panic(err)
+	}
+
+	var paths []string
+	for _, file := range files {
+		if file.IsDir() {
+			paths = append(paths, dirwalk(filepath.Join(dir, file.Name()))...)
+			continue
+		}
+		paths = append(paths, filepath.Join(dir, file.Name()))
+	}
+
+	return paths
 }
 
 func (g *generator) generate() {
