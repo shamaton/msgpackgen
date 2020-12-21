@@ -3,8 +3,7 @@ package main
 import (
 	"crypto/sha256"
 	"fmt"
-	"go/parser"
-	"go/token"
+	"go/ast"
 	"go/types"
 	"io/ioutil"
 	"path/filepath"
@@ -28,6 +27,11 @@ const (
 var funcIdMap = map[string]string{}
 
 type generator struct {
+	targetPackages   map[string]bool
+	file2Parse       map[string]*ast.File
+	file2PackageName map[string]string
+
+	file2Imports map[string][]string
 }
 
 type analyzedStruct struct {
@@ -37,21 +41,20 @@ type analyzedStruct struct {
 }
 
 type analyzedField struct {
-	Name string
-	Type types.Type
+	Name       string
+	Type       types.Type
+	PackageRef string
 }
 
 func main() {
 	files := dirwalk("../tetest/example")
 
-	for _, file := range files {
-		fset := token.NewFileSet()
-		f, err := parser.ParseFile(fset, file, nil, 0)
-		if err != nil {
-			return
-		}
-		parseFiles = append(parseFiles, f)
-	}
+	// 最初にgenerate対象のパッケージをすべて取得
+
+	// 構造体の解析時にgenerate対象でないパッケージを含んだ構造体がある場合
+	// 出力対象にしない
+
+	// 出力対象にしない構造体が見つからなくなるまで実行する
 
 	g := new(generator)
 	// todo : ここで対象のフォルダを再帰的に見て、収集
@@ -82,7 +85,15 @@ func dirwalk(dir string) []string {
 		paths = append(paths, filepath.Join(dir, file.Name()))
 	}
 
-	return paths
+	var abss []string
+	for _, path := range paths {
+		abs, err := filepath.Abs(path)
+		if err != nil {
+			panic(err)
+		}
+		abss = append(abss, abs)
+	}
+	return abss
 }
 
 func (g *generator) generate() {
