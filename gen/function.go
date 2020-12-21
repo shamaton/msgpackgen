@@ -191,6 +191,85 @@ func (as *analyzedStruct) createFieldCode(fieldType types.Type, fieldName string
 	return cArray, cMap, eArray, eMap, dArray, dMap, err
 }
 
+func (as *analyzedStruct) createSliceCode(fieldType types.Type, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
+	child := fieldType.(*types.Slice).Elem()
+
+	name, childName := "", ""
+	if isRoot {
+		name = "v." + fieldName
+		childName = "vv"
+	} else {
+		childName = fieldName + "v"
+	}
+
+	ca, _, ea, _, _, _, _ := as.createFieldCode(child, childName, false)
+
+	calcCodes := as.addSizePattern2("CalcSliceLength", Id(fmt.Sprintf("len(%s)", name)))
+	calcCodes = append(calcCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Id(name)).Block(
+		ca...,
+	))
+
+	cArray = append(cArray, If(Id(name).Op("!=").Nil()).Block(
+		calcCodes...,
+	).Else().Block(
+		as.addSizePattern1("CalcNil"),
+	))
+
+	encCodes := as.addSizePattern2("WriteSliceLength", Id(fmt.Sprintf("len(%s)", name)), Id("offset"))
+	encCodes = append(encCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Id(name)).Block(
+		ea...,
+	))
+
+	eArray = append(eArray, If(Id(name).Op("!=").Nil()).Block(
+		encCodes...,
+	).Else().Block(
+		Id("offset").Op("=").Id(idEncoder).Dot("WriteNil").Call(Id("offset")),
+	))
+
+	decCodes := make([]Code, 0)
+
+	// todo : 構造体かBasicで別処理する必要がありそう
+	// todo : tetest側でgenするようにして試さないといけない
+	// todo : field.Pkgで構造体のQual参照できるかも
+	checkChild := child
+	for {
+		switch reflect.TypeOf(child) {
+		case reflect.TypeOf(&types.Basic{}):
+			decCodes = append(decCodes, Var().Id(childName).Id(fieldType.String()))
+			break
+
+		case reflect.TypeOf(&types.Named{}):
+
+		case reflect.TypeOf(&types.Slice{}):
+			checkChild = checkChild.(*types.Slice).Elem()
+			// continue
+
+		case reflect.TypeOf(&types.Pointer{}):
+			// todo
+
+		default:
+
+		}
+	}
+
+	switch reflect.TypeOf(child) {
+	case reflect.TypeOf(&types.Basic{}):
+		decCodes = append(decCodes, Var().Id(childName).Id(fieldType.String()))
+	}
+
+	decCodes = append(decCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Id(name)).Block(
+		ea...,
+	))
+
+	dArray = append(dArray, If(Op("!").Id(idDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
+		decCodes...,
+	).Else().Block(
+		Id("offset").Op("++"),
+	))
+
+	return cArray, cArray, eArray, eArray, dArray, dArray, nil
+}
+
 func (as *analyzedStruct) createBasicCode(fieldType types.Type, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
 	isType := func(kind types.BasicKind) bool {
 		return types.Identical(types.Typ[kind], fieldType)
