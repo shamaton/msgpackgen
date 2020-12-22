@@ -49,12 +49,6 @@ func (g *generator) getPackages(files []string) error {
 }
 
 func (g *generator) createAnalyzedStructs() error {
-	parseFiles := make([]*ast.File, len(g.file2Parse))
-	index := 0
-	for _, v := range g.file2Parse {
-		parseFiles[index] = v
-		index++
-	}
 
 	for fileName, parseFile := range g.file2Parse {
 		importMap := map[string]string{}
@@ -108,14 +102,20 @@ func (g *generator) createAnalyzedStructs() error {
 			fmt.Println()
 			fmt.Println()
 			fmt.Println(structName, ".........................................")
-			result := g.bbb(g.file2PackageName[fileName], structName, g.fileSet, parseFile)
-			fmt.Println(result)
+			fields := g.createAnalyzedFields(g.file2PackageName[fileName], structName, analyzedFieldMap, g.fileSet, parseFile)
+			if len(fields) > 0 {
+				analyzedStructs = append(analyzedStructs, analyzedStruct{
+					PackageName: g.file2FullPackageName[fileName],
+					Name:        structName,
+					Fields:      fields,
+				})
+			}
 		}
 	}
 	return nil
 }
 
-func (g *generator) bbb(packageName, structName string, fset *token.FileSet, file *ast.File) analyzedStruct {
+func (g *generator) createAnalyzedFields(packageName, structName string, analyzedFieldMap map[string]*analyzedASTFieldType, fset *token.FileSet, file *ast.File) []analyzedField {
 
 	conf := types.Config{
 		Importer: importer.Default(),
@@ -134,16 +134,11 @@ func (g *generator) bbb(packageName, structName string, fset *token.FileSet, fil
 	S := pkg.Scope().Lookup(structName)
 	internal := S.Type().Underlying().(*types.Struct)
 
-	analyzed := analyzedStruct{
-		PackageName: packageName,
-		Name:        structName,
-	}
-
+	analyzedFields := make([]analyzedField, 0)
 	for i := 0; i < internal.NumFields(); i++ {
 		field := internal.Field(i)
 
-		fmt.Printf("gugug %v\n", field)
-		fmt.Println(field.Id(), field.Type(), field.IsField())
+		// fmt.Println(field.Id(), field.Type(), field.IsField())
 
 		if field.IsField() && field.Exported() {
 			tagName, _ := reflect.StructTag(internal.Tag(i)).Lookup("msgpack")
@@ -159,15 +154,16 @@ func (g *generator) bbb(packageName, structName string, fset *token.FileSet, fil
 
 			// todo : type.Namedの場合、解析対象に含まれてないものがあったら、スキップする？
 
-			analyzed.Fields = append(analyzed.Fields, analyzedField{
+			analyzedFields = append(analyzedFields, analyzedField{
 				Name: name,
 				Type: field.Type(),
+				Ast:  analyzedFieldMap[name],
 			})
 		}
 	}
 
 	// todo : msgpackresolverとして出力
-	return analyzed
+	return analyzedFields
 }
 
 const (

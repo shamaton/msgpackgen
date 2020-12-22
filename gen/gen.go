@@ -44,9 +44,9 @@ type analyzedStruct struct {
 }
 
 type analyzedField struct {
-	Name       string
-	Type       types.Type
-	PackageRef string
+	Name string
+	Type types.Type
+	Ast  *analyzedASTFieldType
 }
 
 func main() {
