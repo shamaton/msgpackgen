@@ -71,27 +71,28 @@ func (as *analyzedStruct) calcFunction(f *File) {
 	)))
 
 	f.Func().Id("calcArraySize"+as.Name).Params(Id(v).Qual(as.PackageName, as.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder")).Params(Int(), Error()).Block(
-		calcArraySizeCodes...,
+		append(calcArraySizeCodes, Return(Id("size"), Nil()))...,
 	)
 
 	f.Func().Id("calcMapSize"+as.Name).Params(Id(v).Qual(as.PackageName, as.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder")).Params(Int(), Error()).Block(
-		calcMapSizeCodes...,
+		append(calcMapSizeCodes, Return(Id("size"), Nil()))...,
 	)
 
 	f.Func().Id("encodeArray"+as.Name).Params(Id(v).Qual(as.PackageName, as.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder"), Id("offset").Int()).Params(Index().Byte(), Int(), Error()).Block(
-		encArrayCodes...,
+		append(encArrayCodes, Return(Id(idEncoder).Dot("EncodedBytes").Call(), Id("offset"), Err()))...,
 	)
 
 	f.Func().Id("encodeMap"+as.Name).Params(Id(v).Qual(as.PackageName, as.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder"), Id("offset").Int()).Params(Index().Byte(), Int(), Error()).Block(
-		encMapCodes...,
+		append(encMapCodes, Return(Id(idEncoder).Dot("EncodedBytes").Call(), Id("offset"), Err()))...,
 	)
 
 	f.Func().Id("decodeArray"+as.Name).Params(Id(v).Op("*").Qual(as.PackageName, as.Name), Id(idDecoder).Op("*").Qual(pkDec, "Decoder"), Id("offset").Int()).Params(Int(), Error()).Block(
-		decArrayCodes...,
+		append(decArrayCodes, Return(Id("offset"), Err()))...,
 	)
 
 	f.Func().Id("decodeMap"+as.Name).Params(Id(v).Op("*").Qual(as.PackageName, as.Name), Id(idDecoder).Op("*").Qual(pkDec, "Decoder"), Id("offset").Int()).Params(Int(), Error()).Block(
-		decMapCodes...,
+
+		append(decMapCodes, Return(Id("offset"), Err()))...,
 	)
 }
 
@@ -109,34 +110,6 @@ func (as *analyzedStruct) createFieldCode(ast *analyzedASTFieldType, fieldName s
 
 	case ast.IsMap():
 		return as.createMapCode(ast, fieldName, isRoot)
-		key, value := ast.KeyValue()
-		fmt.Println("map", fieldName, ast)
-		fmt.Println(key, value)
-		fmt.Println("type string.................................. ", ast.TypeString())
-
-		name, childKey, childValue := "", "", ""
-		if isRoot {
-			name = "v." + fieldName
-			childKey = "kk"
-			childValue = "vv"
-		} else {
-			childKey = fieldName + "k"
-			childValue = fieldName + "v"
-		}
-
-		caKey, _, _, _, _, _, _ := as.createFieldCode(key, childKey, false)
-		caValue, _, _, _, _, _, _ := as.createFieldCode(value, childValue, false)
-
-		statements := as.addSizePattern2("CalcMapLength", Id(fmt.Sprintf("len(%s)", name)))
-		statements = append(statements, For(List(Id(childKey), Id(childValue)).Op(":=").Range().Id(name)).Block(
-			append(caKey, caValue...)...,
-		))
-
-		cArray = append(cArray, If(Id(name).Op("!=").Nil()).Block(
-			statements...,
-		).Else().Block(
-			as.addSizePattern1("CalcNil"),
-		))
 
 	case ast.IsStruct():
 		fieldValue := Id(fieldName)
@@ -200,7 +173,8 @@ func (as *analyzedStruct) createMapCode(ast *analyzedASTFieldType, fieldName str
 		as.addSizePattern1("CalcNil"),
 	))
 
-	encCodes := as.addSizePattern2("WriteMapLength", Id(fmt.Sprintf("len(%s)", name)), Id("offset"))
+	encCodes := make([]Code, 0)
+	encCodes = append(encCodes, Id("offset").Op("=").Id(idEncoder).Dot("WriteMapLength").Call(Id(fmt.Sprintf("len(%s)", name)), Id("offset")))
 	encCodes = append(encCodes, For(List(Id(childKey), Id(childValue)).Op(":=").Range().Id(name)).Block(
 		append(eaKey, eaValue...)...,
 	))
@@ -256,7 +230,8 @@ func (as *analyzedStruct) createSliceCode(ast *analyzedASTFieldType, fieldName s
 		as.addSizePattern1("CalcNil"),
 	))
 
-	encCodes := as.addSizePattern2("WriteSliceLength", Id(fmt.Sprintf("len(%s)", name)), Id("offset"))
+	encCodes := make([]Code, 0)
+	encCodes = append(encCodes, Id("offset").Op("=").Id(idEncoder).Dot("WriteSliceLength").Call(Id(fmt.Sprintf("len(%s)", name)), Id("offset")))
 	encCodes = append(encCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Id(name)).Block(
 		ea...,
 	))
