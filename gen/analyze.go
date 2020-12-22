@@ -207,6 +207,36 @@ func (a analyzedASTFieldType) KeyValue() (*analyzedASTFieldType, *analyzedASTFie
 	return a.Key, a.Value
 }
 
+func (a analyzedASTFieldType) TypeString(s ...string) string {
+	str := ""
+	if len(s) > 0 {
+		str += s[0]
+	}
+
+	switch {
+	case a.IsIdentical():
+		str += a.IdenticalName
+
+	case a.IsStruct():
+
+	case a.IsArray():
+		str += "[]"
+		str = a.Elm().TypeString(str)
+
+	case a.IsMap():
+		str += "map["
+		k, v := a.KeyValue()
+		str = k.TypeString(str)
+		str += "]"
+		str = v.TypeString(str)
+
+	case a.IsPointer():
+		str += "*"
+		str = a.Elm().TypeString(str)
+	}
+	return str
+}
+
 func (g *generator) checkFieldTypeRecursive(expr ast.Expr) (*analyzedASTFieldType, bool) {
 	if i, ok := expr.(*ast.Ident); ok {
 		return &analyzedASTFieldType{

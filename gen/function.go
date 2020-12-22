@@ -104,6 +104,7 @@ func (as *analyzedStruct) createFieldCode(ast *analyzedASTFieldType, fieldName s
 
 	case ast.IsArray():
 		fmt.Println("slice", fieldName, ast)
+		fmt.Println("type string.................................. ", ast.TypeString())
 
 		name, childName := "", ""
 		if isRoot {
@@ -130,6 +131,7 @@ func (as *analyzedStruct) createFieldCode(ast *analyzedASTFieldType, fieldName s
 		key, value := ast.KeyValue()
 		fmt.Println("map", fieldName, ast)
 		fmt.Println(key, value)
+		fmt.Println("type string.................................. ", ast.TypeString())
 
 		name, childKey, childValue := "", "", ""
 		if isRoot {
