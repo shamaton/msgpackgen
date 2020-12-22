@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+
+	. "github.com/dave/jennifer/jen"
 )
 
 func (g *generator) getPackages(files []string) error {
@@ -205,6 +207,39 @@ func (a analyzedASTFieldType) IsPointer() bool { return a.fieldType == fieldType
 func (a analyzedASTFieldType) Elm() *analyzedASTFieldType { return a.Key }
 func (a analyzedASTFieldType) KeyValue() (*analyzedASTFieldType, *analyzedASTFieldType) {
 	return a.Key, a.Value
+}
+
+func (a analyzedASTFieldType) TypeJenChain(s ...*Statement) *Statement {
+	var str *Statement
+	if len(s) > 0 {
+		str = s[0]
+	} else {
+		str = Id("")
+	}
+
+	switch {
+	case a.IsIdentical():
+		str = str.Id(a.IdenticalName)
+
+	case a.IsStruct():
+		str = str.Qual(a.ImportPath, a.StructName)
+
+	case a.IsArray():
+		str = str.Id("[]")
+		str = a.Elm().TypeJenChain(str)
+
+	case a.IsMap():
+		str = str.Id("map[")
+		k, v := a.KeyValue()
+		str = k.TypeJenChain(str)
+		str = str.Id("]")
+		str = v.TypeJenChain(str)
+
+	case a.IsPointer():
+		str = str.Id("*")
+		str = a.Elm().TypeJenChain(str)
+	}
+	return str
 }
 
 func (a analyzedASTFieldType) TypeString(s ...string) string {

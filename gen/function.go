@@ -105,27 +105,28 @@ func (as *analyzedStruct) createFieldCode(ast *analyzedASTFieldType, fieldName s
 	case ast.IsArray():
 		fmt.Println("slice", fieldName, ast)
 		fmt.Println("type string.................................. ", ast.TypeString())
+		return as.createSliceCode(ast, fieldName, isRoot)
 
-		name, childName := "", ""
-		if isRoot {
-			name = "v." + fieldName
-			childName = "vv"
-		} else {
-			childName = fieldName + "v"
-		}
-
-		ca, _, _, _, _, _, _ := as.createFieldCode(ast.Elm(), childName, false)
-
-		statements := as.addSizePattern2("CalcSliceLength", Id(fmt.Sprintf("len(%s)", name)))
-		statements = append(statements, For(List(Id("_"), Id(childName)).Op(":=").Range().Id(name)).Block(
-			ca...,
-		))
-
-		cArray = append(cArray, If(Id(name).Op("!=").Nil()).Block(
-			statements...,
-		).Else().Block(
-			as.addSizePattern1("CalcNil"),
-		))
+		//name, childName := "", ""
+		//if isRoot {
+		//	name = "v." + fieldName
+		//	childName = "vv"
+		//} else {
+		//	childName = fieldName + "v"
+		//}
+		//
+		//ca, _, _, _, _, _, _ := as.createFieldCode(ast.Elm(), childName, false)
+		//
+		//statements := as.addSizePattern2("CalcSliceLength", Id(fmt.Sprintf("len(%s)", name)))
+		//statements = append(statements, For(List(Id("_"), Id(childName)).Op(":=").Range().Id(name)).Block(
+		//	ca...,
+		//))
+		//
+		//cArray = append(cArray, If(Id(name).Op("!=").Nil()).Block(
+		//	statements...,
+		//).Else().Block(
+		//	as.addSizePattern1("CalcNil"),
+		//))
 
 	case ast.IsMap():
 		key, value := ast.KeyValue()
@@ -198,7 +199,7 @@ func (as *analyzedStruct) createSliceCode(ast *analyzedASTFieldType, fieldName s
 		childName = fieldName + "v"
 	}
 
-	ca, _, ea, _, _, _, _ := as.createFieldCode(ast.Elm(), childName, false)
+	ca, _, ea, _, da, _, _ := as.createFieldCode(ast.Elm(), childName, false)
 
 	calcCodes := as.addSizePattern2("CalcSliceLength", Id(fmt.Sprintf("len(%s)", name)))
 	calcCodes = append(calcCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Id(name)).Block(
@@ -222,46 +223,28 @@ func (as *analyzedStruct) createSliceCode(ast *analyzedASTFieldType, fieldName s
 		Id("offset").Op("=").Id(idEncoder).Dot("WriteNil").Call(Id("offset")),
 	))
 
-	//decCodes := make([]Code, 0)
-	//
-	//// todo : 構造体かBasicで別処理する必要がありそう
-	//// todo : tetest側でgenするようにして試さないといけない
-	//// todo : field.Pkgで構造体のQual参照できるかも
-	//checkChild := child
-	//for {
-	//	switch reflect.TypeOf(child) {
-	//	case reflect.TypeOf(&types.Basic{}):
-	//		decCodes = append(decCodes, Var().Id(childName).Id(fieldType.String()))
-	//		break
-	//
-	//	case reflect.TypeOf(&types.Named{}):
-	//
-	//	case reflect.TypeOf(&types.Slice{}):
-	//		checkChild = checkChild.(*types.Slice).Elem()
-	//		// continue
-	//
-	//	case reflect.TypeOf(&types.Pointer{}):
-	//		// todo
-	//
-	//	default:
-	//
-	//	}
-	//}
-	//
-	//switch reflect.TypeOf(child) {
-	//case reflect.TypeOf(&types.Basic{}):
-	//	decCodes = append(decCodes, Var().Id(childName).Id(fieldType.String()))
-	//}
+	decCodes := make([]Code, 0)
+	decCodes = append(decCodes, ast.TypeJenChain(Var().Id(childName)))
+	decCodes = append(decCodes, Var().Id(childName+"l").Int())
+	decCodes = append(decCodes, List(Id(childName+"l"), Id("offset"), Err()).Op("=").Id(idDecoder).Dot("SliceLength").Call(Id("offset")))
+	decCodes = append(decCodes, If(Err().Op("!=").Nil()).Block(
+		Return(Lit(0), Err()),
+	))
+	decCodes = append(decCodes, Id(childName).Op("=").Make(ast.TypeJenChain(), Id(childName+"l")))
+	decCodes = append(decCodes, For(Id(childName+"i").Op(":=").Range().Id(childName)).Block(
+		da...,
+	))
+	decCodes = append(decCodes, Id(name).Op("=").Id(childName))
 	//
 	//decCodes = append(decCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Id(name)).Block(
 	//	ea...,
 	//))
 	//
-	//dArray = append(dArray, If(Op("!").Id(idDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
-	//	decCodes...,
-	//).Else().Block(
-	//	Id("offset").Op("++"),
-	//))
+	dArray = append(dArray, If(Op("!").Id(idDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
+		decCodes...,
+	).Else().Block(
+		Id("offset").Op("++"),
+	))
 
 	return cArray, cArray, eArray, eArray, dArray, dArray, nil
 }
