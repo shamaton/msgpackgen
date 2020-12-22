@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"go/ast"
+	"go/token"
 	"go/types"
 	"io/ioutil"
 	"path/filepath"
@@ -27,9 +28,11 @@ const (
 var funcIdMap = map[string]string{}
 
 type generator struct {
-	targetPackages   map[string]bool
-	file2Parse       map[string]*ast.File
-	file2PackageName map[string]string
+	fileSet              *token.FileSet
+	targetPackages       map[string]bool
+	file2Parse           map[string]*ast.File
+	file2FullPackageName map[string]string
+	file2PackageName     map[string]string
 
 	file2Imports map[string][]string
 }
@@ -56,7 +59,16 @@ func main() {
 
 	// 出力対象にしない構造体が見つからなくなるまで実行する
 
-	g := new(generator)
+	g := generator{
+		targetPackages:       map[string]bool{},
+		file2Parse:           map[string]*ast.File{},
+		file2FullPackageName: map[string]string{},
+		file2PackageName:     map[string]string{},
+	}
+	g.getPackages(files)
+	g.createAnalyzedStructs()
+	return
+
 	// todo : ここで対象のフォルダを再帰的に見て、収集
 	for _, fileName := range files {
 		path, err := filepath.Abs(fileName)
