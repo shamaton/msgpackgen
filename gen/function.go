@@ -107,28 +107,8 @@ func (as *analyzedStruct) createFieldCode(ast *analyzedASTFieldType, fieldName s
 		fmt.Println("type string.................................. ", ast.TypeString())
 		return as.createSliceCode(ast, fieldName, isRoot)
 
-		//name, childName := "", ""
-		//if isRoot {
-		//	name = "v." + fieldName
-		//	childName = "vv"
-		//} else {
-		//	childName = fieldName + "v"
-		//}
-		//
-		//ca, _, _, _, _, _, _ := as.createFieldCode(ast.Elm(), childName, false)
-		//
-		//statements := as.addSizePattern2("CalcSliceLength", Id(fmt.Sprintf("len(%s)", name)))
-		//statements = append(statements, For(List(Id("_"), Id(childName)).Op(":=").Range().Id(name)).Block(
-		//	ca...,
-		//))
-		//
-		//cArray = append(cArray, If(Id(name).Op("!=").Nil()).Block(
-		//	statements...,
-		//).Else().Block(
-		//	as.addSizePattern1("CalcNil"),
-		//))
-
 	case ast.IsMap():
+		return as.createMapCode(ast, fieldName, isRoot)
 		key, value := ast.KeyValue()
 		fmt.Println("map", fieldName, ast)
 		fmt.Println(key, value)
@@ -189,6 +169,70 @@ func (as *analyzedStruct) createFieldCode(ast *analyzedASTFieldType, fieldName s
 	return cArray, cMap, eArray, eMap, dArray, dMap, err
 }
 
+func (as *analyzedStruct) createMapCode(ast *analyzedASTFieldType, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
+
+	key, value := ast.KeyValue()
+	fmt.Println("map", fieldName, ast)
+	fmt.Println(key, value)
+	fmt.Println("type string.................................. ", ast.TypeString())
+
+	name, childKey, childValue := "", "", ""
+	if isRoot {
+		name = "v." + fieldName
+		childKey = "kk"
+		childValue = "vv"
+	} else {
+		childKey = fieldName + "k"
+		childValue = fieldName + "v"
+	}
+
+	caKey, _, eaKey, _, daKey, _, _ := as.createFieldCode(key, childKey, false)
+	caValue, _, eaValue, _, daValue, _, _ := as.createFieldCode(value, childValue, false)
+
+	calcCodes := as.addSizePattern2("CalcMapLength", Id(fmt.Sprintf("len(%s)", name)))
+	calcCodes = append(calcCodes, For(List(Id(childKey), Id(childValue)).Op(":=").Range().Id(name)).Block(
+		append(caKey, caValue...)...,
+	))
+
+	cArray = append(cArray, If(Id(name).Op("!=").Nil()).Block(
+		calcCodes...,
+	).Else().Block(
+		as.addSizePattern1("CalcNil"),
+	))
+
+	encCodes := as.addSizePattern2("WriteMapLength", Id(fmt.Sprintf("len(%s)", name)), Id("offset"))
+	encCodes = append(encCodes, For(List(Id(childKey), Id(childValue)).Op(":=").Range().Id(name)).Block(
+		append(eaKey, eaValue...)...,
+	))
+
+	eArray = append(eArray, If(Id(name).Op("!=").Nil()).Block(
+		encCodes...,
+	).Else().Block(
+		Id("offset").Op("=").Id(idEncoder).Dot("WriteNil").Call(Id("offset")),
+	))
+
+	decCodes := make([]Code, 0)
+	decCodes = append(decCodes, ast.TypeJenChain(Var().Id(childValue)))
+	decCodes = append(decCodes, Var().Id(childValue+"l").Int())
+	decCodes = append(decCodes, List(Id(childValue+"l"), Id("offset"), Err()).Op("=").Id(idDecoder).Dot("MapLength").Call(Id("offset")))
+	decCodes = append(decCodes, If(Err().Op("!=").Nil()).Block(
+		Return(Lit(0), Err()),
+	))
+	decCodes = append(decCodes, Id(childValue).Op("=").Make(ast.TypeJenChain(), Id(childValue+"l")))
+	decCodes = append(decCodes, For(Id(childValue+"i").Op(":=").Lit(0).Op(";").Id(childValue+"i").Op("<").Id(childValue+"l").Op(";").Id(childValue+"i").Op("++")).Block(
+		append(daKey, daValue...)...,
+	))
+	decCodes = append(decCodes, Id(name).Op("=").Id(childValue))
+
+	dArray = append(dArray, If(Op("!").Id(idDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
+		decCodes...,
+	).Else().Block(
+		Id("offset").Op("++"),
+	))
+
+	return cArray, cArray, eArray, eArray, dArray, dArray, nil
+}
+
 func (as *analyzedStruct) createSliceCode(ast *analyzedASTFieldType, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
 
 	name, childName := "", ""
@@ -235,11 +279,7 @@ func (as *analyzedStruct) createSliceCode(ast *analyzedASTFieldType, fieldName s
 		da...,
 	))
 	decCodes = append(decCodes, Id(name).Op("=").Id(childName))
-	//
-	//decCodes = append(decCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Id(name)).Block(
-	//	ea...,
-	//))
-	//
+
 	dArray = append(dArray, If(Op("!").Id(idDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
 		decCodes...,
 	).Else().Block(
