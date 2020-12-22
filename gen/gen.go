@@ -67,7 +67,8 @@ func main() {
 	}
 	g.getPackages(files)
 	g.createAnalyzedStructs()
-	//g.generate()
+	g.generate()
+
 	return
 
 	// todo : ここで対象のフォルダを再帰的に見て、収集

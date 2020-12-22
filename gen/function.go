@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"go/types"
-	"reflect"
 
 	. "github.com/dave/jennifer/jen"
 )
@@ -39,7 +37,7 @@ func (as *analyzedStruct) calcFunction(f *File) {
 		calcMapSizeCodes = append(calcMapSizeCodes, as.addSizePattern1("CalcString", Lit(field.Name)))
 		encMapCodes = append(encMapCodes, as.encPattern1("WriteString", Lit(field.Name), Id("offset")))
 
-		cArray, cMap, eArray, eMap, dArray, dMap, _ := as.createFieldCode(field.Type, field.Name, true)
+		cArray, cMap, eArray, eMap, dArray, dMap, _ := as.createFieldCode(field.Ast, field.Name, true)
 		calcArraySizeCodes = append(calcArraySizeCodes, cArray...)
 
 		calcMapSizeCodes = append(calcMapSizeCodes, cMap...)
@@ -97,16 +95,15 @@ func (as *analyzedStruct) calcFunction(f *File) {
 	)
 }
 
-func (as *analyzedStruct) createFieldCode(fieldType types.Type, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
+func (as *analyzedStruct) createFieldCode(ast *analyzedASTFieldType, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
 
-	switch reflect.TypeOf(fieldType) {
-	case reflect.TypeOf(&types.Basic{}):
-		fmt.Println("basic", fieldName, fieldType)
-		return as.createBasicCode(fieldType, fieldName, isRoot)
+	switch {
+	case ast.IsIdentical():
+		fmt.Println("basic", fieldName, ast)
+		return as.createBasicCode(ast, fieldName, isRoot)
 
-	case reflect.TypeOf(&types.Slice{}):
-		fmt.Println("slice", fieldName, fieldType)
-		child := fieldType.(*types.Slice).Elem()
+	case ast.IsArray():
+		fmt.Println("slice", fieldName, ast)
 
 		name, childName := "", ""
 		if isRoot {
@@ -116,7 +113,7 @@ func (as *analyzedStruct) createFieldCode(fieldType types.Type, fieldName string
 			childName = fieldName + "v"
 		}
 
-		ca, _, _, _, _, _, _ := as.createFieldCode(child, childName, false)
+		ca, _, _, _, _, _, _ := as.createFieldCode(ast.Elm(), childName, false)
 
 		statements := as.addSizePattern2("CalcSliceLength", Id(fmt.Sprintf("len(%s)", name)))
 		statements = append(statements, For(List(Id("_"), Id(childName)).Op(":=").Range().Id(name)).Block(
@@ -129,11 +126,9 @@ func (as *analyzedStruct) createFieldCode(fieldType types.Type, fieldName string
 			as.addSizePattern1("CalcNil"),
 		))
 
-	case reflect.TypeOf(&types.Map{}):
-		mp := fieldType.(*types.Map)
-		key := mp.Key()
-		value := mp.Elem()
-		fmt.Println("map", fieldName, fieldType)
+	case ast.IsMap():
+		key, value := ast.KeyValue()
+		fmt.Println("map", fieldName, ast)
 		fmt.Println(key, value)
 
 		name, childKey, childValue := "", "", ""
@@ -160,13 +155,13 @@ func (as *analyzedStruct) createFieldCode(fieldType types.Type, fieldName string
 			as.addSizePattern1("CalcNil"),
 		))
 
-	case reflect.TypeOf(&types.Named{}):
+	case ast.IsStruct():
 		fieldValue := Id(fieldName)
 		if isRoot {
 			fieldValue = Id("v").Dot(fieldName)
 		}
 
-		if fieldType.String() == "time.Time" {
+		if ast.ImportPath == "time" {
 
 			cArray = append(cArray, as.addSizePattern1("CalcTime", fieldValue))
 			eArray = append(eArray, as.encPattern1("WriteTime", fieldValue, Id("offset")))
@@ -174,14 +169,14 @@ func (as *analyzedStruct) createFieldCode(fieldType types.Type, fieldName string
 			cMap = append(cMap, as.addSizePattern1("CalcTime", fieldValue))
 			eMap = append(eMap, as.encPattern1("WriteTime", fieldValue, Id("offset")))
 
-			dArray = append(dArray, as.decodeBasicPattern(fieldType, fieldName, "offset", "time.Time", "AsDateTime", isRoot)...)
-			dMap = append(dMap, as.decodeBasicPattern(fieldType, fieldName, "offset", "time.Time", "AsDateTime", isRoot)...)
+			dArray = append(dArray, as.decodeBasicPattern(ast, fieldName, "offset", "time.Time", "AsDateTime", isRoot)...)
+			dMap = append(dMap, as.decodeBasicPattern(ast, fieldName, "offset", "time.Time", "AsDateTime", isRoot)...)
 		} else {
 			// todo : 対象のパッケージかどうかをちゃんと判断する
-			cArray, cMap, eArray, eMap, dArray, dMap = as.createNamedCode(fieldName, fieldValue, isRoot)
+			cArray, cMap, eArray, eMap, dArray, dMap = as.createNamedCode(fieldName, ast, fieldValue, isRoot)
 		}
-		//if (types.Identical(types.Struct{}, fieldType))
-		fmt.Println("named", fieldName, fieldType, as.PackageName)
+		//if (types.Identical(types.Struct{}, ast))
+		fmt.Println("named", fieldName, ast, as.PackageName)
 
 	default:
 		// todo : error
@@ -191,8 +186,7 @@ func (as *analyzedStruct) createFieldCode(fieldType types.Type, fieldName string
 	return cArray, cMap, eArray, eMap, dArray, dMap, err
 }
 
-func (as *analyzedStruct) createSliceCode(fieldType types.Type, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
-	child := fieldType.(*types.Slice).Elem()
+func (as *analyzedStruct) createSliceCode(ast *analyzedASTFieldType, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
 
 	name, childName := "", ""
 	if isRoot {
@@ -202,7 +196,7 @@ func (as *analyzedStruct) createSliceCode(fieldType types.Type, fieldName string
 		childName = fieldName + "v"
 	}
 
-	ca, _, ea, _, _, _, _ := as.createFieldCode(child, childName, false)
+	ca, _, ea, _, _, _, _ := as.createFieldCode(ast.Elm(), childName, false)
 
 	calcCodes := as.addSizePattern2("CalcSliceLength", Id(fmt.Sprintf("len(%s)", name)))
 	calcCodes = append(calcCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Id(name)).Block(
@@ -226,54 +220,51 @@ func (as *analyzedStruct) createSliceCode(fieldType types.Type, fieldName string
 		Id("offset").Op("=").Id(idEncoder).Dot("WriteNil").Call(Id("offset")),
 	))
 
-	decCodes := make([]Code, 0)
-
-	// todo : 構造体かBasicで別処理する必要がありそう
-	// todo : tetest側でgenするようにして試さないといけない
-	// todo : field.Pkgで構造体のQual参照できるかも
-	checkChild := child
-	for {
-		switch reflect.TypeOf(child) {
-		case reflect.TypeOf(&types.Basic{}):
-			decCodes = append(decCodes, Var().Id(childName).Id(fieldType.String()))
-			break
-
-		case reflect.TypeOf(&types.Named{}):
-
-		case reflect.TypeOf(&types.Slice{}):
-			checkChild = checkChild.(*types.Slice).Elem()
-			// continue
-
-		case reflect.TypeOf(&types.Pointer{}):
-			// todo
-
-		default:
-
-		}
-	}
-
-	switch reflect.TypeOf(child) {
-	case reflect.TypeOf(&types.Basic{}):
-		decCodes = append(decCodes, Var().Id(childName).Id(fieldType.String()))
-	}
-
-	decCodes = append(decCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Id(name)).Block(
-		ea...,
-	))
-
-	dArray = append(dArray, If(Op("!").Id(idDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
-		decCodes...,
-	).Else().Block(
-		Id("offset").Op("++"),
-	))
+	//decCodes := make([]Code, 0)
+	//
+	//// todo : 構造体かBasicで別処理する必要がありそう
+	//// todo : tetest側でgenするようにして試さないといけない
+	//// todo : field.Pkgで構造体のQual参照できるかも
+	//checkChild := child
+	//for {
+	//	switch reflect.TypeOf(child) {
+	//	case reflect.TypeOf(&types.Basic{}):
+	//		decCodes = append(decCodes, Var().Id(childName).Id(fieldType.String()))
+	//		break
+	//
+	//	case reflect.TypeOf(&types.Named{}):
+	//
+	//	case reflect.TypeOf(&types.Slice{}):
+	//		checkChild = checkChild.(*types.Slice).Elem()
+	//		// continue
+	//
+	//	case reflect.TypeOf(&types.Pointer{}):
+	//		// todo
+	//
+	//	default:
+	//
+	//	}
+	//}
+	//
+	//switch reflect.TypeOf(child) {
+	//case reflect.TypeOf(&types.Basic{}):
+	//	decCodes = append(decCodes, Var().Id(childName).Id(fieldType.String()))
+	//}
+	//
+	//decCodes = append(decCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Id(name)).Block(
+	//	ea...,
+	//))
+	//
+	//dArray = append(dArray, If(Op("!").Id(idDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
+	//	decCodes...,
+	//).Else().Block(
+	//	Id("offset").Op("++"),
+	//))
 
 	return cArray, cArray, eArray, eArray, dArray, dArray, nil
 }
 
-func (as *analyzedStruct) createBasicCode(fieldType types.Type, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
-	isType := func(kind types.BasicKind) bool {
-		return types.Identical(types.Typ[kind], fieldType)
-	}
+func (as *analyzedStruct) createBasicCode(ast *analyzedASTFieldType, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
 
 	offset := "offset"
 
@@ -289,28 +280,28 @@ func (as *analyzedStruct) createBasicCode(fieldType types.Type, fieldName string
 
 	// todo : byte
 
-	switch {
-	case isType(types.Int), isType(types.Int8), isType(types.Int16), isType(types.Int32), isType(types.Int64):
+	switch ast.IdenticalName {
+	case "int", "int8", "int16", "int32", "int64":
 		castName = "int64"
 		funcSuffix = "Int"
 
-	case isType(types.Uint), isType(types.Uint8), isType(types.Uint16), isType(types.Uint32), isType(types.Uint64):
+	case "uint", "uint8", "uint16", "uint32", "uint64":
 		castName = "uint64"
 		funcSuffix = "Uint"
 
-	case isType(types.String):
+	case "string":
 		castName = "string"
 		funcSuffix = "String"
 
-	case isType(types.Float32):
+	case "float32":
 		castName = "float32"
 		funcSuffix = "Float32"
 
-	case isType(types.Float64):
+	case "float64":
 		castName = "float64"
 		funcSuffix = "Float64"
 
-	case isType(types.Bool):
+	case "bool":
 		castName = "bool"
 		funcSuffix = "Bool"
 	default:
@@ -324,8 +315,8 @@ func (as *analyzedStruct) createBasicCode(fieldType types.Type, fieldName string
 	cMap = append(cMap, as.addSizePattern1("Calc"+funcSuffix, Id(castName).Call(fieldValue)))
 	eMap = append(eMap, as.encPattern1("Write"+funcSuffix, Id(castName).Call(fieldValue), Id(offset)))
 
-	dArray = append(dArray, as.decodeBasicPattern(fieldType, fieldName, offset, castName, "As"+funcSuffix, isRoot)...)
-	dMap = append(dMap, as.decodeBasicPattern(fieldType, fieldName, offset, castName, "As"+funcSuffix, isRoot)...)
+	dArray = append(dArray, as.decodeBasicPattern(ast, fieldName, offset, castName, "As"+funcSuffix, isRoot)...)
+	dMap = append(dMap, as.decodeBasicPattern(ast, fieldName, offset, castName, "As"+funcSuffix, isRoot)...)
 
 	return cArray, cMap, eArray, eMap, dArray, dMap, err
 }
@@ -349,7 +340,7 @@ func (as *analyzedStruct) encPattern1(funcName string, params ...Code) Code {
 	return Id("offset").Op("=").Id(idEncoder).Dot(funcName).Call(params...)
 }
 
-func (as *analyzedStruct) decodeBasicPattern(fieldType types.Type, fieldName, offsetName, varTypeName, decoderFuncName string, isRoot bool) []Code {
+func (as *analyzedStruct) decodeBasicPattern(ast *analyzedASTFieldType, fieldName, offsetName, varTypeName, decoderFuncName string, isRoot bool) []Code {
 
 	varName, setVarName := as.decodeVarPattern(fieldName, isRoot)
 
@@ -359,11 +350,11 @@ func (as *analyzedStruct) decodeBasicPattern(fieldType types.Type, fieldName, of
 		If(Err().Op("!=").Nil()).Block(
 			Return(Lit(0), Err()),
 		),
-		Id(setVarName).Op("=").Id(fieldType.String()).Call(Id(varName)),
+		Id(setVarName).Op("=").Id(ast.IdenticalName).Call(Id(varName)),
 	)}
 }
 
-func (as *analyzedStruct) createNamedCode(fieldName string, fieldValue Code, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code) {
+func (as *analyzedStruct) createNamedCode(fieldName string, ast *analyzedASTFieldType, fieldValue Code, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code) {
 
 	cArray = []Code{
 		List(Id("size"+fieldName), Err()).
@@ -407,7 +398,7 @@ func (as *analyzedStruct) createNamedCode(fieldName string, fieldValue Code, isR
 
 	dArray = []Code{
 		Block(
-			Var().Id(varName).Qual(as.PackageName, as.Name),
+			Var().Id(varName).Qual(ast.ImportPath, ast.StructName),
 			List(Id("offset"), Err()).Op("=").Id(as.decodeArrayFuncName()).Call(Op("&").Id(varName), Id(idDecoder), Id("offset")),
 			If(Err().Op("!=").Nil()).Block(
 				Return(Lit(0), Err()),
@@ -419,7 +410,7 @@ func (as *analyzedStruct) createNamedCode(fieldName string, fieldValue Code, isR
 	// dArrayと一緒
 	dMap = []Code{
 		Block(
-			Var().Id(varName).Qual(as.PackageName, as.Name),
+			Var().Id(varName).Qual(ast.ImportPath, ast.StructName),
 			List(Id("offset"), Err()).Op("=").Id(as.decodeArrayFuncName()).Call(Op("&").Id(varName), Id(idDecoder), Id("offset")),
 			If(Err().Op("!=").Nil()).Block(
 				Return(Lit(0), Err()),

@@ -42,7 +42,7 @@ func (g *generator) getPackages(files []string) error {
 
 		g.file2Parse[file] = parseFile
 		g.file2PackageName[file] = packageName
-		g.file2FullPackageName[file] = prefix + "/" + packageName
+		g.file2FullPackageName[file] = prefix
 		g.targetPackages[packageName] = true
 	}
 	return nil
