@@ -55,11 +55,14 @@ func (g *generator) createAnalyzedStructs() error {
 
 		for _, imp := range parseFile.Imports {
 
+			value := strings.ReplaceAll(imp.Path.Value, "\"", "")
+
 			if imp.Name == nil || imp.Name.Name == "" {
-				vs := strings.Split(imp.Path.Value, "/")
-				importMap[vs[len(vs)-1]] = imp.Path.Value
+				key := strings.Split(value, "/")
+				importMap[key[len(key)-1]] = value
 			} else {
-				importMap[imp.Name.Name] = imp.Path.Value
+				key := strings.ReplaceAll(imp.Name.Name, "\"", "")
+				importMap[key] = value
 			}
 		}
 
@@ -178,10 +181,15 @@ const (
 type analyzedASTFieldType struct {
 	fieldType int
 
+	// for identical
+	IdenticalName string
+
+	// for struct
 	ImportPath  string
 	PackageName string
 	StructName  string
 
+	// for array / map / pointer
 	Key   *analyzedASTFieldType
 	Value *analyzedASTFieldType
 }
@@ -200,8 +208,11 @@ func (a analyzedASTFieldType) KeyValue() (*analyzedASTFieldType, *analyzedASTFie
 }
 
 func (g *generator) checkFieldTypeRecursive(expr ast.Expr) (*analyzedASTFieldType, bool) {
-	if _, ok := expr.(*ast.Ident); ok {
-		return &analyzedASTFieldType{fieldType: fieldTypeIdent}, true
+	if i, ok := expr.(*ast.Ident); ok {
+		return &analyzedASTFieldType{
+			fieldType:     fieldTypeIdent,
+			IdenticalName: i.Name,
+		}, true
 	}
 	if selector, ok := expr.(*ast.SelectorExpr); ok {
 		return &analyzedASTFieldType{
