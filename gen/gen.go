@@ -33,8 +33,6 @@ type generator struct {
 	file2Parse           map[string]*ast.File
 	file2FullPackageName map[string]string
 	file2PackageName     map[string]string
-
-	file2Imports map[string][]string
 }
 
 type analyzedStruct struct {
@@ -67,20 +65,6 @@ func main() {
 	}
 	g.getPackages(files)
 	g.createAnalyzedStructs()
-	g.generate()
-
-	return
-
-	// todo : ここで対象のフォルダを再帰的に見て、収集
-	for _, fileName := range files {
-		path, err := filepath.Abs(fileName)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		g.findStructs(path)
-	}
-	return
 	g.generate()
 }
 

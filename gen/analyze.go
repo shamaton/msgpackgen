@@ -119,8 +119,14 @@ func (g *generator) createAnalyzedStructs() error {
 
 func (g *generator) createAnalyzedFields(packageName, structName string, analyzedFieldMap map[string]*analyzedASTFieldType, fset *token.FileSet, file *ast.File) []analyzedField {
 
+	// todo : ここなにか解決策あれば
+	imp := importer.Default()
+	_, err := imp.Import("github.com/shamaton/tetest/example/item")
+	if err != nil {
+		fmt.Println("import error", err)
+	}
 	conf := types.Config{
-		Importer: importer.Default(),
+		Importer: imp,
 		Error: func(err error) {
 			//fmt.Printf("!!! %#v\n", err)
 		},

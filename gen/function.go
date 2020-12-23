@@ -131,8 +131,9 @@ func (as *analyzedStruct) createFieldCode(ast *analyzedASTFieldType, fieldName s
 			// todo : 対象のパッケージかどうかをちゃんと判断する
 			cArray, cMap, eArray, eMap, dArray, dMap = as.createNamedCode(fieldName, ast, fieldValue, isRoot)
 		}
-		//if (types.Identical(types.Struct{}, ast))
 		fmt.Println("named", fieldName, ast, as.PackageName)
+
+	case ast.IsPointer():
 
 	default:
 		// todo : error
@@ -140,6 +141,31 @@ func (as *analyzedStruct) createFieldCode(ast *analyzedASTFieldType, fieldName s
 	}
 
 	return cArray, cMap, eArray, eMap, dArray, dMap, err
+}
+
+func (as *analyzedStruct) createPointerCode(ast *analyzedASTFieldType, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
+
+	name := fieldName
+	if isRoot {
+		name = "v." + fieldName
+	}
+	ca, _, ea, _, _, _, _ := as.createFieldCode(ast.Elm(), fieldName, isRoot)
+
+	cArray = make([]Code, 0)
+	cArray = append(cArray, If(Id(name).Op("!=").Nil()).Block(
+		ca...,
+	).Else().Block(
+		Id("size").Op("+=").Id(idEncoder).Dot("CalcNil").Call(),
+	))
+
+	eArray = make([]Code, 0)
+	eArray = append(eArray, If(Id(name).Op("!=").Nil()).Block(
+		ea...,
+	).Else().Block(
+		Id("offset").Op("=").Id(idEncoder).Dot("WriteNil").Call(Id("offset")),
+	))
+
+	return
 }
 
 func (as *analyzedStruct) createMapCode(ast *analyzedASTFieldType, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
@@ -342,6 +368,7 @@ func (as *analyzedStruct) encPattern1(funcName string, params ...Code) Code {
 
 func (as *analyzedStruct) decodeBasicPattern(ast *analyzedASTFieldType, fieldName, offsetName, varTypeName, decoderFuncName string, isRoot bool) []Code {
 
+	// todo : ポインタの場合, vvp / vvvを使う必要
 	varName, setVarName := as.decodeVarPattern(fieldName, isRoot)
 
 	commons := []Code{
