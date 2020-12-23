@@ -200,8 +200,9 @@ func (g *generator) encodeAsArrayCases() []Code {
 					Return(Nil(), Err()),
 				),
 				If(Id("size").Op("!=").Id("offset")).Block(
-					Return(Nil(), Qual("fmt", "Errorf").Call(Lit(v.Name+" size / offset different %d : %d"), Id("size"), Id("offset"))),
+					Return(Nil(), Qual("fmt", "Errorf").Call(Lit("%s size / offset different %d : %d"), Id("\"").Qual(v.PackageName, v.Name).Id("\""), Id("size"), Id("offset"))),
 				),
+				Return(Id("b"), Err()),
 			))
 		}
 	}
@@ -224,8 +225,9 @@ func (g *generator) encodeAsMapCases() []Code {
 					Return(Nil(), Err()),
 				),
 				If(Id("size").Op("!=").Id("offset")).Block(
-					Return(Nil(), Qual("fmt", "Errorf").Call(Lit(v.Name+" size / offset different %d : %d"), Id("size"), Id("offset"))),
+					Return(Nil(), Qual("fmt", "Errorf").Call(Lit("%s size / offset different %d : %d"), Id("\"").Qual(v.PackageName, v.Name).Id("\""), Id("size"), Id("offset"))),
 				),
+				Return(Id("b"), Err()),
 			))
 		}
 	}
@@ -257,11 +259,11 @@ func (g *generator) decodeAsMapCases() []Code {
 }
 
 func (as *analyzedStruct) calcArraySizeFuncName() string {
-	return fmt.Sprintf("decodeArray%s_%s", as.Name, funcIdMap[as.PackageName])
+	return fmt.Sprintf("calArraySize%s_%s", as.Name, funcIdMap[as.PackageName])
 }
 
 func (as *analyzedStruct) calcMapSizeFuncName() string {
-	return fmt.Sprintf("decodeMap%s_%s", as.Name, funcIdMap[as.PackageName])
+	return fmt.Sprintf("calcMapSize%s_%s", as.Name, funcIdMap[as.PackageName])
 }
 
 func (as *analyzedStruct) encodeArrayFuncName() string {

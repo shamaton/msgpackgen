@@ -2,7 +2,7 @@ package enc
 
 import "github.com/shamaton/msgpack/def"
 
-func (e *Encoder) CalcBool() int {
+func (e *Encoder) CalcBool(v bool) int {
 	return def.Byte1
 }
 

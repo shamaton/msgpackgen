@@ -6,7 +6,7 @@ import (
 	"github.com/shamaton/msgpack/def"
 )
 
-func (e *Encoder) CalcFloat32(v float64) int {
+func (e *Encoder) CalcFloat32(v float32) int {
 	return def.Byte1 + def.Byte4
 }
 

@@ -71,27 +71,27 @@ func (as *analyzedStruct) calcFunction(f *File) {
 		),
 	)))
 
-	f.Func().Id("calcArraySize"+as.Name).Params(Id(v).Qual(as.PackageName, as.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder")).Params(Int(), Error()).Block(
+	f.Func().Id(as.calcArraySizeFuncName()).Params(Id(v).Qual(as.PackageName, as.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder")).Params(Int(), Error()).Block(
 		append(calcArraySizeCodes, Return(Id("size"), Nil()))...,
 	)
 
-	f.Func().Id("calcMapSize"+as.Name).Params(Id(v).Qual(as.PackageName, as.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder")).Params(Int(), Error()).Block(
+	f.Func().Id(as.calcMapSizeFuncName()).Params(Id(v).Qual(as.PackageName, as.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder")).Params(Int(), Error()).Block(
 		append(calcMapSizeCodes, Return(Id("size"), Nil()))...,
 	)
 
-	f.Func().Id("encodeArray"+as.Name).Params(Id(v).Qual(as.PackageName, as.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder"), Id("offset").Int()).Params(Index().Byte(), Int(), Error()).Block(
+	f.Func().Id(as.encodeArrayFuncName()).Params(Id(v).Qual(as.PackageName, as.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder"), Id("offset").Int()).Params(Index().Byte(), Int(), Error()).Block(
 		append(encArrayCodes, Return(Id(idEncoder).Dot("EncodedBytes").Call(), Id("offset"), Err()))...,
 	)
 
-	f.Func().Id("encodeMap"+as.Name).Params(Id(v).Qual(as.PackageName, as.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder"), Id("offset").Int()).Params(Index().Byte(), Int(), Error()).Block(
+	f.Func().Id(as.encodeMapFuncName()).Params(Id(v).Qual(as.PackageName, as.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder"), Id("offset").Int()).Params(Index().Byte(), Int(), Error()).Block(
 		append(encMapCodes, Return(Id(idEncoder).Dot("EncodedBytes").Call(), Id("offset"), Err()))...,
 	)
 
-	f.Func().Id("decodeArray"+as.Name).Params(Id(v).Op("*").Qual(as.PackageName, as.Name), Id(idDecoder).Op("*").Qual(pkDec, "Decoder"), Id("offset").Int()).Params(Int(), Error()).Block(
+	f.Func().Id(as.decodeArrayFuncName()).Params(Id(v).Op("*").Qual(as.PackageName, as.Name), Id(idDecoder).Op("*").Qual(pkDec, "Decoder"), Id("offset").Int()).Params(Int(), Error()).Block(
 		append(decArrayCodes, Return(Id("offset"), Err()))...,
 	)
 
-	f.Func().Id("decodeMap"+as.Name).Params(Id(v).Op("*").Qual(as.PackageName, as.Name), Id(idDecoder).Op("*").Qual(pkDec, "Decoder"), Id("offset").Int()).Params(Int(), Error()).Block(
+	f.Func().Id(as.decodeMapFuncName()).Params(Id(v).Op("*").Qual(as.PackageName, as.Name), Id(idDecoder).Op("*").Qual(pkDec, "Decoder"), Id("offset").Int()).Params(Int(), Error()).Block(
 
 		append(decMapCodes, Return(Id("offset"), Err()))...,
 	)
@@ -201,7 +201,7 @@ func (as *analyzedStruct) createMapCode(ast *analyzedASTFieldType, fieldName str
 	))
 
 	encCodes := make([]Code, 0)
-	encCodes = append(encCodes, Id("offset").Op("=").Id(idEncoder).Dot("WriteMapLength").Call(Len(Id(name))), Id("offset"))
+	encCodes = append(encCodes, Id("offset").Op("=").Id(idEncoder).Dot("WriteMapLength").Call(Len(Id(name)), Id("offset")))
 	encCodes = append(encCodes, For(List(Id(childKey), Id(childValue)).Op(":=").Range().Id(name)).Block(
 		append(eaKey, eaValue...)...,
 	))
@@ -258,7 +258,7 @@ func (as *analyzedStruct) createSliceCode(ast *analyzedASTFieldType, fieldName s
 	))
 
 	encCodes := make([]Code, 0)
-	encCodes = append(encCodes, Id("offset").Op("=").Id(idEncoder).Dot("WriteSliceLength").Call(Len(Id(name))), Id("offset"))
+	encCodes = append(encCodes, Id("offset").Op("=").Id(idEncoder).Dot("WriteSliceLength").Call(Len(Id(name)), Id("offset")))
 	encCodes = append(encCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Id(name)).Block(
 		ea...,
 	))
@@ -401,7 +401,7 @@ func (as *analyzedStruct) createNamedCode(fieldName string, ast *analyzedASTFiel
 		If(Err().Op("!=").Nil()).Block(
 			Return(Lit(0), Err()),
 		),
-		Id("size").Op("+=").Id(fieldName + "Size"),
+		Id("size").Op("+=").Id("size" + fieldName),
 	}
 
 	cMap = []Code{
@@ -411,7 +411,7 @@ func (as *analyzedStruct) createNamedCode(fieldName string, ast *analyzedASTFiel
 		If(Err().Op("!=").Nil()).Block(
 			Return(Lit(0), Err()),
 		),
-		Id("size").Op("+=").Id(fieldName + "Size"),
+		Id("size").Op("+=").Id("size" + fieldName),
 	}
 
 	eArray = []Code{
