@@ -91,7 +91,8 @@ func (as *analyzedStruct) calcFunction(f *File) {
 		append(decArrayCodes, Return(Id("offset"), Err()))...,
 	)
 
-	f.Func().Id(as.decodeMapFuncName()).Params(Id(v).Op("*").Qual(as.PackageName, as.Name), Id(idDecoder).Op("*").Qual(pkDec, "Decoder"), Id("offset").Int()).Params(Int(), Error()).Block(
+	f.Comment(as.PackageName+as.Name+"\n").
+		Func().Id(as.decodeMapFuncName()).Params(Id(v).Op("*").Qual(as.PackageName, as.Name), Id(idDecoder).Op("*").Qual(pkDec, "Decoder"), Id("offset").Int()).Params(Int(), Error()).Block(
 
 		append(decMapCodes, Return(Id("offset"), Err()))...,
 	)
