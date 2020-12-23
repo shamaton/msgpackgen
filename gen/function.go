@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	. "github.com/dave/jennifer/jen"
 )
@@ -125,8 +126,8 @@ func (as *analyzedStruct) createFieldCode(ast *analyzedASTFieldType, fieldName s
 			cMap = append(cMap, as.addSizePattern1("CalcTime", fieldValue))
 			eMap = append(eMap, as.encPattern1("WriteTime", fieldValue, Id("offset")))
 
-			dArray = append(dArray, as.decodeBasicPattern(ast, fieldName, "offset", "time.Time", "AsDateTime", isRoot)...)
-			dMap = append(dMap, as.decodeBasicPattern(ast, fieldName, "offset", "time.Time", "AsDateTime", isRoot)...)
+			dArray = append(dArray, as.decodeBasicPattern(ast, fieldName, "offset", "AsDateTime", isRoot)...)
+			dMap = append(dMap, as.decodeBasicPattern(ast, fieldName, "offset", "AsDateTime", isRoot)...)
 		} else {
 			// todo : 対象のパッケージかどうかをちゃんと判断する
 			cArray, cMap, eArray, eMap, dArray, dMap = as.createNamedCode(fieldName, ast, fieldValue, isRoot)
@@ -300,49 +301,50 @@ func (as *analyzedStruct) createBasicCode(ast *analyzedASTFieldType, fieldName s
 	}
 
 	var (
-		castName   = ""
+		//castName   = ""
 		funcSuffix = ""
 	)
 
 	// todo : byte
 
-	switch ast.IdenticalName {
-	case "int", "int8", "int16", "int32", "int64":
-		castName = "int64"
-		funcSuffix = "Int"
+	//switch ast.IdenticalName {
+	//case "int", "int8", "int16", "int32", "int64":
+	//	castName = "int64"
+	//	funcSuffix = "Int"
+	//
+	//case "uint", "uint8", "uint16", "uint32", "uint64":
+	//	castName = "uint64"
+	//	funcSuffix = "Uint"
+	//
+	//case "string":
+	//	castName = "string"
+	//	funcSuffix = "String"
+	//
+	//case "float32":
+	//	castName = "float32"
+	//	funcSuffix = "Float32"
+	//
+	//case "float64":
+	//	castName = "float64"
+	//	funcSuffix = "Float64"
+	//
+	//case "bool":
+	//	castName = "bool"
+	//	funcSuffix = "Bool"
+	//default:
+	//	// todo error
+	//
+	//}
+	funcSuffix = strings.Title(ast.IdenticalName)
 
-	case "uint", "uint8", "uint16", "uint32", "uint64":
-		castName = "uint64"
-		funcSuffix = "Uint"
+	cArray = append(cArray, as.addSizePattern1("Calc"+funcSuffix, fieldValue))
+	eArray = append(eArray, as.encPattern1("Write"+funcSuffix, fieldValue, Id(offset)))
 
-	case "string":
-		castName = "string"
-		funcSuffix = "String"
+	cMap = append(cMap, as.addSizePattern1("Calc"+funcSuffix, fieldValue))
+	eMap = append(eMap, as.encPattern1("Write"+funcSuffix, fieldValue, Id(offset)))
 
-	case "float32":
-		castName = "float32"
-		funcSuffix = "Float32"
-
-	case "float64":
-		castName = "float64"
-		funcSuffix = "Float64"
-
-	case "bool":
-		castName = "bool"
-		funcSuffix = "Bool"
-	default:
-		// todo error
-
-	}
-
-	cArray = append(cArray, as.addSizePattern1("Calc"+funcSuffix, Id(castName).Call(fieldValue)))
-	eArray = append(eArray, as.encPattern1("Write"+funcSuffix, Id(castName).Call(fieldValue), Id(offset)))
-
-	cMap = append(cMap, as.addSizePattern1("Calc"+funcSuffix, Id(castName).Call(fieldValue)))
-	eMap = append(eMap, as.encPattern1("Write"+funcSuffix, Id(castName).Call(fieldValue), Id(offset)))
-
-	dArray = append(dArray, as.decodeBasicPattern(ast, fieldName, offset, castName, "As"+funcSuffix, isRoot)...)
-	dMap = append(dMap, as.decodeBasicPattern(ast, fieldName, offset, castName, "As"+funcSuffix, isRoot)...)
+	dArray = append(dArray, as.decodeBasicPattern(ast, fieldName, offset, "As"+funcSuffix, isRoot)...)
+	dMap = append(dMap, as.decodeBasicPattern(ast, fieldName, offset, "As"+funcSuffix, isRoot)...)
 
 	return cArray, cMap, eArray, eMap, dArray, dMap, err
 }
@@ -366,7 +368,7 @@ func (as *analyzedStruct) encPattern1(funcName string, params ...Code) Code {
 	return Id("offset").Op("=").Id(idEncoder).Dot(funcName).Call(params...)
 }
 
-func (as *analyzedStruct) decodeBasicPattern(ast *analyzedASTFieldType, fieldName, offsetName, varTypeName, decoderFuncName string, isRoot bool) []Code {
+func (as *analyzedStruct) decodeBasicPattern(ast *analyzedASTFieldType, fieldName, offsetName, decoderFuncName string, isRoot bool) []Code {
 
 	// todo : ポインタの場合, vvp / vvvを使う必要
 	varName, setVarName := as.decodeVarPattern(fieldName, isRoot)
@@ -385,20 +387,9 @@ func (as *analyzedStruct) decodeBasicPattern(ast *analyzedASTFieldType, fieldNam
 		// todo : pointer
 		return commons
 	} else {
-		commons = append(commons, Id(setVarName).Op("=").Id(ast.IdenticalName).Call(Id(varName)))
+		commons = append(commons, Id(setVarName).Op("=").Id(varName))
 		return []Code{Block(commons...)}
 	}
-
-	// 変数がかぶらなければ、Blockに入れる必要がない
-	// astが親を知れる必要がある
-	return []Code{Block(
-		Var().Id(varName).Id(varTypeName),
-		List(Id(varName), Id(offsetName), Err()).Op("=").Id(idDecoder).Dot(decoderFuncName).Call(Id(offsetName)),
-		If(Err().Op("!=").Nil()).Block(
-			Return(Lit(0), Err()),
-		),
-		Id(setVarName).Op("=").Id(ast.IdenticalName).Call(Id(varName)),
-	)}
 }
 
 func (as *analyzedStruct) createNamedCode(fieldName string, ast *analyzedASTFieldType, fieldValue Code, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code) {
