@@ -6,15 +6,31 @@ import (
 	"github.com/shamaton/msgpack/def"
 )
 
-func (d *Decoder) isPositiveFixNum(v byte) bool {
-	return def.PositiveFixIntMin <= v && v <= def.PositiveFixIntMax
+func (d *Decoder) AsInt(offset int) (int, int, error) {
+	v, offset, err := d.asInt(offset)
+	return int(v), offset, err
 }
 
-func (d *Decoder) isNegativeFixNum(v byte) bool {
-	return def.NegativeFixintMin <= int8(v) && int8(v) <= def.NegativeFixintMax
+func (d *Decoder) AsInt8(offset int) (int8, int, error) {
+	v, offset, err := d.asInt(offset)
+	return int8(v), offset, err
 }
 
-func (d *Decoder) AsInt(offset int) (int64, int, error) {
+func (d *Decoder) AsInt16(offset int) (int16, int, error) {
+	v, offset, err := d.asInt(offset)
+	return int16(v), offset, err
+}
+
+func (d *Decoder) AsInt32(offset int) (int32, int, error) {
+	v, offset, err := d.asInt(offset)
+	return int32(v), offset, err
+}
+
+func (d *Decoder) AsInt64(offset int) (int64, int, error) {
+	return d.asInt(offset)
+}
+
+func (d *Decoder) asInt(offset int) (int64, int, error) {
 
 	code := d.data[offset]
 
@@ -77,4 +93,12 @@ func (d *Decoder) AsInt(offset int) (int64, int, error) {
 	}
 
 	return 0, 0, d.errorTemplate(code, "asInt")
+}
+
+func (d *Decoder) isPositiveFixNum(v byte) bool {
+	return def.PositiveFixIntMin <= v && v <= def.PositiveFixIntMax
+}
+
+func (d *Decoder) isNegativeFixNum(v byte) bool {
+	return def.NegativeFixintMin <= int8(v) && int8(v) <= def.NegativeFixintMax
 }

@@ -14,9 +14,29 @@ func (e *Encoder) isNegativeFixInt64(v int64) bool {
 	return def.NegativeFixintMin <= v && v <= def.NegativeFixintMax
 }
 
-func (e *Encoder) CalcInt(v int64) int {
+func (e *Encoder) CalcInt(v int) int {
+	return e.calcInt(int64(v))
+}
+
+func (e *Encoder) CalcInt8(v int8) int {
+	return e.calcInt(int64(v))
+}
+
+func (e *Encoder) CalcInt16(v int16) int {
+	return e.calcInt(int64(v))
+}
+
+func (e *Encoder) CalcInt32(v int32) int {
+	return e.calcInt(int64(v))
+}
+
+func (e *Encoder) CalcInt64(v int64) int {
+	return e.calcInt(v)
+}
+
+func (e *Encoder) calcInt(v int64) int {
 	if v >= 0 {
-		return e.CalcUint(uint64(v))
+		return e.calcUint(uint64(v))
 	} else if e.isNegativeFixInt64(v) {
 		// format code only
 		return def.Byte1
@@ -30,9 +50,26 @@ func (e *Encoder) CalcInt(v int64) int {
 	return def.Byte1 + def.Byte8
 }
 
-func (e *Encoder) WriteInt(v int64, offset int) int {
+func (e *Encoder) WriteInt(v int, offset int) int {
+	return e.writeInt(int64(v), offset)
+}
+
+func (e *Encoder) WriteInt8(v int8, offset int) int {
+	return e.writeInt(int64(v), offset)
+}
+func (e *Encoder) WriteInt16(v int16, offset int) int {
+	return e.writeInt(int64(v), offset)
+}
+func (e *Encoder) WriteInt32(v int32, offset int) int {
+	return e.writeInt(int64(v), offset)
+}
+func (e *Encoder) WriteInt64(v int64, offset int) int {
+	return e.writeInt(v, offset)
+}
+
+func (e *Encoder) writeInt(v int64, offset int) int {
 	if v >= 0 {
-		offset = e.WriteUint(uint64(v), offset)
+		offset = e.writeUint(uint64(v), offset)
 	} else if e.isNegativeFixInt64(v) {
 		offset = e.setByte1Int64(v, offset)
 	} else if v >= math.MinInt8 {

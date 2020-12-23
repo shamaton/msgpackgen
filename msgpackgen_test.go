@@ -271,7 +271,7 @@ func calcArraySizestructTest(v msgpackgen.StructTest, encoder *enc.Encoder) (int
 		size += s
 	}
 
-	size += encoder.CalcInt(int64(v.A))
+	size += encoder.CalcInt(v.A)
 
 	size += encoder.CalcFloat32(float64(v.B))
 
@@ -279,7 +279,7 @@ func calcArraySizestructTest(v msgpackgen.StructTest, encoder *enc.Encoder) (int
 
 	size += encoder.CalcBool()
 
-	size += encoder.CalcUint(v.Uint64)
+	size += encoder.CalcUint64(v.Uint64)
 
 	size += encoder.CalcTime(v.Now)
 
@@ -291,7 +291,7 @@ func calcArraySizestructTest(v msgpackgen.StructTest, encoder *enc.Encoder) (int
 		}
 		size += s
 		for _, v := range v.Slice {
-			size += encoder.CalcUint(uint64(v))
+			size += encoder.CalcUint(v)
 		}
 	} else {
 		size += encoder.CalcNil()
@@ -350,7 +350,7 @@ func calcMapSizestructTest(v msgpackgen.StructTest, encoder *enc.Encoder) (int, 
 	}
 
 	size += encoder.CalcString("A")
-	size += encoder.CalcInt(int64(v.A))
+	size += encoder.CalcInt(v.A)
 
 	size += encoder.CalcString("B")
 	size += encoder.CalcFloat32(float64(v.B))
@@ -362,7 +362,7 @@ func calcMapSizestructTest(v msgpackgen.StructTest, encoder *enc.Encoder) (int, 
 	size += encoder.CalcBool()
 
 	size += encoder.CalcString("Uint64")
-	size += encoder.CalcUint(v.Uint64)
+	size += encoder.CalcUint64(v.Uint64)
 
 	size += encoder.CalcString("Now")
 	size += encoder.CalcTime(v.Now)
@@ -376,7 +376,7 @@ func calcMapSizestructTest(v msgpackgen.StructTest, encoder *enc.Encoder) (int, 
 		}
 		size += s
 		for _, v := range v.Slice {
-			size += encoder.CalcUint(uint64(v))
+			size += encoder.CalcUint(v)
 		}
 	} else {
 		size += encoder.CalcNil()
@@ -429,18 +429,18 @@ func encodeArraystructTest(v msgpackgen.StructTest, encoder *enc.Encoder, offset
 	var err error
 	offset = encoder.WriteStructHeader(num, offset)
 
-	offset = encoder.WriteInt(int64(v.A), offset)
+	offset = encoder.WriteInt(v.A, offset)
 	offset = encoder.WriteFloat32(v.B, offset)
 	offset = encoder.WriteString(v.String, offset)
 	offset = encoder.WriteBool(v.Bool, offset)
-	offset = encoder.WriteUint(v.Uint64, offset)
+	offset = encoder.WriteUint64(v.Uint64, offset)
 	offset = encoder.WriteTime(v.Now, offset)
 
 	// todo : nilのパターン
 	if v.Slice != nil {
 		offset = encoder.WriteSliceLength(len(v.Slice), offset)
 		for _, vv := range v.Slice {
-			offset = encoder.WriteUint(uint64(vv), offset)
+			offset = encoder.WriteUint(vv, offset)
 		}
 	} else {
 		offset = encoder.WriteNil(offset)
@@ -481,7 +481,7 @@ func encodeMapstructTest(v msgpackgen.StructTest, encoder *enc.Encoder, offset i
 	offset = encoder.WriteStructHeader(num, offset)
 
 	offset = encoder.WriteString("A", offset)
-	offset = encoder.WriteInt(int64(v.A), offset)
+	offset = encoder.WriteInt(v.A, offset)
 
 	offset = encoder.WriteString("B", offset)
 	offset = encoder.WriteFloat32(v.B, offset)
@@ -493,7 +493,7 @@ func encodeMapstructTest(v msgpackgen.StructTest, encoder *enc.Encoder, offset i
 	offset = encoder.WriteBool(v.Bool, offset)
 
 	offset = encoder.WriteString("Uint64", offset)
-	offset = encoder.WriteUint(v.Uint64, offset)
+	offset = encoder.WriteUint64(v.Uint64, offset)
 
 	offset = encoder.WriteString("Now", offset)
 	offset = encoder.WriteTime(v.Now, offset)
@@ -503,7 +503,7 @@ func encodeMapstructTest(v msgpackgen.StructTest, encoder *enc.Encoder, offset i
 	if v.Slice != nil {
 		offset = encoder.WriteSliceLength(len(v.Slice), offset)
 		for _, vv := range v.Slice {
-			offset = encoder.WriteUint(uint64(vv), offset)
+			offset = encoder.WriteUint(vv, offset)
 		}
 	} else {
 		offset = encoder.WriteNil(offset)
@@ -547,12 +547,12 @@ func decodeArraystructTest(v *msgpackgen.StructTest, decoder *dec.Decoder, offse
 		return 0, err
 	}
 	{
-		var vv int64
+		var vv int
 		vv, offset, err = decoder.AsInt(offset)
 		if err != nil {
 			return 0, err
 		}
-		v.A = int(vv)
+		v.A = vv
 	}
 	{
 		var vv float32
@@ -580,7 +580,7 @@ func decodeArraystructTest(v *msgpackgen.StructTest, decoder *dec.Decoder, offse
 	}
 	{
 		var vv uint64
-		vv, offset, err = decoder.AsUint(offset)
+		vv, offset, err = decoder.AsUint64(offset)
 		if err != nil {
 			return 0, err
 		}
@@ -606,12 +606,12 @@ func decodeArraystructTest(v *msgpackgen.StructTest, decoder *dec.Decoder, offse
 		vv = make([]uint, l)
 		for i := range vv {
 			{
-				var vvv uint64
+				var vvv uint
 				vvv, offset, err = decoder.AsUint(offset)
 				if err != nil {
 					return 0, err
 				}
-				vv[i] = uint(vvv)
+				vv[i] = vvv
 			}
 		}
 		v.Slice = vv
@@ -701,12 +701,12 @@ func decodeMapstructTest(v *msgpackgen.StructTest, decoder *dec.Decoder, offset 
 		switch s {
 		case "A":
 			{
-				var vv int64
+				var vv int
 				vv, offset, err = decoder.AsInt(offset)
 				if err != nil {
 					return 0, err
 				}
-				v.A = int(vv)
+				v.A = vv
 			}
 		case "B":
 			{
@@ -738,7 +738,7 @@ func decodeMapstructTest(v *msgpackgen.StructTest, decoder *dec.Decoder, offset 
 		case "Uint64":
 			{
 				var vv uint64
-				vv, offset, err = decoder.AsUint(offset)
+				vv, offset, err = decoder.AsUint64(offset)
 				if err != nil {
 					return 0, err
 				}
@@ -766,12 +766,12 @@ func decodeMapstructTest(v *msgpackgen.StructTest, decoder *dec.Decoder, offset 
 				vv = make([]uint, l)
 				for i := range vv {
 					{
-						var vvv uint64
+						var vvv uint
 						vvv, offset, err = decoder.AsUint(offset)
 						if err != nil {
 							return 0, err
 						}
-						vv[i] = uint(vvv)
+						vv[i] = vvv
 					}
 				}
 				v.Slice = vv
@@ -886,12 +886,12 @@ func _decodeMapstructTest(v *msgpackgen.StructTest, decoder *dec.Decoder, offset
 		switch field {
 		case "A":
 			{
-				var vv int64
+				var vv int
 				vv, offset, err = decoder.AsInt(off)
 				if err != nil {
 					return 0, err
 				}
-				v.A = int(vv)
+				v.A = vv
 			}
 		case "B":
 			{
@@ -923,7 +923,7 @@ func _decodeMapstructTest(v *msgpackgen.StructTest, decoder *dec.Decoder, offset
 		case "Uint64":
 			{
 				var vv uint64
-				vv, offset, err = decoder.AsUint(off)
+				vv, offset, err = decoder.AsUint64(off)
 				if err != nil {
 					return 0, err
 				}
@@ -999,7 +999,7 @@ func calcSizeItem(v Item, encoder *enc.Encoder) (int, error) {
 	size += s
 
 	size += def.Byte1
-	size += encoder.CalcInt(int64(v.ID))
+	size += encoder.CalcInt(v.ID)
 
 	size += def.Byte1
 	size += encoder.CalcString(v.Name)
@@ -1008,17 +1008,17 @@ func calcSizeItem(v Item, encoder *enc.Encoder) (int, error) {
 	size += encoder.CalcFloat32(float64(v.Effect))
 
 	size += def.Byte1
-	size += encoder.CalcUint(uint64(v.Num))
+	size += encoder.CalcUint(v.Num)
 
 	return size, err
 }
 
 func encodeItem(v Item, encoder *enc.Encoder, offset int) ([]byte, int, error) {
 	offset = encoder.WriteStructHeader(4, offset)
-	offset = encoder.WriteInt(int64(v.ID), offset)
+	offset = encoder.WriteInt(v.ID, offset)
 	offset = encoder.WriteString(v.Name, offset)
 	offset = encoder.WriteFloat32(v.Effect, offset)
-	offset = encoder.WriteUint(uint64(v.Num), offset)
+	offset = encoder.WriteUint(v.Num, offset)
 	return encoder.EncodedBytes(), offset, nil
 }
 
@@ -1029,12 +1029,12 @@ func decodeItem(v *Item, decoder *dec.Decoder, offset int) (int, error) {
 		return 0, err
 	}
 	{
-		var vv int64
+		var vv int
 		vv, offset, err = decoder.AsInt(offset)
 		if err != nil {
 			return 0, err
 		}
-		v.ID = int(vv)
+		v.ID = vv
 	}
 	{
 		var vv string
@@ -1053,12 +1053,12 @@ func decodeItem(v *Item, decoder *dec.Decoder, offset int) (int, error) {
 		v.Effect = vv
 	}
 	{
-		var vv uint64
+		var vv uint
 		vv, offset, err = decoder.AsUint(offset)
 		if err != nil {
 			return 0, err
 		}
-		v.Num = uint(vv)
+		v.Num = vv
 	}
 	return offset, nil
 }

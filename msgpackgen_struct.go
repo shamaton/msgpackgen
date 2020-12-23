@@ -14,7 +14,7 @@ type StructTest struct {
 	//ItemData Item
 	//Items    []Item
 	//Interface interface{}
-	Piyo Hoge
+	//Piyo Hoge
 }
 
 type Hoge struct {

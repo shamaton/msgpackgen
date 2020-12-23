@@ -6,7 +6,31 @@ import (
 	"github.com/shamaton/msgpack/def"
 )
 
-func (d *Decoder) AsUint(offset int) (uint64, int, error) {
+func (d *Decoder) AsUint(offset int) (uint, int, error) {
+	v, offset, err := d.asUint(offset)
+	return uint(v), offset, err
+}
+
+func (d *Decoder) AsUint8(offset int) (uint8, int, error) {
+	v, offset, err := d.asUint(offset)
+	return uint8(v), offset, err
+}
+
+func (d *Decoder) AsUint16(offset int) (uint16, int, error) {
+	v, offset, err := d.asUint(offset)
+	return uint16(v), offset, err
+}
+
+func (d *Decoder) AsUint32(offset int) (uint32, int, error) {
+	v, offset, err := d.asUint(offset)
+	return uint32(v), offset, err
+}
+
+func (d *Decoder) AsUint64(offset int) (uint64, int, error) {
+	return d.asUint(offset)
+}
+
+func (d *Decoder) asUint(offset int) (uint64, int, error) {
 
 	code := d.data[offset]
 
