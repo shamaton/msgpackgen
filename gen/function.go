@@ -201,7 +201,7 @@ func (as *analyzedStruct) createMapCode(ast *analyzedASTFieldType, fieldName str
 	))
 
 	encCodes := make([]Code, 0)
-	encCodes = append(encCodes, Id("offset").Op("=").Id(idEncoder).Dot("WriteMapLength").Call(Id(fmt.Sprintf("len(%s)", name)), Id("offset")))
+	encCodes = append(encCodes, Id("offset").Op("=").Id(idEncoder).Dot("WriteMapLength").Call(Len(Id(name))), Id("offset"))
 	encCodes = append(encCodes, For(List(Id(childKey), Id(childValue)).Op(":=").Range().Id(name)).Block(
 		append(eaKey, eaValue...)...,
 	))
@@ -258,7 +258,7 @@ func (as *analyzedStruct) createSliceCode(ast *analyzedASTFieldType, fieldName s
 	))
 
 	encCodes := make([]Code, 0)
-	encCodes = append(encCodes, Id("offset").Op("=").Id(idEncoder).Dot("WriteSliceLength").Call(Id(fmt.Sprintf("len(%s)", name)), Id("offset")))
+	encCodes = append(encCodes, Id("offset").Op("=").Id(idEncoder).Dot("WriteSliceLength").Call(Len(Id(name))), Id("offset"))
 	encCodes = append(encCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Id(name)).Block(
 		ea...,
 	))
