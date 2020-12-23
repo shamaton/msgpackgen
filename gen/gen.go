@@ -7,6 +7,7 @@ import (
 	"go/token"
 	"go/types"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	. "github.com/dave/jennifer/jen"
@@ -48,7 +49,8 @@ type analyzedField struct {
 }
 
 func main() {
-	files := dirwalk("../tetest/example")
+	dir := "../tetest/example"
+	files := dirwalk(dir)
 
 	// 最初にgenerate対象のパッケージをすべて取得
 
@@ -65,7 +67,7 @@ func main() {
 	}
 	g.getPackages(files)
 	g.createAnalyzedStructs()
-	g.generate()
+	g.generate(dir)
 }
 
 func dirwalk(dir string) []string {
@@ -94,7 +96,7 @@ func dirwalk(dir string) []string {
 	return abss
 }
 
-func (g *generator) generate() {
+func (g *generator) generate(dir string) {
 
 	for _, st := range analyzedStructs {
 		funcIdMap[st.PackageName] = fmt.Sprintf("%x", sha256.Sum256([]byte(st.PackageName)))
@@ -102,7 +104,8 @@ func (g *generator) generate() {
 
 	fmt.Println(funcIdMap)
 
-	f := NewFilePath("msgpackgen/resolver")
+	path := "msgpackgen/resolver"
+	f := NewFilePath(path)
 
 	f.Func().Id("init").Params().Block(
 		Qual(pkTop, "SetResolver").Call(Id("encode"), Id("decode")),
@@ -157,6 +160,20 @@ func (g *generator) generate() {
 	}
 
 	fmt.Printf("%#v", f)
+
+	d := dir + "/" + path
+	if err := os.MkdirAll(d, 0777); err != nil {
+		fmt.Println(err)
+	}
+
+	file, err := os.Create(d + "/resolver.go")
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer file.Close()
+
+	_, err = fmt.Fprintf(file, "%#v", f)
+	fmt.Println(err)
 }
 
 func (g *generator) decodeTopTemplate(name string, f *File) *Statement {
