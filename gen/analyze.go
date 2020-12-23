@@ -87,12 +87,9 @@ func (g *generator) createAnalyzedStructs() error {
 						key = name.Name
 					}
 
-					value, ok := g.checkFieldTypeRecursive(field.Type)
+					value, ok := g.checkFieldTypeRecursive(field.Type, nil, importMap)
 					canGen = canGen && ok
 					if ok {
-						if value.IsStruct() {
-							value.ImportPath = importMap[value.PackageName]
-						}
 						analyzedFieldMap[key] = value
 					}
 				}
@@ -194,7 +191,11 @@ type analyzedASTFieldType struct {
 	// for array / map / pointer
 	Key   *analyzedASTFieldType
 	Value *analyzedASTFieldType
+
+	Parent *analyzedASTFieldType
 }
+
+func (a analyzedASTFieldType) HasParent() bool { return a.Parent != nil }
 
 func (a analyzedASTFieldType) IsIdentical() bool { return a.fieldType == fieldTypeIdent }
 func (a analyzedASTFieldType) IsArray() bool     { return a.fieldType == fieldTypeArray }
@@ -272,42 +273,52 @@ func (a analyzedASTFieldType) TypeString(s ...string) string {
 	return str
 }
 
-func (g *generator) checkFieldTypeRecursive(expr ast.Expr) (*analyzedASTFieldType, bool) {
+func (g *generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFieldType, importMap map[string]string) (*analyzedASTFieldType, bool) {
 	if i, ok := expr.(*ast.Ident); ok {
 		return &analyzedASTFieldType{
 			fieldType:     fieldTypeIdent,
 			IdenticalName: i.Name,
+			Parent:        parent,
 		}, true
 	}
 	if selector, ok := expr.(*ast.SelectorExpr); ok {
+		pkgName := fmt.Sprint(selector.X) // todo : ok?
 		return &analyzedASTFieldType{
 			fieldType:   fieldTypeStruct,
-			PackageName: fmt.Sprint(selector.X), // todo : ok?
+			PackageName: pkgName,
 			StructName:  selector.Sel.Name,
+			ImportPath:  importMap[pkgName],
+			Parent:      parent,
 		}, true
 	}
 	if array, ok := expr.(*ast.ArrayType); ok {
-		key, check := g.checkFieldTypeRecursive(array.Elt)
-		return &analyzedASTFieldType{
+		node := &analyzedASTFieldType{
 			fieldType: fieldTypeArray,
-			Key:       key,
-		}, check
+			Parent:    parent,
+		}
+		key, check := g.checkFieldTypeRecursive(array.Elt, node, importMap)
+		node.Key = key
+		return node, check
 	}
 	if mp, ok := expr.(*ast.MapType); ok {
-		key, c1 := g.checkFieldTypeRecursive(mp.Key)
-		value, c2 := g.checkFieldTypeRecursive(mp.Value)
-		return &analyzedASTFieldType{
+		node := &analyzedASTFieldType{
 			fieldType: fieldTypeMap,
-			Key:       key,
-			Value:     value,
-		}, c1 && c2
+			Parent:    parent,
+		}
+		key, c1 := g.checkFieldTypeRecursive(mp.Key, node, importMap)
+		value, c2 := g.checkFieldTypeRecursive(mp.Value, node, importMap)
+		node.Key = key
+		node.Value = value
+		return node, c1 && c2
 	}
 	if star, ok := expr.(*ast.StarExpr); ok {
-		key, check := g.checkFieldTypeRecursive(star.X)
-		return &analyzedASTFieldType{
+		node := &analyzedASTFieldType{
 			fieldType: fieldTypePointer,
-			Key:       key,
-		}, check
+			Parent:    parent,
+		}
+		key, check := g.checkFieldTypeRecursive(star.X, node, importMap)
+		node.Key = key
+		return node, check
 	}
 	if _, ok := expr.(*ast.InterfaceType); ok {
 		return nil, false

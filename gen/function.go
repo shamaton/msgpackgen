@@ -194,7 +194,7 @@ func (as *analyzedStruct) createMapCode(ast *analyzedASTFieldType, fieldName str
 	))
 	decCodes = append(decCodes, Id(childValue).Op("=").Make(ast.TypeJenChain(), Id(childValue+"l")))
 	decCodes = append(decCodes, For(Id(childValue+"i").Op(":=").Lit(0).Op(";").Id(childValue+"i").Op("<").Id(childValue+"l").Op(";").Id(childValue+"i").Op("++")).Block(
-		append(daKey, daValue...)...,
+		append(append(daKey, daValue...), Id(childValue).Index(Id(childKey+"v")).Op("=").Id(childValue+"v"))...,
 	))
 	decCodes = append(decCodes, Id(name).Op("=").Id(childValue))
 
@@ -251,7 +251,7 @@ func (as *analyzedStruct) createSliceCode(ast *analyzedASTFieldType, fieldName s
 	))
 	decCodes = append(decCodes, Id(childName).Op("=").Make(ast.TypeJenChain(), Id(childName+"l")))
 	decCodes = append(decCodes, For(Id(childName+"i").Op(":=").Range().Id(childName)).Block(
-		da...,
+		append(da, Id(childName).Index(Id(childName+"i")).Op("=").Id(childName+"v"))...,
 	))
 	decCodes = append(decCodes, Id(name).Op("=").Id(childName))
 
@@ -344,6 +344,26 @@ func (as *analyzedStruct) decodeBasicPattern(ast *analyzedASTFieldType, fieldNam
 
 	varName, setVarName := as.decodeVarPattern(fieldName, isRoot)
 
+	commons := []Code{
+		ast.TypeJenChain(Var().Id(varName)),
+		List(Id(varName), Id(offsetName), Err()).Op("=").Id(idDecoder).Dot(decoderFuncName).Call(Id(offsetName)),
+		If(Err().Op("!=").Nil()).Block(
+			Return(Lit(0), Err()),
+		),
+	}
+
+	if ast.HasParent() {
+		// array
+		// map
+		// todo : pointer
+		return commons
+	} else {
+		commons = append(commons, Id(setVarName).Op("=").Id(ast.IdenticalName).Call(Id(varName)))
+		return []Code{Block(commons...)}
+	}
+
+	// 変数がかぶらなければ、Blockに入れる必要がない
+	// astが親を知れる必要がある
 	return []Code{Block(
 		Var().Id(varName).Id(varTypeName),
 		List(Id(varName), Id(offsetName), Err()).Op("=").Id(idDecoder).Dot(decoderFuncName).Call(Id(offsetName)),
