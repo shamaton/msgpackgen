@@ -397,7 +397,7 @@ func (as *analyzedStruct) createNamedCode(fieldName string, ast *analyzedASTFiel
 	cArray = []Code{
 		List(Id("size"+fieldName), Err()).
 			Op(":=").
-			Id(as.calcArraySizeFuncName()).Call(fieldValue, Id(idEncoder)),
+			Id(createFuncName("calcArraySize", ast.StructName, ast.ImportPath)).Call(fieldValue, Id(idEncoder)),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Lit(0), Err()),
 		),
@@ -407,7 +407,7 @@ func (as *analyzedStruct) createNamedCode(fieldName string, ast *analyzedASTFiel
 	cMap = []Code{
 		List(Id("size"+fieldName), Err()).
 			Op(":=").
-			Id(as.calcMapSizeFuncName()).Call(fieldValue, Id(idEncoder)),
+			Id(createFuncName("calcMapSize", ast.StructName, ast.ImportPath)).Call(fieldValue, Id(idEncoder)),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Lit(0), Err()),
 		),
@@ -417,7 +417,7 @@ func (as *analyzedStruct) createNamedCode(fieldName string, ast *analyzedASTFiel
 	eArray = []Code{
 		List(Id("_"), Id("offset"), Err()).
 			Op("=").
-			Id(as.encodeArrayFuncName()).Call(fieldValue, Id(idEncoder)),
+			Id(createFuncName("encodeArray", ast.StructName, ast.ImportPath)).Call(fieldValue, Id(idEncoder), Id("offset")),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Nil(), Lit(0), Err()),
 		),
@@ -426,7 +426,7 @@ func (as *analyzedStruct) createNamedCode(fieldName string, ast *analyzedASTFiel
 	eMap = []Code{
 		List(Id("_"), Id("offset"), Err()).
 			Op("=").
-			Id(as.encodeMapFuncName()).Call(fieldValue, Id(idEncoder)),
+			Id(createFuncName("encodeMap", ast.StructName, ast.ImportPath)).Call(fieldValue, Id(idEncoder), Id("offset")),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Nil(), Lit(0), Err()),
 		),
@@ -437,7 +437,7 @@ func (as *analyzedStruct) createNamedCode(fieldName string, ast *analyzedASTFiel
 	dArray = []Code{
 		Block(
 			Var().Id(varName).Qual(ast.ImportPath, ast.StructName),
-			List(Id("offset"), Err()).Op("=").Id(as.decodeArrayFuncName()).Call(Op("&").Id(varName), Id(idDecoder), Id("offset")),
+			List(Id("offset"), Err()).Op("=").Id(createFuncName("decodeArray", ast.StructName, ast.ImportPath)).Call(Op("&").Id(varName), Id(idDecoder), Id("offset")),
 			If(Err().Op("!=").Nil()).Block(
 				Return(Lit(0), Err()),
 			),
@@ -449,7 +449,7 @@ func (as *analyzedStruct) createNamedCode(fieldName string, ast *analyzedASTFiel
 	dMap = []Code{
 		Block(
 			Var().Id(varName).Qual(ast.ImportPath, ast.StructName),
-			List(Id("offset"), Err()).Op("=").Id(as.decodeArrayFuncName()).Call(Op("&").Id(varName), Id(idDecoder), Id("offset")),
+			List(Id("offset"), Err()).Op("=").Id(createFuncName("decodeMap", ast.StructName, ast.ImportPath)).Call(Op("&").Id(varName), Id(idDecoder), Id("offset")),
 			If(Err().Op("!=").Nil()).Block(
 				Return(Lit(0), Err()),
 			),

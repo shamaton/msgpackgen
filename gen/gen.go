@@ -259,25 +259,29 @@ func (g *generator) decodeAsMapCases() []Code {
 }
 
 func (as *analyzedStruct) calcArraySizeFuncName() string {
-	return fmt.Sprintf("calArraySize%s_%s", as.Name, funcIdMap[as.PackageName])
+	return fmt.Sprintf("calcArraySize%s_%s", as.Name, funcIdMap[as.PackageName])
 }
 
 func (as *analyzedStruct) calcMapSizeFuncName() string {
-	return fmt.Sprintf("calcMapSize%s_%s", as.Name, funcIdMap[as.PackageName])
+	return createFuncName("calcMapSize", as.Name, as.PackageName)
 }
 
 func (as *analyzedStruct) encodeArrayFuncName() string {
-	return fmt.Sprintf("encodeArray%s_%s", as.Name, funcIdMap[as.PackageName])
+	return createFuncName("encodeArray", as.Name, as.PackageName)
 }
 
 func (as *analyzedStruct) encodeMapFuncName() string {
-	return fmt.Sprintf("encodeMap%s_%s", as.Name, funcIdMap[as.PackageName])
+	return createFuncName("encodeMap", as.Name, as.PackageName)
 }
 
 func (as *analyzedStruct) decodeArrayFuncName() string {
-	return fmt.Sprintf("decodeArray%s_%s", as.Name, funcIdMap[as.PackageName])
+	return createFuncName("decodeArray", as.Name, as.PackageName)
 }
 
 func (as *analyzedStruct) decodeMapFuncName() string {
-	return fmt.Sprintf("decodeMap%s_%s", as.Name, funcIdMap[as.PackageName])
+	return createFuncName("decodeMap", as.Name, as.PackageName)
+}
+
+func createFuncName(prefix, name, packageName string) string {
+	return fmt.Sprintf("%s%s_%s", prefix, name, funcIdMap[packageName])
 }
