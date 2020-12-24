@@ -141,6 +141,7 @@ func (as *analyzedStruct) createFieldCode(ast *analyzedASTFieldType, fieldName s
 		fmt.Println("named", fieldName, ast, as.PackageName)
 
 	case ast.IsPointer():
+		return as.createPointerCode(ast, fieldName, isRoot)
 
 	default:
 		// todo : error
@@ -156,7 +157,7 @@ func (as *analyzedStruct) createPointerCode(ast *analyzedASTFieldType, fieldName
 	if isRoot {
 		name = "v." + fieldName
 	}
-	ca, _, ea, _, _, _, _ := as.createFieldCode(ast.Elm(), fieldName, isRoot)
+	ca, _, ea, _, da, _, _ := as.createFieldCode(ast.Elm(), fieldName, isRoot)
 
 	cArray = make([]Code, 0)
 	cArray = append(cArray, If(Id(name).Op("!=").Nil()).Block(
@@ -172,7 +173,14 @@ func (as *analyzedStruct) createPointerCode(ast *analyzedASTFieldType, fieldName
 		Id("offset").Op("=").Id(idEncoder).Dot("WriteNil").Call(Id("offset")),
 	))
 
-	return
+	dArray = make([]Code, 0)
+	dArray = append(dArray, If(Id(idDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
+		da...,
+	).Else().Block(
+		Id("offset").Op("++"),
+	))
+
+	return cArray, cArray, eArray, eArray, dArray, dArray, err
 }
 
 func (as *analyzedStruct) createMapCode(ast *analyzedASTFieldType, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
@@ -192,11 +200,18 @@ func (as *analyzedStruct) createMapCode(ast *analyzedASTFieldType, fieldName str
 		childValue = fieldName + "v"
 	}
 
+	// todo : double pointer use while
+	ptrOp := ""
+	andOp := ""
+	if ast.HasParent() && ast.Parent.IsPointer() {
+		ptrOp, andOp = "*", "&"
+	}
+
 	caKey, _, eaKey, _, daKey, _, _ := as.createFieldCode(key, childKey, false)
 	caValue, _, eaValue, _, daValue, _, _ := as.createFieldCode(value, childValue, false)
 
-	calcCodes := as.addSizePattern2("CalcMapLength", Id(fmt.Sprintf("len(%s)", name)))
-	calcCodes = append(calcCodes, For(List(Id(childKey), Id(childValue)).Op(":=").Range().Id(name)).Block(
+	calcCodes := as.addSizePattern2("CalcMapLength", Len(Op(ptrOp).Id(name)))
+	calcCodes = append(calcCodes, For(List(Id(childKey), Id(childValue)).Op(":=").Range().Op(ptrOp).Id(name)).Block(
 		append(caKey, caValue...)...,
 	))
 
@@ -207,8 +222,8 @@ func (as *analyzedStruct) createMapCode(ast *analyzedASTFieldType, fieldName str
 	))
 
 	encCodes := make([]Code, 0)
-	encCodes = append(encCodes, Id("offset").Op("=").Id(idEncoder).Dot("WriteMapLength").Call(Len(Id(name)), Id("offset")))
-	encCodes = append(encCodes, For(List(Id(childKey), Id(childValue)).Op(":=").Range().Id(name)).Block(
+	encCodes = append(encCodes, Id("offset").Op("=").Id(idEncoder).Dot("WriteMapLength").Call(Len(Op(ptrOp).Id(name)), Id("offset")))
+	encCodes = append(encCodes, For(List(Id(childKey), Id(childValue)).Op(":=").Range().Op(ptrOp).Id(name)).Block(
 		append(eaKey, eaValue...)...,
 	))
 
@@ -229,7 +244,7 @@ func (as *analyzedStruct) createMapCode(ast *analyzedASTFieldType, fieldName str
 	decCodes = append(decCodes, For(Id(childValue+"i").Op(":=").Lit(0).Op(";").Id(childValue+"i").Op("<").Id(childValue+"l").Op(";").Id(childValue+"i").Op("++")).Block(
 		append(append(daKey, daValue...), Id(childValue).Index(Id(childKey+"v")).Op("=").Id(childValue+"v"))...,
 	))
-	decCodes = append(decCodes, Id(name).Op("=").Id(childValue))
+	decCodes = append(decCodes, Id(name).Op("=").Op(andOp).Id(childValue))
 
 	dArray = append(dArray, If(Op("!").Id(idDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
 		decCodes...,
@@ -301,9 +316,14 @@ func (as *analyzedStruct) createBasicCode(ast *analyzedASTFieldType, fieldName s
 
 	offset := "offset"
 
-	fieldValue := Id(fieldName)
+	ptrOp := ""
+	if ast.HasParent() && ast.Parent.IsPointer() {
+		ptrOp = "*"
+	}
+
+	fieldValue := Op(ptrOp).Id(fieldName)
 	if isRoot {
-		fieldValue = Id("v").Dot(fieldName)
+		fieldValue = Op(ptrOp).Id("v").Dot(fieldName)
 	}
 
 	var (
@@ -379,6 +399,11 @@ func (as *analyzedStruct) decodeBasicPattern(ast *analyzedASTFieldType, fieldNam
 	// todo : ポインタの場合, vvp / vvvを使う必要
 	varName, setVarName := as.decodeVarPattern(fieldName, isRoot)
 
+	andOp := ""
+	if ast.HasParent() && ast.Parent.IsPointer() {
+		andOp = "&"
+	}
+
 	commons := []Code{
 		ast.TypeJenChain(Var().Id(varName)),
 		List(Id(varName), Id(offsetName), Err()).Op("=").Id(idDecoder).Dot(decoderFuncName).Call(Id(offsetName)),
@@ -387,15 +412,13 @@ func (as *analyzedStruct) decodeBasicPattern(ast *analyzedASTFieldType, fieldNam
 		),
 	}
 
-	if ast.HasParent() {
-		// array
-		// map
-		// todo : pointer
+	// array or map
+	if ast.HasParent() && !ast.Parent.IsPointer() {
 		return commons
-	} else {
-		commons = append(commons, Id(setVarName).Op("=").Id(varName))
-		return []Code{Block(commons...)}
 	}
+
+	commons = append(commons, Id(setVarName).Op("=").Op(andOp).Id(varName))
+	return []Code{Block(commons...)}
 }
 
 func (as *analyzedStruct) createNamedCode(fieldName string, ast *analyzedASTFieldType, fieldValue Code, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code) {
