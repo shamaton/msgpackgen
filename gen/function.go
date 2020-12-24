@@ -451,19 +451,22 @@ func (as *analyzedStruct) decodeBasicPattern(ast *analyzedASTFieldType, fieldNam
 		),
 	}
 
-	// array or map
-	if commonOnly {
-		return commons
-	}
-
 	for i := 0; i < ptrCount; i++ {
 		p := strings.Repeat("p", ptrCount-1-i)
-		kome := strings.Repeat("*", ptrCount-1-i)
+		kome := strings.Repeat("*", i)
 		commons = append([]Code{ast.TypeJenChain(Var().Id(varName + p).Op(kome))}, commons...)
 	}
 	if ptrCount < 1 {
 		commons = append([]Code{ast.TypeJenChain(Var().Id(varName))}, commons...)
 	}
+
+	commons = as.createDecodeSetVarPattern(ptrCount, varName, setVarName, commonOnly, commons)
+
+	// array or map
+	if commonOnly {
+		return commons
+	}
+
 	//for i := 0; i < ptrCount; i++ {
 	//	if i != ptrCount-1 {
 	//		tmp1 := varName + strings.Repeat("p", i)
@@ -478,26 +481,35 @@ func (as *analyzedStruct) decodeBasicPattern(ast *analyzedASTFieldType, fieldNam
 	//if ptrCount < 1 {
 	//	commons = append(commons, Id(setVarName).Op("=").Op("").Id(varName))
 	//}
-	commons = as.createDecodeSetVarPattern(ptrCount, varName, setVarName, commons)
 	return []Code{Block(commons...)}
 }
 
-func (as *analyzedStruct) createDecodeSetVarPattern(ptrCount int, varName, setVarName string, codes []Code) []Code {
+func (as *analyzedStruct) createDecodeSetVarPattern(ptrCount int, varName, setVarName string, isLastSkip bool, codes []Code) []Code {
 
-	for i := 0; i < ptrCount; i++ {
-		if i != ptrCount-1 {
-			tmp1 := varName + strings.Repeat("p", i)
-			tmp2 := varName + strings.Repeat("p", i+1)
-			codes = append(codes, Id(tmp2).Op("=").Op("&").Id(tmp1))
-		} else {
-			// last
-			tmp := varName + strings.Repeat("p", i)
-			codes = append(codes, Id(setVarName).Op("=").Op("&").Id(tmp))
+	if isLastSkip {
+		for i := 0; i < ptrCount; i++ {
+			tmp1 := varName + strings.Repeat("p", ptrCount-1-i)
+			tmp2 := varName + strings.Repeat("p", ptrCount-i)
+			codes = append(codes, Id(tmp1).Op("=").Op("&").Id(tmp2))
+		}
+	} else {
+
+		for i := 0; i < ptrCount; i++ {
+			if i != ptrCount-1 {
+				tmp1 := varName + strings.Repeat("p", ptrCount-2+i)
+				tmp2 := varName + strings.Repeat("p", ptrCount-1+i)
+				codes = append(codes, Id(tmp1).Op("=").Op("&").Id(tmp2))
+			} else {
+				// last
+				tmp := varName + strings.Repeat("p", 0)
+				codes = append(codes, Id(setVarName).Op("=").Op("&").Id(tmp))
+			}
+		}
+		if ptrCount < 1 {
+			codes = append(codes, Id(setVarName).Op("=").Op("").Id(varName))
 		}
 	}
-	if ptrCount < 1 {
-		codes = append(codes, Id(setVarName).Op("=").Op("").Id(varName))
-	}
+
 	return codes
 }
 
