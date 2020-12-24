@@ -71,27 +71,32 @@ func (as *analyzedStruct) calcFunction(f *File) {
 		),
 	)))
 
-	f.Func().Id(as.calcArraySizeFuncName()).Params(Id(v).Qual(as.PackageName, as.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder")).Params(Int(), Error()).Block(
+	f.Comment(fmt.Sprintf("// calculate size from %s.%s\n", as.PackageName, as.Name)).
+		Func().Id(as.calcArraySizeFuncName()).Params(Id(v).Qual(as.PackageName, as.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder")).Params(Int(), Error()).Block(
 		append(calcArraySizeCodes, Return(Id("size"), Nil()))...,
 	)
 
-	f.Func().Id(as.calcMapSizeFuncName()).Params(Id(v).Qual(as.PackageName, as.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder")).Params(Int(), Error()).Block(
+	f.Comment(fmt.Sprintf("// calculate size from %s.%s\n", as.PackageName, as.Name)).
+		Func().Id(as.calcMapSizeFuncName()).Params(Id(v).Qual(as.PackageName, as.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder")).Params(Int(), Error()).Block(
 		append(calcMapSizeCodes, Return(Id("size"), Nil()))...,
 	)
 
-	f.Func().Id(as.encodeArrayFuncName()).Params(Id(v).Qual(as.PackageName, as.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder"), Id("offset").Int()).Params(Index().Byte(), Int(), Error()).Block(
+	f.Comment(fmt.Sprintf("// encode from %s.%s\n", as.PackageName, as.Name)).
+		Func().Id(as.encodeArrayFuncName()).Params(Id(v).Qual(as.PackageName, as.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder"), Id("offset").Int()).Params(Index().Byte(), Int(), Error()).Block(
 		append(encArrayCodes, Return(Id(idEncoder).Dot("EncodedBytes").Call(), Id("offset"), Err()))...,
 	)
 
-	f.Func().Id(as.encodeMapFuncName()).Params(Id(v).Qual(as.PackageName, as.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder"), Id("offset").Int()).Params(Index().Byte(), Int(), Error()).Block(
+	f.Comment(fmt.Sprintf("// encode from %s.%s\n", as.PackageName, as.Name)).
+		Func().Id(as.encodeMapFuncName()).Params(Id(v).Qual(as.PackageName, as.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder"), Id("offset").Int()).Params(Index().Byte(), Int(), Error()).Block(
 		append(encMapCodes, Return(Id(idEncoder).Dot("EncodedBytes").Call(), Id("offset"), Err()))...,
 	)
 
-	f.Func().Id(as.decodeArrayFuncName()).Params(Id(v).Op("*").Qual(as.PackageName, as.Name), Id(idDecoder).Op("*").Qual(pkDec, "Decoder"), Id("offset").Int()).Params(Int(), Error()).Block(
+	f.Comment(fmt.Sprintf("// decode to %s.%s\n", as.PackageName, as.Name)).
+		Func().Id(as.decodeArrayFuncName()).Params(Id(v).Op("*").Qual(as.PackageName, as.Name), Id(idDecoder).Op("*").Qual(pkDec, "Decoder"), Id("offset").Int()).Params(Int(), Error()).Block(
 		append(decArrayCodes, Return(Id("offset"), Err()))...,
 	)
 
-	f.Comment(as.PackageName+as.Name+"\n").
+	f.Comment(fmt.Sprintf("// decode to %s.%s\n", as.PackageName, as.Name)).
 		Func().Id(as.decodeMapFuncName()).Params(Id(v).Op("*").Qual(as.PackageName, as.Name), Id(idDecoder).Op("*").Qual(pkDec, "Decoder"), Id("offset").Int()).Params(Int(), Error()).Block(
 
 		append(decMapCodes, Return(Id("offset"), Err()))...,
