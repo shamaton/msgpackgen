@@ -53,11 +53,12 @@ func main() {
 	files := dirwalk(dir)
 
 	// 最初にgenerate対象のパッケージをすべて取得
+	// できればコードにエラーがない状態を知りたい
 
-	// 構造体の解析時にgenerate対象でないパッケージを含んだ構造体がある場合
+	// todo : 構造体の解析時にgenerate対象でないパッケージを含んだ構造体がある場合
 	// 出力対象にしない
 
-	// 出力対象にしない構造体が見つからなくなるまで実行する
+	// todo : 出力対象にしない構造体が見つからなくなるまで実行する
 
 	g := generator{
 		targetPackages:       map[string]bool{},
