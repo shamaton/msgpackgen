@@ -200,11 +200,17 @@ func (as *analyzedStruct) createMapCode(ast *analyzedASTFieldType, fieldName str
 		childValue = fieldName + "v"
 	}
 
-	// todo : double pointer use while
 	ptrOp := ""
 	andOp := ""
-	if ast.HasParent() && ast.Parent.IsPointer() {
-		ptrOp, andOp = "*", "&"
+	node := ast
+	for {
+		if node.HasParent() && node.Parent.IsPointer() {
+			ptrOp += "*"
+			andOp += "&"
+			node = node.Parent
+		} else {
+			break
+		}
 	}
 
 	caKey, _, eaKey, _, daKey, _, _ := as.createFieldCode(key, childKey, false)
@@ -265,10 +271,23 @@ func (as *analyzedStruct) createSliceCode(ast *analyzedASTFieldType, fieldName s
 		childName = fieldName + "v"
 	}
 
+	ptrOp := ""
+	andOp := ""
+	node := ast
+	for {
+		if node.HasParent() && node.Parent.IsPointer() {
+			ptrOp += "*"
+			andOp += "&"
+			node = node.Parent
+		} else {
+			break
+		}
+	}
+
 	ca, _, ea, _, da, _, _ := as.createFieldCode(ast.Elm(), childName, false)
 
-	calcCodes := as.addSizePattern2("CalcSliceLength", Id(fmt.Sprintf("len(%s)", name)))
-	calcCodes = append(calcCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Id(name)).Block(
+	calcCodes := as.addSizePattern2("CalcSliceLength", Len(Op(ptrOp).Id(name)))
+	calcCodes = append(calcCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Op(ptrOp).Id(name)).Block(
 		ca...,
 	))
 
@@ -279,8 +298,8 @@ func (as *analyzedStruct) createSliceCode(ast *analyzedASTFieldType, fieldName s
 	))
 
 	encCodes := make([]Code, 0)
-	encCodes = append(encCodes, Id("offset").Op("=").Id(idEncoder).Dot("WriteSliceLength").Call(Len(Id(name)), Id("offset")))
-	encCodes = append(encCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Id(name)).Block(
+	encCodes = append(encCodes, Id("offset").Op("=").Id(idEncoder).Dot("WriteSliceLength").Call(Len(Op(ptrOp).Id(name)), Id("offset")))
+	encCodes = append(encCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Op(ptrOp).Id(name)).Block(
 		ea...,
 	))
 
@@ -301,7 +320,7 @@ func (as *analyzedStruct) createSliceCode(ast *analyzedASTFieldType, fieldName s
 	decCodes = append(decCodes, For(Id(childName+"i").Op(":=").Range().Id(childName)).Block(
 		append(da, Id(childName).Index(Id(childName+"i")).Op("=").Id(childName+"v"))...,
 	))
-	decCodes = append(decCodes, Id(name).Op("=").Id(childName))
+	decCodes = append(decCodes, Id(name).Op("=").Op(andOp).Id(childName))
 
 	dArray = append(dArray, If(Op("!").Id(idDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
 		decCodes...,
@@ -317,8 +336,14 @@ func (as *analyzedStruct) createBasicCode(ast *analyzedASTFieldType, fieldName s
 	offset := "offset"
 
 	ptrOp := ""
-	if ast.HasParent() && ast.Parent.IsPointer() {
-		ptrOp = "*"
+	node := ast
+	for {
+		if node.HasParent() && node.Parent.IsPointer() {
+			ptrOp += "*"
+			node = node.Parent
+		} else {
+			break
+		}
 	}
 
 	fieldValue := Op(ptrOp).Id(fieldName)
@@ -401,11 +426,11 @@ func (as *analyzedStruct) decodeBasicPattern(ast *analyzedASTFieldType, fieldNam
 
 	andOp := ""
 	if ast.HasParent() && ast.Parent.IsPointer() {
-		andOp = "&"
+		andOp = "&" // todo : 2重は無理
 	}
 
 	commons := []Code{
-		ast.TypeJenChain(Var().Id(varName)),
+		ast.TypeJenChain(Var().Id(varName)), // todo : これは外だし
 		List(Id(varName), Id(offsetName), Err()).Op("=").Id(idDecoder).Dot(decoderFuncName).Call(Id(offsetName)),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Lit(0), Err()),
