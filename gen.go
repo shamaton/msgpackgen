@@ -16,9 +16,9 @@ import (
 var analyzedStructs []analyzedStruct
 
 const (
-	pkTop = "github.com/shamaton/msgpackgen"
-	pkEnc = "github.com/shamaton/msgpackgen/enc"
-	pkDec = "github.com/shamaton/msgpackgen/dec"
+	pkTop = "github.com/shamaton/msgpackgen/msgpack"
+	pkEnc = "github.com/shamaton/msgpackgen/msgpack/enc"
+	pkDec = "github.com/shamaton/msgpackgen/msgpack/dec"
 
 	idEncoder = "encoder"
 	idDecoder = "decoder"
@@ -49,7 +49,7 @@ type analyzedField struct {
 }
 
 func main() {
-	dir := "../tetest/example"
+	dir := "../msgpackgencheck/example"
 	files := dirwalk(dir)
 
 	// 最初にgenerate対象のパッケージをすべて取得

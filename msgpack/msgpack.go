@@ -1,4 +1,4 @@
-package msgpackgen
+package msgpack
 
 import (
 	"github.com/shamaton/msgpack"
