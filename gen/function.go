@@ -153,12 +153,6 @@ func (as *analyzedStruct) createFieldCode(ast *analyzedASTFieldType, fieldName s
 
 func (as *analyzedStruct) createPointerCode(ast *analyzedASTFieldType, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
 
-	// todo : ようかくにん、重複コードをスキップ
-	// todo : enc側は*でnilcheckが必要かも
-	//if ast.HasParent() && ast.Parent.IsPointer() {
-	//	return as.createFieldCode(ast.Elm(), fieldName, isRoot)
-	//}
-
 	ptrOp := ""
 	node := ast
 	for {
@@ -190,12 +184,17 @@ func (as *analyzedStruct) createPointerCode(ast *analyzedASTFieldType, fieldName
 		Id("offset").Op("=").Id(idEncoder).Dot("WriteNil").Call(Id("offset")),
 	))
 
-	dArray = make([]Code, 0)
-	dArray = append(dArray, If(Op("!").Id(idDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
-		da...,
-	).Else().Block(
-		Id("offset").Op("++"),
-	))
+	// todo : ようかくにん、重複コードをスキップ
+	if len(ptrOp) < 1 {
+		dArray = make([]Code, 0)
+		dArray = append(dArray, If(Op("!").Id(idDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
+			da...,
+		).Else().Block(
+			Id("offset").Op("++"),
+		))
+	} else {
+		dArray = da
+	}
 
 	return cArray, cArray, eArray, eArray, dArray, dArray, err
 }
