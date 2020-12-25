@@ -273,11 +273,11 @@ func calcArraySizestructTest(v msgpackgen.StructTest, encoder *enc.Encoder) (int
 
 	size += encoder.CalcInt(v.A)
 
-	size += encoder.CalcFloat32(float64(v.B))
+	size += encoder.CalcFloat32(v.B)
 
 	size += encoder.CalcString(v.String)
 
-	size += encoder.CalcBool()
+	size += encoder.CalcBool(v.Bool)
 
 	size += encoder.CalcUint64(v.Uint64)
 
@@ -353,13 +353,13 @@ func calcMapSizestructTest(v msgpackgen.StructTest, encoder *enc.Encoder) (int, 
 	size += encoder.CalcInt(v.A)
 
 	size += encoder.CalcString("B")
-	size += encoder.CalcFloat32(float64(v.B))
+	size += encoder.CalcFloat32(v.B)
 
 	size += encoder.CalcString("String")
 	size += encoder.CalcString(v.String)
 
 	size += encoder.CalcString("Bool")
-	size += encoder.CalcBool()
+	size += encoder.CalcBool(v.Bool)
 
 	size += encoder.CalcString("Uint64")
 	size += encoder.CalcUint64(v.Uint64)
@@ -1005,7 +1005,7 @@ func calcSizeItem(v Item, encoder *enc.Encoder) (int, error) {
 	size += encoder.CalcString(v.Name)
 
 	size += def.Byte1
-	size += encoder.CalcFloat32(float64(v.Effect))
+	size += encoder.CalcFloat32(v.Effect)
 
 	size += def.Byte1
 	size += encoder.CalcUint(v.Num)
