@@ -174,7 +174,7 @@ func (as *analyzedStruct) createPointerCode(ast *analyzedASTFieldType, fieldName
 	))
 
 	dArray = make([]Code, 0)
-	dArray = append(dArray, If(Id(idDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
+	dArray = append(dArray, If(Op("!").Id(idDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
 		da...,
 	).Else().Block(
 		Id("offset").Op("++"),
@@ -247,8 +247,15 @@ func (as *analyzedStruct) createMapCode(ast *analyzedASTFieldType, fieldName str
 		Return(Lit(0), Err()),
 	))
 	decCodes = append(decCodes, Id(childValue).Op("=").Make(ast.TypeJenChain(), Id(childValue+"l")))
+
+	da := []Code{ast.Key.TypeJenChain(Var().Id(childKey + "v"))}
+	da = append(da, daKey...)
+	da = append(da, ast.Value.TypeJenChain(Var().Id(childValue+"v")))
+	da = append(da, daValue...)
+	da = append(da, Id(childValue).Index(Id(childKey+"v")).Op("=").Id(childValue+"v"))
+
 	decCodes = append(decCodes, For(Id(childValue+"i").Op(":=").Lit(0).Op(";").Id(childValue+"i").Op("<").Id(childValue+"l").Op(";").Id(childValue+"i").Op("++")).Block(
-		append(append(daKey, daValue...), Id(childValue).Index(Id(childKey+"v")).Op("=").Id(childValue+"v"))...,
+		da..., //append(append(daKey, daValue...), Id(childValue).Index(Id(childKey+"v")).Op("=").Id(childValue+"v"))...,
 	))
 	decCodes = append(decCodes, Id(name).Op("=").Op(andOp).Id(childValue))
 
@@ -317,8 +324,12 @@ func (as *analyzedStruct) createSliceCode(ast *analyzedASTFieldType, fieldName s
 		Return(Lit(0), Err()),
 	))
 	decCodes = append(decCodes, Id(childName).Op("=").Make(ast.TypeJenChain(), Id(childName+"l")))
+
+	da = append([]Code{ast.Elm().TypeJenChain(Var().Id(childName + "v"))}, da...)
+	da = append(da, Id(childName).Index(Id(childName+"i")).Op("=").Id(childName+"v"))
+
 	decCodes = append(decCodes, For(Id(childName+"i").Op(":=").Range().Id(childName)).Block(
-		append(da, Id(childName).Index(Id(childName+"i")).Op("=").Id(childName+"v"))...,
+		da...,
 	))
 	decCodes = append(decCodes, Id(name).Op("=").Op(andOp).Id(childName))
 
@@ -426,7 +437,7 @@ func (as *analyzedStruct) decodeBasicPattern(ast *analyzedASTFieldType, fieldNam
 
 	node := ast
 	ptrCount := 0
-	commonOnly := false
+	isParentTypeArrayOrMap := false
 
 	for {
 		if node.HasParent() {
@@ -434,7 +445,8 @@ func (as *analyzedStruct) decodeBasicPattern(ast *analyzedASTFieldType, fieldNam
 			if node.IsPointer() {
 				ptrCount++
 			} else if node.IsArray() || node.IsMap() {
-				commonOnly = true
+				isParentTypeArrayOrMap = true
+				break
 			} else {
 				// todo : error or empty
 			}
@@ -443,28 +455,41 @@ func (as *analyzedStruct) decodeBasicPattern(ast *analyzedASTFieldType, fieldNam
 		}
 	}
 
-	commons := []Code{
+	codes := make([]Code, 0)
+	recieverName := varName
+
+	if ptrCount < 1 && !isParentTypeArrayOrMap {
+		codes = append(codes, ast.TypeJenChain(Var().Id(recieverName)))
+	} else if isParentTypeArrayOrMap {
+
+		for i := 0; i < ptrCount; i++ {
+			p := strings.Repeat("p", i+1)
+			kome := strings.Repeat("*", ptrCount-1-i)
+			codes = append(codes, ast.TypeJenChain(Var().Id(varName+p).Op(kome)))
+		}
+		recieverName = varName + strings.Repeat("p", ptrCount)
+	} else {
+		for i := 0; i < ptrCount; i++ {
+			p := strings.Repeat("p", i)
+			kome := strings.Repeat("*", ptrCount-1-i)
+			codes = append(codes, ast.TypeJenChain(Var().Id(varName+p).Op(kome)))
+		}
+		recieverName = varName + strings.Repeat("p", ptrCount-1)
+	}
+
+	codes = append(codes,
 		//ast.TypeJenChain(Var().Id(varName)), // todo : これは外だし
-		List(Id(varName), Id(offsetName), Err()).Op("=").Id(idDecoder).Dot(decoderFuncName).Call(Id(offsetName)),
+		List(Id(recieverName), Id(offsetName), Err()).Op("=").Id(idDecoder).Dot(decoderFuncName).Call(Id(offsetName)),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Lit(0), Err()),
 		),
-	}
+	)
 
-	for i := 0; i < ptrCount; i++ {
-		p := strings.Repeat("p", ptrCount-1-i)
-		kome := strings.Repeat("*", i)
-		commons = append([]Code{ast.TypeJenChain(Var().Id(varName + p).Op(kome))}, commons...)
-	}
-	if ptrCount < 1 {
-		commons = append([]Code{ast.TypeJenChain(Var().Id(varName))}, commons...)
-	}
-
-	commons = as.createDecodeSetVarPattern(ptrCount, varName, setVarName, commonOnly, commons)
+	codes = as.createDecodeSetVarPattern(ptrCount, varName, setVarName, isParentTypeArrayOrMap, codes)
 
 	// array or map
-	if commonOnly {
-		return commons
+	if isParentTypeArrayOrMap {
+		return codes
 	}
 
 	//for i := 0; i < ptrCount; i++ {
@@ -481,7 +506,7 @@ func (as *analyzedStruct) decodeBasicPattern(ast *analyzedASTFieldType, fieldNam
 	//if ptrCount < 1 {
 	//	commons = append(commons, Id(setVarName).Op("=").Op("").Id(varName))
 	//}
-	return []Code{Block(commons...)}
+	return []Code{Block(codes...)}
 }
 
 func (as *analyzedStruct) createDecodeSetVarPattern(ptrCount int, varName, setVarName string, isLastSkip bool, codes []Code) []Code {
