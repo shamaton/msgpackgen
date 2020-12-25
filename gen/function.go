@@ -153,6 +153,23 @@ func (as *analyzedStruct) createFieldCode(ast *analyzedASTFieldType, fieldName s
 
 func (as *analyzedStruct) createPointerCode(ast *analyzedASTFieldType, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
 
+	// todo : ようかくにん、重複コードをスキップ
+	// todo : enc側は*でnilcheckが必要かも
+	//if ast.HasParent() && ast.Parent.IsPointer() {
+	//	return as.createFieldCode(ast.Elm(), fieldName, isRoot)
+	//}
+
+	ptrOp := ""
+	node := ast
+	for {
+		if node.HasParent() && node.Parent.IsPointer() {
+			ptrOp += "*"
+			node = node.Parent
+		} else {
+			break
+		}
+	}
+
 	name := fieldName
 	if isRoot {
 		name = "v." + fieldName
@@ -160,14 +177,14 @@ func (as *analyzedStruct) createPointerCode(ast *analyzedASTFieldType, fieldName
 	ca, _, ea, _, da, _, _ := as.createFieldCode(ast.Elm(), fieldName, isRoot)
 
 	cArray = make([]Code, 0)
-	cArray = append(cArray, If(Id(name).Op("!=").Nil()).Block(
+	cArray = append(cArray, If(Op(ptrOp).Id(name).Op("!=").Nil()).Block(
 		ca...,
 	).Else().Block(
 		Id("size").Op("+=").Id(idEncoder).Dot("CalcNil").Call(),
 	))
 
 	eArray = make([]Code, 0)
-	eArray = append(eArray, If(Id(name).Op("!=").Nil()).Block(
+	eArray = append(eArray, If(Op(ptrOp).Id(name).Op("!=").Nil()).Block(
 		ea...,
 	).Else().Block(
 		Id("offset").Op("=").Id(idEncoder).Dot("WriteNil").Call(Id("offset")),
@@ -298,7 +315,7 @@ func (as *analyzedStruct) createSliceCode(ast *analyzedASTFieldType, fieldName s
 		ca...,
 	))
 
-	cArray = append(cArray, If(Id(name).Op("!=").Nil()).Block(
+	cArray = append(cArray, If(Op(ptrOp).Id(name).Op("!=").Nil()).Block(
 		calcCodes...,
 	).Else().Block(
 		as.addSizePattern1("CalcNil"),
@@ -310,7 +327,7 @@ func (as *analyzedStruct) createSliceCode(ast *analyzedASTFieldType, fieldName s
 		ea...,
 	))
 
-	eArray = append(eArray, If(Id(name).Op("!=").Nil()).Block(
+	eArray = append(eArray, If(Op(ptrOp).Id(name).Op("!=").Nil()).Block(
 		encCodes...,
 	).Else().Block(
 		Id("offset").Op("=").Id(idEncoder).Dot("WriteNil").Call(Id("offset")),
@@ -333,11 +350,17 @@ func (as *analyzedStruct) createSliceCode(ast *analyzedASTFieldType, fieldName s
 	))
 	decCodes = append(decCodes, Id(name).Op("=").Op(andOp).Id(childName))
 
-	dArray = append(dArray, If(Op("!").Id(idDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
-		decCodes...,
-	).Else().Block(
-		Id("offset").Op("++"),
-	))
+	// todo : ようかくにん、重複コードをスキップ
+	if ast.HasParent() && ast.Parent.IsPointer() {
+		dArray = decCodes
+	} else {
+
+		dArray = append(dArray, If(Op("!").Id(idDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
+			decCodes...,
+		).Else().Block(
+			Id("offset").Op("++"),
+		))
+	}
 
 	return cArray, cArray, eArray, eArray, dArray, dArray, nil
 }
