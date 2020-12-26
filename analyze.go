@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"unicode"
 
 	. "github.com/dave/jennifer/jen"
 )
@@ -41,6 +42,11 @@ func (g *generator) getPackages(files []string) error {
 
 			return true
 		})
+
+		// todo : verbose
+		if packageName == "main" {
+			continue
+		}
 
 		g.file2Parse[file] = parseFile
 		g.file2PackageName[file] = packageName
@@ -78,6 +84,9 @@ func (g *generator) createAnalyzedStructs() error {
 			}
 
 			if st, ok := x.Type.(*ast.StructType); ok {
+				if !unicode.IsUpper(rune(x.Name.String()[0])) {
+					return true
+				}
 
 				canGen := true
 				for _, field := range st.Fields.List {

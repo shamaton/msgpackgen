@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/sha256"
+	"flag"
 	"fmt"
 	"go/ast"
 	"go/token"
@@ -9,6 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	. "github.com/dave/jennifer/jen"
 )
@@ -48,9 +50,33 @@ type analyzedField struct {
 	Ast  *analyzedASTFieldType
 }
 
+var (
+	out     = flag.String("output", "", "output directory")
+	input   = flag.String("input", ".", "input directory")
+	strict  = flag.Bool("strict", false, "strict mode")
+	verbose = flag.Bool("v", false, "verbose diagnostics")
+)
+
+func init() {
+	flag.Parse()
+
+	_, err := os.Stat(*input)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println("1", *out)
+	if *out == "" {
+		*out = *input
+	}
+	fmt.Println("2", *out)
+}
+
 func main() {
-	dir := "../msgpackgencheck/example"
-	files := dirwalk(dir)
+
+	files := dirwalk(*input)
+	fmt.Println(files)
 
 	// 最初にgenerate対象のパッケージをすべて取得
 	// できればコードにエラーがない状態を知りたい
@@ -68,7 +94,7 @@ func main() {
 	}
 	g.getPackages(files)
 	g.createAnalyzedStructs()
-	g.generate(dir)
+	g.generate(*out)
 }
 
 func dirwalk(dir string) []string {
@@ -83,7 +109,9 @@ func dirwalk(dir string) []string {
 			paths = append(paths, dirwalk(filepath.Join(dir, file.Name()))...)
 			continue
 		}
-		paths = append(paths, filepath.Join(dir, file.Name()))
+		if filepath.Ext(file.Name()) == ".go" && !strings.HasSuffix(file.Name(), "_test.go") {
+			paths = append(paths, filepath.Join(dir, file.Name()))
+		}
 	}
 
 	var abss []string
@@ -163,12 +191,12 @@ func (g *generator) generate(dir string) {
 		st.calcFunction(f)
 	}
 
-	fmt.Printf("%#v", f)
-
 	d := dir + "/" + path
 	if err := os.MkdirAll(d, 0777); err != nil {
 		fmt.Println(err)
 	}
+
+	fmt.Println("dddddddddddddddddddddddddddddddddddddd", d, *input, *out)
 
 	file, err := os.Create(d + "/resolver.go")
 	if err != nil {
