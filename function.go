@@ -600,31 +600,113 @@ func (as *analyzedStruct) createNamedCode(fieldName string, ast *analyzedASTFiel
 		),
 	}
 
+	//varName, setVarName := as.decodeVarPattern(fieldName, isRoot)
+
+	dArray = append(dArray, as.decodeNamedPattern(ast, fieldName, "decodeArray", isRoot)...)
+	dMap = append(dMap, as.decodeNamedPattern(ast, fieldName, "decodeMap", isRoot)...)
+
+	//dArray = []Code{
+	//	Block(
+	//		Var().Id(varName).Qual(ast.ImportPath, ast.StructName),
+	//		List(Id("offset"), Err()).Op("=").Id(createFuncName("decodeArray", ast.StructName, ast.ImportPath)).Call(Op("&").Id(varName), Id(idDecoder), Id("offset")),
+	//		If(Err().Op("!=").Nil()).Block(
+	//			Return(Lit(0), Err()),
+	//		),
+	//		Id(setVarName).Op("=").Id(varName),
+	//	),
+	//}
+	//
+	//// dArrayと一緒
+	//dMap = []Code{
+	//	Block(
+	//		Var().Id(varName).Qual(ast.ImportPath, ast.StructName),
+	//		List(Id("offset"), Err()).Op("=").Id(createFuncName("decodeMap", ast.StructName, ast.ImportPath)).Call(Op("&").Id(varName), Id(idDecoder), Id("offset")),
+	//		If(Err().Op("!=").Nil()).Block(
+	//			Return(Lit(0), Err()),
+	//		),
+	//		Id(setVarName).Op("=").Id(varName),
+	//	),
+	//}
+	return
+}
+
+func (as *analyzedStruct) decodeNamedPattern(ast *analyzedASTFieldType, fieldName, decodeFuncName string, isRoot bool) []Code {
+
+	// todo : ポインタの場合, vvp / vvvを使う必要
 	varName, setVarName := as.decodeVarPattern(fieldName, isRoot)
 
-	dArray = []Code{
-		Block(
-			Var().Id(varName).Qual(ast.ImportPath, ast.StructName),
-			List(Id("offset"), Err()).Op("=").Id(createFuncName("decodeArray", ast.StructName, ast.ImportPath)).Call(Op("&").Id(varName), Id(idDecoder), Id("offset")),
-			If(Err().Op("!=").Nil()).Block(
-				Return(Lit(0), Err()),
-			),
-			Id(setVarName).Op("=").Id(varName),
-		),
+	node := ast
+	ptrCount := 0
+	isParentTypeArrayOrMap := false
+
+	for {
+		if node.HasParent() {
+			node = node.Parent
+			if node.IsPointer() {
+				ptrCount++
+			} else if node.IsArray() || node.IsMap() {
+				isParentTypeArrayOrMap = true
+				break
+			} else {
+				// todo : error or empty
+			}
+		} else {
+			break
+		}
 	}
 
-	// dArrayと一緒
-	dMap = []Code{
-		Block(
-			Var().Id(varName).Qual(ast.ImportPath, ast.StructName),
-			List(Id("offset"), Err()).Op("=").Id(createFuncName("decodeMap", ast.StructName, ast.ImportPath)).Call(Op("&").Id(varName), Id(idDecoder), Id("offset")),
-			If(Err().Op("!=").Nil()).Block(
-				Return(Lit(0), Err()),
-			),
-			Id(setVarName).Op("=").Id(varName),
-		),
+	codes := make([]Code, 0)
+	recieverName := varName
+
+	if ptrCount < 1 && !isParentTypeArrayOrMap {
+		codes = append(codes, ast.TypeJenChain(Var().Id(recieverName)))
+	} else if isParentTypeArrayOrMap {
+
+		for i := 0; i < ptrCount; i++ {
+			p := strings.Repeat("p", i+1)
+			kome := strings.Repeat("*", ptrCount-1-i)
+			codes = append(codes, ast.TypeJenChain(Var().Id(varName+p).Op(kome)))
+		}
+		recieverName = varName + strings.Repeat("p", ptrCount)
+	} else {
+		for i := 0; i < ptrCount; i++ {
+			p := strings.Repeat("p", i)
+			kome := strings.Repeat("*", ptrCount-1-i)
+			codes = append(codes, ast.TypeJenChain(Var().Id(varName+p).Op(kome)))
+		}
+		recieverName = varName + strings.Repeat("p", ptrCount-1)
 	}
-	return
+
+	codes = append(codes,
+		//ast.TypeJenChain(Var().Id(varName)), // todo : これは外だし
+		List(Id("offset"), Err()).Op("=").Id(createFuncName(decodeFuncName, ast.StructName, ast.ImportPath)).Call(Op("&").Id(varName), Id(idDecoder), Id("offset")),
+		If(Err().Op("!=").Nil()).Block(
+			Return(Lit(0), Err()),
+		),
+	)
+
+	codes = as.createDecodeSetVarPattern(ptrCount, varName, setVarName, isParentTypeArrayOrMap, codes)
+
+	// array or map
+	if isParentTypeArrayOrMap {
+		return codes
+	}
+
+	//for i := 0; i < ptrCount; i++ {
+	//	if i != ptrCount-1 {
+	//		tmp1 := varName + strings.Repeat("p", i)
+	//		tmp2 := varName + strings.Repeat("p", i+1)
+	//		commons = append(commons, Id(tmp2).Op("=").Op("&").Id(tmp1))
+	//	} else {
+	//		// last
+	//		tmp := varName + strings.Repeat("p", i)
+	//		commons = append(commons, Id(setVarName).Op("=").Op("&").Id(tmp))
+	//	}
+	//}
+	//if ptrCount < 1 {
+	//	commons = append(commons, Id(setVarName).Op("=").Op("").Id(varName))
+	//}
+	return []Code{Block(codes...)}
 }
 
 func (as *analyzedStruct) decodeVarPattern(fieldName string, isRoot bool) (varName string, setVarName string) {
