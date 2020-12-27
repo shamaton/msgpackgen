@@ -27,7 +27,7 @@ func (as *analyzedStruct) calcFunction(f *File) {
 	encMapCodes = append(encMapCodes, Id("offset").Op("=").Id(idEncoder).Dot("WriteStructHeader").Call(Lit(len(as.Fields)), Id("offset")))
 
 	decArrayCodes := make([]Code, 0)
-	decArrayCodes = append(decArrayCodes, List(Id("offset"), Err()).Op(":=").Id(idDecoder).Dot("CheckStructHeader").Call(Lit(len(as.Fields)), Lit(0)))
+	decArrayCodes = append(decArrayCodes, List(Id("offset"), Err()).Op(":=").Id(idDecoder).Dot("CheckStructHeader").Call(Lit(len(as.Fields)), Id("offset")))
 	decArrayCodes = append(decArrayCodes, If(Err().Op("!=").Nil()).Block(
 		Return(Lit(0), Err()),
 	))
