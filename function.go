@@ -35,8 +35,8 @@ func (as *analyzedStruct) calcFunction(f *File) {
 	decMapCodeSwitchCases := make([]Code, 0)
 
 	for _, field := range as.Fields {
-		calcMapSizeCodes = append(calcMapSizeCodes, as.addSizePattern1("CalcString", Lit(field.Name)))
-		encMapCodes = append(encMapCodes, as.encPattern1("WriteString", Lit(field.Name), Id("offset")))
+		calcMapSizeCodes = append(calcMapSizeCodes, as.addSizePattern1("CalcString", Lit(field.Tag)))
+		encMapCodes = append(encMapCodes, as.encPattern1("WriteString", Lit(field.Tag), Id("offset")))
 
 		cArray, cMap, eArray, eMap, dArray, dMap, _ := as.createFieldCode(field.Ast, field.Name, true)
 		calcArraySizeCodes = append(calcArraySizeCodes, cArray...)
@@ -48,7 +48,7 @@ func (as *analyzedStruct) calcFunction(f *File) {
 
 		decArrayCodes = append(decArrayCodes, dArray...)
 
-		decMapCodeSwitchCases = append(decMapCodeSwitchCases, Case(Lit(field.Name)).Block(dMap...))
+		decMapCodeSwitchCases = append(decMapCodeSwitchCases, Case(Lit(field.Tag)).Block(dMap...))
 
 	}
 
@@ -71,33 +71,42 @@ func (as *analyzedStruct) calcFunction(f *File) {
 		),
 	)))
 
+	var firstEncParam, firstDecParam *Statement
+	if as.NoUseQual {
+		firstEncParam = Id(v).Id(as.Name)
+		firstDecParam = Id(v).Op("*").Id(as.Name)
+	} else {
+		firstEncParam = Id(v).Qual(as.PackageName, as.Name)
+		firstDecParam = Id(v).Op("*").Qual(as.PackageName, as.Name)
+	}
+
 	f.Comment(fmt.Sprintf("// calculate size from %s.%s\n", as.PackageName, as.Name)).
-		Func().Id(as.calcArraySizeFuncName()).Params(Id(v).Qual(as.PackageName, as.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder")).Params(Int(), Error()).Block(
+		Func().Id(as.calcArraySizeFuncName()).Params(firstEncParam, Id(idEncoder).Op("*").Qual(pkEnc, "Encoder")).Params(Int(), Error()).Block(
 		append(calcArraySizeCodes, Return(Id("size"), Nil()))...,
 	)
 
 	f.Comment(fmt.Sprintf("// calculate size from %s.%s\n", as.PackageName, as.Name)).
-		Func().Id(as.calcMapSizeFuncName()).Params(Id(v).Qual(as.PackageName, as.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder")).Params(Int(), Error()).Block(
+		Func().Id(as.calcMapSizeFuncName()).Params(firstEncParam, Id(idEncoder).Op("*").Qual(pkEnc, "Encoder")).Params(Int(), Error()).Block(
 		append(calcMapSizeCodes, Return(Id("size"), Nil()))...,
 	)
 
 	f.Comment(fmt.Sprintf("// encode from %s.%s\n", as.PackageName, as.Name)).
-		Func().Id(as.encodeArrayFuncName()).Params(Id(v).Qual(as.PackageName, as.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder"), Id("offset").Int()).Params(Index().Byte(), Int(), Error()).Block(
+		Func().Id(as.encodeArrayFuncName()).Params(firstEncParam, Id(idEncoder).Op("*").Qual(pkEnc, "Encoder"), Id("offset").Int()).Params(Index().Byte(), Int(), Error()).Block(
 		append(encArrayCodes, Return(Id(idEncoder).Dot("EncodedBytes").Call(), Id("offset"), Err()))...,
 	)
 
 	f.Comment(fmt.Sprintf("// encode from %s.%s\n", as.PackageName, as.Name)).
-		Func().Id(as.encodeMapFuncName()).Params(Id(v).Qual(as.PackageName, as.Name), Id(idEncoder).Op("*").Qual(pkEnc, "Encoder"), Id("offset").Int()).Params(Index().Byte(), Int(), Error()).Block(
+		Func().Id(as.encodeMapFuncName()).Params(firstEncParam, Id(idEncoder).Op("*").Qual(pkEnc, "Encoder"), Id("offset").Int()).Params(Index().Byte(), Int(), Error()).Block(
 		append(encMapCodes, Return(Id(idEncoder).Dot("EncodedBytes").Call(), Id("offset"), Err()))...,
 	)
 
 	f.Comment(fmt.Sprintf("// decode to %s.%s\n", as.PackageName, as.Name)).
-		Func().Id(as.decodeArrayFuncName()).Params(Id(v).Op("*").Qual(as.PackageName, as.Name), Id(idDecoder).Op("*").Qual(pkDec, "Decoder"), Id("offset").Int()).Params(Int(), Error()).Block(
+		Func().Id(as.decodeArrayFuncName()).Params(firstDecParam, Id(idDecoder).Op("*").Qual(pkDec, "Decoder"), Id("offset").Int()).Params(Int(), Error()).Block(
 		append(decArrayCodes, Return(Id("offset"), Err()))...,
 	)
 
 	f.Comment(fmt.Sprintf("// decode to %s.%s\n", as.PackageName, as.Name)).
-		Func().Id(as.decodeMapFuncName()).Params(Id(v).Op("*").Qual(as.PackageName, as.Name), Id(idDecoder).Op("*").Qual(pkDec, "Decoder"), Id("offset").Int()).Params(Int(), Error()).Block(
+		Func().Id(as.decodeMapFuncName()).Params(firstDecParam, Id(idDecoder).Op("*").Qual(pkDec, "Decoder"), Id("offset").Int()).Params(Int(), Error()).Block(
 
 		append(decMapCodes, Return(Id("offset"), Err()))...,
 	)
@@ -659,20 +668,33 @@ func (as *analyzedStruct) decodeNamedPattern(ast *analyzedASTFieldType, fieldNam
 	recieverName := varName
 
 	if ptrCount < 1 && !isParentTypeArrayOrMap {
-		codes = append(codes, ast.TypeJenChain(Var().Id(recieverName)))
+		if as.NoUseQual {
+			codes = append(codes, Var().Id(recieverName).Id(as.Name))
+		} else {
+			codes = append(codes, ast.TypeJenChain(Var().Id(recieverName)))
+		}
 	} else if isParentTypeArrayOrMap {
 
 		for i := 0; i < ptrCount; i++ {
 			p := strings.Repeat("p", i+1)
 			kome := strings.Repeat("*", ptrCount-1-i)
-			codes = append(codes, ast.TypeJenChain(Var().Id(varName+p).Op(kome)))
+
+			if as.NoUseQual {
+				codes = append(codes, Var().Id(recieverName).Op(kome).Id(as.Name))
+			} else {
+				codes = append(codes, ast.TypeJenChain(Var().Id(varName+p).Op(kome)))
+			}
 		}
 		recieverName = varName + strings.Repeat("p", ptrCount)
 	} else {
 		for i := 0; i < ptrCount; i++ {
 			p := strings.Repeat("p", i)
 			kome := strings.Repeat("*", ptrCount-1-i)
-			codes = append(codes, ast.TypeJenChain(Var().Id(varName+p).Op(kome)))
+			if as.NoUseQual {
+				codes = append(codes, Var().Id(recieverName).Op(kome).Id(as.Name))
+			} else {
+				codes = append(codes, ast.TypeJenChain(Var().Id(varName+p).Op(kome)))
+			}
 		}
 		recieverName = varName + strings.Repeat("p", ptrCount-1)
 	}
