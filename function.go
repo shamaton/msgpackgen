@@ -116,12 +116,9 @@ func (as *analyzedStruct) createFieldCode(ast *analyzedASTFieldType, fieldName s
 
 	switch {
 	case ast.IsIdentical():
-		fmt.Println("basic", fieldName, ast)
 		return as.createBasicCode(ast, fieldName, isRoot)
 
 	case ast.IsArray():
-		fmt.Println("slice", fieldName, ast)
-		fmt.Println("type string.................................. ", ast.TypeString())
 		return as.createSliceCode(ast, fieldName, isRoot)
 
 	case ast.IsMap():
@@ -134,7 +131,6 @@ func (as *analyzedStruct) createFieldCode(ast *analyzedASTFieldType, fieldName s
 		}
 
 		if ast.ImportPath == "time" {
-
 			cArray = append(cArray, as.addSizePattern1("CalcTime", fieldValue))
 			eArray = append(eArray, as.encPattern1("WriteTime", fieldValue, Id("offset")))
 
@@ -147,7 +143,6 @@ func (as *analyzedStruct) createFieldCode(ast *analyzedASTFieldType, fieldName s
 			// todo : 対象のパッケージかどうかをちゃんと判断する
 			cArray, cMap, eArray, eMap, dArray, dMap = as.createNamedCode(fieldName, ast, fieldValue, isRoot)
 		}
-		fmt.Println("named", fieldName, ast, as.PackageName)
 
 	case ast.IsPointer():
 		return as.createPointerCode(ast, fieldName, isRoot)
@@ -211,9 +206,6 @@ func (as *analyzedStruct) createPointerCode(ast *analyzedASTFieldType, fieldName
 func (as *analyzedStruct) createMapCode(ast *analyzedASTFieldType, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
 
 	key, value := ast.KeyValue()
-	fmt.Println("map", fieldName, ast)
-	fmt.Println(key, value)
-	fmt.Println("type string.................................. ", ast.TypeString())
 
 	name, childKey, childValue := "", "", ""
 	if isRoot {
@@ -280,7 +272,7 @@ func (as *analyzedStruct) createMapCode(ast *analyzedASTFieldType, fieldName str
 	da = append(da, Id(childValue).Index(Id(childKey+"v")).Op("=").Id(childValue+"v"))
 
 	decCodes = append(decCodes, For(Id(childValue+"i").Op(":=").Lit(0).Op(";").Id(childValue+"i").Op("<").Id(childValue+"l").Op(";").Id(childValue+"i").Op("++")).Block(
-		da..., //append(append(daKey, daValue...), Id(childValue).Index(Id(childKey+"v")).Op("=").Id(childValue+"v"))...,
+		da...,
 	))
 	decCodes = append(decCodes, Id(name).Op("=").Op(andOp).Id(childValue))
 
