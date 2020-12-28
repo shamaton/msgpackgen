@@ -35,8 +35,8 @@ func (as *analyzedStruct) calcFunction(f *File) {
 	decMapCodeSwitchCases := make([]Code, 0)
 
 	for _, field := range as.Fields {
-		calcMapSizeCodes = append(calcMapSizeCodes, as.addSizePattern1("CalcString", Lit(field.Name)))
-		encMapCodes = append(encMapCodes, as.encPattern1("WriteString", Lit(field.Name), Id("offset")))
+		calcMapSizeCodes = append(calcMapSizeCodes, as.addSizePattern1("CalcString", Lit(field.Tag)))
+		encMapCodes = append(encMapCodes, as.encPattern1("WriteString", Lit(field.Tag), Id("offset")))
 
 		cArray, cMap, eArray, eMap, dArray, dMap, _ := as.createFieldCode(field.Ast, field.Name, true)
 		calcArraySizeCodes = append(calcArraySizeCodes, cArray...)
@@ -48,7 +48,7 @@ func (as *analyzedStruct) calcFunction(f *File) {
 
 		decArrayCodes = append(decArrayCodes, dArray...)
 
-		decMapCodeSwitchCases = append(decMapCodeSwitchCases, Case(Lit(field.Name)).Block(dMap...))
+		decMapCodeSwitchCases = append(decMapCodeSwitchCases, Case(Lit(field.Tag)).Block(dMap...))
 
 	}
 

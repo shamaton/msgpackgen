@@ -170,16 +170,19 @@ func (g *generator) createAnalyzedFields(packageName, structName string, analyze
 				continue
 			}
 			name := field.Id()
+			tag := name
 			if len(tagName) > 0 {
-				name = tagName
+				tag = tagName
 			}
 
 			//fmt.Println("hogehoge", reflect.TypeOf(field.Type()))
 
 			// todo : type.Namedの場合、解析対象に含まれてないものがあったら、スキップする？
+			// todo : タグが重複してたら、エラー
 
 			analyzedFields = append(analyzedFields, analyzedField{
 				Name: name,
+				Tag:  tag,
 				Type: field.Type(),
 				Ast:  analyzedFieldMap[name],
 			})

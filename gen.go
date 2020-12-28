@@ -56,6 +56,7 @@ type analyzedStruct struct {
 
 type analyzedField struct {
 	Name string
+	Tag  string
 	Type types.Type
 	Ast  *analyzedASTFieldType
 }
