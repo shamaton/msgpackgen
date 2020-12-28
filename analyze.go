@@ -248,7 +248,18 @@ func (a analyzedASTFieldType) TypeJenChain(s ...*Statement) *Statement {
 		str = str.Id(a.IdenticalName)
 
 	case a.IsStruct():
-		str = str.Qual(a.ImportPath, a.StructName)
+		// todo : performance
+		var asRef analyzedStruct
+		for _, v := range analyzedStructs {
+			if v.PackageName == a.ImportPath && v.Name == a.StructName {
+				asRef = v
+			}
+		}
+		if asRef.NoUseQual {
+			str = str.Id(a.StructName)
+		} else {
+			str = str.Qual(a.ImportPath, a.StructName)
+		}
 
 	case a.IsArray():
 		str = str.Id("[]")
