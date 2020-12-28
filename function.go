@@ -668,20 +668,33 @@ func (as *analyzedStruct) decodeNamedPattern(ast *analyzedASTFieldType, fieldNam
 	recieverName := varName
 
 	if ptrCount < 1 && !isParentTypeArrayOrMap {
-		codes = append(codes, ast.TypeJenChain(Var().Id(recieverName)))
+		if as.NoUseQual {
+			codes = append(codes, Var().Id(recieverName).Id(as.Name))
+		} else {
+			codes = append(codes, ast.TypeJenChain(Var().Id(recieverName)))
+		}
 	} else if isParentTypeArrayOrMap {
 
 		for i := 0; i < ptrCount; i++ {
 			p := strings.Repeat("p", i+1)
 			kome := strings.Repeat("*", ptrCount-1-i)
-			codes = append(codes, ast.TypeJenChain(Var().Id(varName+p).Op(kome)))
+
+			if as.NoUseQual {
+				codes = append(codes, Var().Id(recieverName).Op(kome).Id(as.Name))
+			} else {
+				codes = append(codes, ast.TypeJenChain(Var().Id(varName+p).Op(kome)))
+			}
 		}
 		recieverName = varName + strings.Repeat("p", ptrCount)
 	} else {
 		for i := 0; i < ptrCount; i++ {
 			p := strings.Repeat("p", i)
 			kome := strings.Repeat("*", ptrCount-1-i)
-			codes = append(codes, ast.TypeJenChain(Var().Id(varName+p).Op(kome)))
+			if as.NoUseQual {
+				codes = append(codes, Var().Id(recieverName).Op(kome).Id(as.Name))
+			} else {
+				codes = append(codes, ast.TypeJenChain(Var().Id(varName+p).Op(kome)))
+			}
 		}
 		recieverName = varName + strings.Repeat("p", ptrCount-1)
 	}
