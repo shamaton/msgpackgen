@@ -43,8 +43,11 @@ func (g *generator) getPackages(files []string) error {
 			return true
 		})
 
-		// todo : verbose
-		if packageName == "main" {
+		if dir == g.outputDir {
+			g.outputPackageName = packageName
+			g.noUserQualMap[file] = true
+		} else if packageName == "main" {
+			// todo : verbose
 			continue
 		}
 
@@ -84,7 +87,10 @@ func (g *generator) createAnalyzedStructs() error {
 			}
 
 			if st, ok := x.Type.(*ast.StructType); ok {
-				if !unicode.IsUpper(rune(x.Name.String()[0])) {
+
+				// todo : 出力パッケージの場所と同じならLowerでもOK
+
+				if g.file2FullPackageName[fileName] != g.OutputPackageFullName() && !unicode.IsUpper(rune(x.Name.String()[0])) {
 					return true
 				}
 
@@ -112,13 +118,14 @@ func (g *generator) createAnalyzedStructs() error {
 		for _, structName := range structNames {
 			fmt.Println()
 			fmt.Println()
-			fmt.Println(structName, ".........................................")
+			fmt.Println(structName, ".........................................", g.noUserQualMap[fileName])
 			fields := g.createAnalyzedFields(g.file2PackageName[fileName], structName, analyzedFieldMap, g.fileSet, parseFile)
 			if len(fields) > 0 {
 				analyzedStructs = append(analyzedStructs, analyzedStruct{
 					PackageName: g.file2FullPackageName[fileName],
 					Name:        structName,
 					Fields:      fields,
+					NoUseQual:   g.noUserQualMap[fileName],
 				})
 			}
 		}
@@ -339,140 +346,4 @@ func (g *generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 		return nil, false
 	}
 	return nil, false
-}
-
-func (g *generator) findStructs(fileName string) error {
-	dir := filepath.Dir(fileName)
-	paths := strings.SplitN(dir, "src/", 2)
-	if len(paths) != 2 {
-		return fmt.Errorf("error...")
-	}
-
-	prefix := paths[1]
-
-	fset := token.NewFileSet()
-	f, err := parser.ParseFile(fset, fileName, nil, 0)
-	if err != nil {
-		return err
-	}
-
-	for _, v := range f.Imports {
-		fmt.Println(v.Name, v.Path.Value)
-	}
-
-	structNames := make([]string, 0)
-	var packageName string
-	ast.Inspect(f, func(n ast.Node) bool {
-
-		switch x := n.(type) {
-		case *ast.File:
-			packageName = x.Name.String()
-			//fmt.Println(x.Name)
-		}
-
-		x, ok := n.(*ast.TypeSpec)
-		if !ok {
-			return true
-		}
-
-		if st, ok := x.Type.(*ast.StructType); ok {
-			structNames = append(structNames, x.Name.String())
-
-			for _, field := range st.Fields.List {
-
-				fmt.Println(reflect.TypeOf(field.Type))
-
-				if i, ok := field.Type.(*ast.Ident); ok {
-					fieldType := i.Name
-
-					for _, name := range field.Names {
-						fmt.Printf("\tField:  \n")
-						fmt.Printf("\tField: name=%s type=%s\n", name.Name, fieldType)
-					}
-				}
-				if stt, ok := field.Type.(*ast.SelectorExpr); ok {
-					fmt.Println("1111111111", stt.X, stt.Sel.Name, field.Names, reflect.TypeOf(stt.X), fmt.Sprint(stt.X))
-
-				}
-				if analyzedSt, ok := field.Type.(*ast.ArrayType); ok {
-					if i, ok := analyzedSt.Elt.(*ast.Ident); ok {
-
-						fieldType := i.Name
-
-						for _, name := range field.Names {
-							fmt.Printf("\tField: name=%s type=[]%s\n", name.Name, fieldType)
-						}
-					}
-				}
-
-				if star, ok := field.Type.(*ast.StarExpr); ok {
-					fmt.Println("starrrrrrrrr", star.X, reflect.TypeOf(star.X))
-				}
-
-			}
-		}
-		return true
-	})
-
-	for _, name := range structNames {
-		analyzedSt := aaa(packageName, name, fset, f)
-		analyzedSt.PackageName = prefix + "/" + packageName
-		analyzedStructs = append(analyzedStructs, analyzedSt)
-	}
-	return nil
-}
-
-func aaa(packageName, structName string, fset *token.FileSet, file *ast.File) analyzedStruct {
-
-	conf := types.Config{
-		Importer: importer.Default(),
-		Error: func(err error) {
-			//fmt.Printf("!!! %#v\n", err)
-		},
-	}
-
-	pkg, err := conf.Check(packageName, fset, []*ast.File{file}, nil)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	// todo : FullNameとかQual使って重複を回避する必要がある
-
-	S := pkg.Scope().Lookup(structName)
-	internal := S.Type().Underlying().(*types.Struct)
-
-	analyzed := analyzedStruct{
-		PackageName: packageName,
-		Name:        structName,
-	}
-
-	for i := 0; i < internal.NumFields(); i++ {
-		field := internal.Field(i)
-
-		fmt.Printf("gugug %v\n", field)
-		fmt.Println(field.Id(), field.Type(), field.IsField())
-
-		if field.IsField() && field.Exported() {
-			tagName, _ := reflect.StructTag(internal.Tag(i)).Lookup("msgpack")
-			if tagName == "ignore" {
-				continue
-			}
-			name := field.Id()
-			if len(tagName) > 0 {
-				name = tagName
-			}
-
-			//fmt.Println("hogehoge", reflect.TypeOf(field.Type()))
-
-			// todo : type.Namedの場合、解析対象に含まれてないものがあったら、スキップする？
-
-			analyzed.Fields = append(analyzed.Fields, analyzedField{
-				Name: name,
-				Type: field.Type(),
-			})
-		}
-	}
-
-	// todo : msgpackresolverとして出力
-	return analyzed
 }
