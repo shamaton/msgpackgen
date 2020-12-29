@@ -22,6 +22,16 @@ func (d *Decoder) SliceLength(offset int) (int, int, error) {
 	case code == def.Array32:
 		bs, offset := d.readSize4(offset)
 		return int(binary.BigEndian.Uint32(bs)), offset, nil
+
+	case code == def.Bin8:
+		l, offset := d.readSize1(offset)
+		return int(uint8(l)), offset, nil
+	case code == def.Bin16:
+		bs, offset := d.readSize2(offset)
+		return int(binary.BigEndian.Uint16(bs)), offset, nil
+	case code == def.Bin32:
+		bs, offset := d.readSize4(offset)
+		return int(binary.BigEndian.Uint32(bs)), offset, nil
 	}
 	return 0, 0, d.errorTemplate(code, "SliceLength")
 }

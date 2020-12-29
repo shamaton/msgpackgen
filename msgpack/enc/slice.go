@@ -7,7 +7,11 @@ import (
 	"github.com/shamaton/msgpack/def"
 )
 
-func (e *Encoder) CalcSliceLength(l int) (int, error) {
+func (e *Encoder) CalcSliceLength(l int, isChildTypeByte bool) (int, error) {
+
+	if isChildTypeByte {
+		return e.calcByteSlice(l)
+	}
 
 	if l <= 0x0f {
 		// format code only
@@ -20,7 +24,11 @@ func (e *Encoder) CalcSliceLength(l int) (int, error) {
 	return 0, fmt.Errorf("not support this array length : %d", l)
 }
 
-func (e *Encoder) WriteSliceLength(l int, offset int) int {
+func (e *Encoder) WriteSliceLength(l int, offset int, isChildTypeByte bool) int {
+	if isChildTypeByte {
+		return e.writeByteSliceLength(l, offset)
+	}
+
 	// format size
 	if l <= 0x0f {
 		offset = e.setByte1Int(def.FixArray+l, offset)

@@ -95,3 +95,8 @@ func (e *Encoder) setBytes(bs []byte, offset int) int {
 	}
 	return offset + len(bs)
 }
+
+func (e *Encoder) setByte(b byte, offset int) int {
+	e.d[offset] = b
+	return offset + 1
+}

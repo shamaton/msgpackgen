@@ -55,7 +55,7 @@ func (e *Encoder) create(rv reflect.Value, offset int) int {
 			l := rv.Len()
 			// bin format
 			if e.isByteSlice(rv) {
-				offset = e.WriteByteSliceLength(l, offset)
+				offset = e.writeByteSliceLength(l, offset)
 				offset = e.setBytes(rv.Bytes(), offset)
 				return offset
 			}
@@ -85,7 +85,7 @@ func (e *Encoder) create(rv reflect.Value, offset int) int {
 			l := rv.Len()
 			// bin format
 			if e.isByteSlice(rv) {
-				offset = e.WriteByteSliceLength(l, offset)
+				offset = e.writeByteSliceLength(l, offset)
 				// objects
 				for i := 0; i < l; i++ {
 					offset = e.setByte1Uint64(rv.Index(i).Uint(), offset)

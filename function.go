@@ -309,8 +309,9 @@ func (as *analyzedStruct) createSliceCode(ast *analyzedASTFieldType, fieldName s
 	}
 
 	ca, _, ea, _, da, _, _ := as.createFieldCode(ast.Elm(), childName, false)
+	isChildByte := ast.Elm().IsIdentical() && ast.Elm().IdenticalName == "byte"
 
-	calcCodes := as.addSizePattern2("CalcSliceLength", Len(Op(ptrOp).Id(name)))
+	calcCodes := as.addSizePattern2("CalcSliceLength", Len(Op(ptrOp).Id(name)), Lit(isChildByte))
 	calcCodes = append(calcCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Op(ptrOp).Id(name)).Block(
 		ca...,
 	))
@@ -322,7 +323,7 @@ func (as *analyzedStruct) createSliceCode(ast *analyzedASTFieldType, fieldName s
 	))
 
 	encCodes := make([]Code, 0)
-	encCodes = append(encCodes, Id("offset").Op("=").Id(idEncoder).Dot("WriteSliceLength").Call(Len(Op(ptrOp).Id(name)), Id("offset")))
+	encCodes = append(encCodes, Id("offset").Op("=").Id(idEncoder).Dot("WriteSliceLength").Call(Len(Op(ptrOp).Id(name)), Id("offset"), Lit(isChildByte)))
 	encCodes = append(encCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Op(ptrOp).Id(name)).Block(
 		ea...,
 	))
