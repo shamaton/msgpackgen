@@ -51,7 +51,8 @@ func (g *generator) getPackages(files []string) error {
 			continue
 		}
 
-		g.file2Parse[file] = parseFile
+		g.parseFiles = append(g.parseFiles, parseFile)
+		g.fileNames = append(g.fileNames, file)
 		g.file2PackageName[file] = packageName
 		g.file2FullPackageName[file] = prefix
 		g.targetPackages[packageName] = true
@@ -61,7 +62,8 @@ func (g *generator) getPackages(files []string) error {
 
 func (g *generator) createAnalyzedStructs() error {
 
-	for fileName, parseFile := range g.file2Parse {
+	for i, parseFile := range g.parseFiles {
+		fileName := g.fileNames[i]
 		importMap := map[string]string{}
 
 		for _, imp := range parseFile.Imports {

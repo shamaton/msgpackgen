@@ -35,7 +35,8 @@ var funcIdMap = map[string]string{}
 type generator struct {
 	fileSet              *token.FileSet
 	targetPackages       map[string]bool
-	file2Parse           map[string]*ast.File
+	parseFiles           []*ast.File
+	fileNames            []string
 	file2FullPackageName map[string]string
 	file2PackageName     map[string]string
 	noUserQualMap        map[string]bool
@@ -72,7 +73,8 @@ var (
 
 var g = generator{
 	targetPackages:       map[string]bool{},
-	file2Parse:           map[string]*ast.File{},
+	parseFiles:           []*ast.File{},
+	fileNames:            []string{},
 	file2FullPackageName: map[string]string{},
 	file2PackageName:     map[string]string{},
 	noUserQualMap:        map[string]bool{},
