@@ -9,11 +9,11 @@ import (
 
 func (e *Encoder) calcByteSlice(l int) (int, error) {
 	if l <= math.MaxUint8 {
-		return def.Byte1 + def.Byte1 + l, nil
+		return def.Byte1 + def.Byte1, nil
 	} else if l <= math.MaxUint16 {
-		return def.Byte1 + def.Byte2 + l, nil
+		return def.Byte1 + def.Byte2, nil
 	} else if uint(l) <= math.MaxUint32 {
-		return def.Byte1 + def.Byte4 + l, nil
+		return def.Byte1 + def.Byte4, nil
 	}
 	// not supported error
 	return 0, fmt.Errorf("not support this array length : %d", l)
