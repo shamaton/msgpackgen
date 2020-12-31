@@ -89,12 +89,12 @@ func (d *Decoder) AsInterface(offset int) (interface{}, int, error) {
 		}
 		return v, offset, err
 
-	case code == def.Bin8, code == def.Bin16, code == def.Bin32:
-		v, offset, err := d.AsBin(offset)
-		if err != nil {
-			return nil, 0, err
-		}
-		return v, offset, err
+	//case code == def.Bin8, code == def.Bin16, code == def.Bin32:
+	//	v, offset, err := d.AsBin(offset)
+	//	if err != nil {
+	//		return nil, 0, err
+	//	}
+	//	return v, offset, err
 
 	case d.isFixSlice(code), code == def.Array16, code == def.Array32:
 		l, o, err := d.SliceLength(offset)
