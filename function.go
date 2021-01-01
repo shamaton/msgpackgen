@@ -125,11 +125,24 @@ func (as *analyzedStruct) createFieldCode(ast *analyzedASTFieldType, fieldName s
 		return as.createMapCode(ast, fieldName, isRoot)
 
 	case ast.IsStruct():
-		fieldValue := Id(fieldName)
-		if isRoot {
-			fieldValue = Id("v").Dot(fieldName)
+
+		ptrOp := ""
+		node := ast
+		for {
+			if node.HasParent() && node.Parent.IsPointer() {
+				ptrOp += "*"
+				node = node.Parent
+			} else {
+				break
+			}
 		}
 
+		fieldValue := Op(ptrOp).Id(fieldName)
+		if isRoot {
+			fieldValue = Op(ptrOp).Id("v").Dot(fieldName)
+		}
+
+		// todo : ポインタでの動作検証
 		if ast.ImportPath == "time" {
 			cArray = append(cArray, as.addSizePattern1("CalcTime", fieldValue))
 			eArray = append(eArray, as.encPattern1("WriteTime", fieldValue, Id("offset")))
@@ -660,41 +673,52 @@ func (as *analyzedStruct) decodeNamedPattern(ast *analyzedASTFieldType, fieldNam
 	codes := make([]Code, 0)
 	recieverName := varName
 
+	//var asRef analyzedStruct
+	//for _, v := range analyzedStructs {
+	//	if v.PackageName == ast.ImportPath && v.Name == ast.StructName {
+	//		asRef = v
+	//	}
+	//}
+
 	if ptrCount < 1 && !isParentTypeArrayOrMap {
-		if as.NoUseQual {
-			codes = append(codes, Var().Id(recieverName).Id(as.Name))
-		} else {
-			codes = append(codes, ast.TypeJenChain(Var().Id(recieverName)))
-		}
+		codes = append(codes, ast.TypeJenChain(Var().Id(recieverName)))
+		//if as.NoUseQual {
+		//	codes = append(codes, Var().Id(recieverName).Id(as.Name))
+		//} else {
+		//	codes = append(codes, ast.TypeJenChain(Var().Id(recieverName)))
+		//}
 	} else if isParentTypeArrayOrMap {
 
 		for i := 0; i < ptrCount; i++ {
 			p := strings.Repeat("p", i+1)
 			kome := strings.Repeat("*", ptrCount-1-i)
 
-			if as.NoUseQual {
-				codes = append(codes, Var().Id(recieverName).Op(kome).Id(as.Name))
-			} else {
-				codes = append(codes, ast.TypeJenChain(Var().Id(varName+p).Op(kome)))
-			}
+			codes = append(codes, ast.TypeJenChain(Var().Id(varName+p).Op(kome)))
+			//if as.NoUseQual {
+			//	codes = append(codes, Var().Id(recieverName).Op(kome).Id(as.Name))
+			//} else {
+			//	codes = append(codes, ast.TypeJenChain(Var().Id(varName+p).Op(kome)))
+			//}
 		}
 		recieverName = varName + strings.Repeat("p", ptrCount)
 	} else {
 		for i := 0; i < ptrCount; i++ {
 			p := strings.Repeat("p", i)
 			kome := strings.Repeat("*", ptrCount-1-i)
-			if as.NoUseQual {
-				codes = append(codes, Var().Id(recieverName).Op(kome).Id(as.Name))
-			} else {
-				codes = append(codes, ast.TypeJenChain(Var().Id(varName+p).Op(kome)))
-			}
+
+			codes = append(codes, ast.TypeJenChain(Var().Id(varName+p).Op(kome)))
+			//if as.NoUseQual {
+			//	codes = append(codes, Var().Id(recieverName).Op(kome).Id(as.Name))
+			//} else {
+			//	codes = append(codes, ast.TypeJenChain(Var().Id(varName+p).Op(kome)))
+			//}
 		}
 		recieverName = varName + strings.Repeat("p", ptrCount-1)
 	}
 
 	codes = append(codes,
 		//ast.TypeJenChain(Var().Id(varName)), // todo : これは外だし
-		List(Id("offset"), Err()).Op("=").Id(createFuncName(decodeFuncName, ast.StructName, ast.ImportPath)).Call(Op("&").Id(varName), Id(idDecoder), Id("offset")),
+		List(Id("offset"), Err()).Op("=").Id(createFuncName(decodeFuncName, ast.StructName, ast.ImportPath)).Call(Op("&").Id(recieverName), Id(idDecoder), Id("offset")),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Lit(0), Err()),
 		),
