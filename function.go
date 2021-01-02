@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"strings"
 
 	. "github.com/dave/jennifer/jen"
@@ -35,7 +36,7 @@ func (as *analyzedStruct) calcFunction(f *File) {
 	decMapCodeSwitchCases := make([]Code, 0)
 
 	for _, field := range as.Fields {
-		calcMapSizeCodes = append(calcMapSizeCodes, as.addSizePattern1("CalcString", Lit(field.Tag)))
+		calcMapSizeCodes = append(calcMapSizeCodes, as.CalcStringKeyCode(field.Tag))
 		encMapCodes = append(encMapCodes, as.encPattern1("WriteString", Lit(field.Tag), Id("offset")))
 
 		cArray, cMap, eArray, eMap, dArray, dMap, _ := as.createFieldCode(field.Ast, field.Name, true)
@@ -110,6 +111,18 @@ func (as *analyzedStruct) calcFunction(f *File) {
 
 		append(decMapCodes, Return(Id("offset"), Err()))...,
 	)
+}
+
+func (as *analyzedStruct) CalcStringKeyCode(v string) Code {
+	l := len(v)
+	if l < 32 {
+		return Id("size").Op("+=").Qual(pkMsgDef, "Byte1").Op("+").Lit(l)
+	} else if l <= math.MaxUint8 {
+		return Id("size").Op("+=").Qual(pkMsgDef, "Byte1").Op("+").Qual(pkMsgDef, "Byte1").Op("+").Lit(l)
+	} else if l <= math.MaxUint16 {
+		return Id("size").Op("+=").Qual(pkMsgDef, "Byte1").Op("+").Qual(pkMsgDef, "Byte2").Op("+").Lit(l)
+	}
+	return Id("size").Op("+=").Qual(pkMsgDef, "Byte1").Op("+").Qual(pkMsgDef, "Byte4").Op("+").Lit(l)
 }
 
 func (as *analyzedStruct) createFieldCode(ast *analyzedASTFieldType, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {

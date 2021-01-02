@@ -22,6 +22,8 @@ const (
 	pkEnc = pkTop + "/enc"
 	pkDec = pkTop + "/dec"
 
+	pkMsgDef = "github.com/shamaton/msgpack/def"
+
 	idEncoder = "encoder"
 	idDecoder = "decoder"
 
