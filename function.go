@@ -36,8 +36,9 @@ func (as *analyzedStruct) calcFunction(f *File) {
 	decMapCodeSwitchCases := make([]Code, 0)
 
 	for _, field := range as.Fields {
-		calcMapSizeCodes = append(calcMapSizeCodes, as.CreateKeyStringCode(field.Tag))
-		encMapCodes = append(encMapCodes, as.encPattern1("WriteString", Lit(field.Tag), Id("offset")))
+		calcKeyStringCode, writeKeyStringCode := as.CreateKeyStringCode(field.Tag)
+		calcMapSizeCodes = append(calcMapSizeCodes, calcKeyStringCode)
+		encMapCodes = append(encMapCodes, writeKeyStringCode)
 
 		cArray, cMap, eArray, eMap, dArray, dMap, _ := as.createFieldCode(field.Ast, field.Name, true)
 		calcArraySizeCodes = append(calcArraySizeCodes, cArray...)
@@ -113,16 +114,21 @@ func (as *analyzedStruct) calcFunction(f *File) {
 	)
 }
 
-func (as *analyzedStruct) CreateKeyStringCode(v string) Code {
+func (as *analyzedStruct) CreateKeyStringCode(v string) (Code, Code) {
 	l := len(v)
+	suffix := ""
 	if l < 32 {
-		return Id("size").Op("+=").Lit(1).Op("+").Lit(l)
+		suffix = "Fix"
 	} else if l <= math.MaxUint8 {
-		return Id("size").Op("+=").Lit(1).Op("+").Lit(1).Op("+").Lit(l)
+		suffix = "8"
 	} else if l <= math.MaxUint16 {
-		return Id("size").Op("+=").Lit(1).Op("+").Lit(2).Op("+").Lit(l)
+		suffix = "16"
+	} else {
+		suffix = "32"
 	}
-	return Id("size").Op("+=").Lit(1).Op("+").Lit(4).Op("+").Lit(l)
+	//	offset = encoder.WriteString("Name", offset)
+	return Id("size").Op("+=").Id(idEncoder).Dot("CalcString" + suffix).Call(Lit(l)),
+		Id("offset").Op("=").Id(idEncoder).Dot("WriteString"+suffix).Call(Lit(v), Lit(l), Id("offset"))
 }
 
 func (as *analyzedStruct) createFieldCode(ast *analyzedASTFieldType, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {

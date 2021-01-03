@@ -7,6 +7,7 @@ import (
 	"github.com/shamaton/msgpack/def"
 )
 
+// todo : コード生成側ですでにわかる
 func (e *Encoder) CalcStructHeader(fieldNum int) (int, error) {
 	ret := def.Byte1
 	if e.asArray {
@@ -36,6 +37,7 @@ func (e *Encoder) CalcStructHeader(fieldNum int) (int, error) {
 	return ret, nil
 }
 
+// todo : コード生成側ですでにわかる
 func (e *Encoder) WriteStructHeader(fieldNum, offset int) int {
 	if e.asArray {
 		if fieldNum <= 0x0f {
