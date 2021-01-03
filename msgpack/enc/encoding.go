@@ -1,14 +1,17 @@
 package enc
 
 import (
+	"bytes"
 	"reflect"
 
 	"github.com/shamaton/msgpack"
 )
 
 type Encoder struct {
+	buf     *bytes.Buffer
 	d       []byte
 	asArray bool
+	size    int
 	//common.Common
 	mk map[uintptr][]reflect.Value
 	mv map[uintptr][]reflect.Value
@@ -19,10 +22,19 @@ func NewEncoder() *Encoder {
 }
 
 func (e *Encoder) MakeBytes(size int) {
-	e.d = make([]byte, size)
+	//e.d = make([]byte, size)
+	e.size = size
+	e.buf = bufPool.Get(size)
+	e.d = e.buf.Bytes()
 }
 
-func (e *Encoder) EncodedBytes() []byte { return e.d }
+func (e *Encoder) EncodedBytes() []byte {
+	return e.d[:e.size]
+}
+
+func (e *Encoder) ReleaseBytes() {
+	bufPool.Put(e.buf)
+}
 
 func (e *Encoder) create(rv reflect.Value, offset int) int {
 	return -1

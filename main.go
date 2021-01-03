@@ -288,11 +288,14 @@ func (g *generator) encodeAsArrayCases() []Code {
 				Id(idEncoder).Dot("MakeBytes").Call(Id("size")),
 				List(Id("b"), Id("offset"), Err()).Op(":=").Id(v.encodeArrayFuncName()).Call(Id(vv+"v"), Id(idEncoder), Lit(0)),
 				If(Err().Op("!=").Nil()).Block(
+					Id(idEncoder).Dot("ReleaseBytes").Call(),
 					Return(Nil(), Err()),
 				),
 				If(Id("size").Op("!=").Id("offset")).Block(
+					Id(idEncoder).Dot("ReleaseBytes").Call(),
 					Return(Nil(), Qual("fmt", "Errorf").Call(Lit("%s size / offset different %d : %d"), errID, Id("size"), Id("offset"))),
 				),
+				Id(idEncoder).Dot("ReleaseBytes").Call(),
 				Return(Id("b"), Err()),
 			))
 		}
@@ -324,11 +327,14 @@ func (g *generator) encodeAsMapCases() []Code {
 				Id(idEncoder).Dot("MakeBytes").Call(Id("size")),
 				List(Id("b"), Id("offset"), Err()).Op(":=").Id(v.encodeMapFuncName()).Call(Id(vv+"v"), Id(idEncoder), Lit(0)),
 				If(Err().Op("!=").Nil()).Block(
+					Id(idEncoder).Dot("ReleaseBytes").Call(),
 					Return(Nil(), Err()),
 				),
 				If(Id("size").Op("!=").Id("offset")).Block(
+					Id(idEncoder).Dot("ReleaseBytes").Call(),
 					Return(Nil(), Qual("fmt", "Errorf").Call(Lit("%s size / offset different %d : %d"), errID, Id("size"), Id("offset"))),
 				),
+				Id(idEncoder).Dot("ReleaseBytes").Call(),
 				Return(Id("b"), Err()),
 			))
 		}
