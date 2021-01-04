@@ -107,7 +107,7 @@ func (g *generator) createAnalyzedStructs() error {
 					value, ok := g.checkFieldTypeRecursive(field.Type, nil, importMap)
 					canGen = canGen && ok
 					if ok {
-						analyzedFieldMap[key] = value
+						analyzedFieldMap[key+"@"+x.Name.String()] = value
 					}
 				}
 				if canGen {
@@ -186,7 +186,7 @@ func (g *generator) createAnalyzedFields(packageName, structName string, analyze
 				Name: name,
 				Tag:  tag,
 				Type: field.Type(),
-				Ast:  analyzedFieldMap[name],
+				Ast:  analyzedFieldMap[name+"@"+structName],
 			})
 		}
 	}
