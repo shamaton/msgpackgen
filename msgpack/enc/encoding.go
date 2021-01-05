@@ -3,19 +3,16 @@ package enc
 import (
 	"bytes"
 	"reflect"
-
-	"github.com/shamaton/msgpack"
 )
 
 type Encoder struct {
-	buf     *bytes.Buffer
-	d       []byte
-	asArray bool
-	size    int
+	buf  *bytes.Buffer
+	d    []byte
+	size int
 }
 
 func NewEncoder() *Encoder {
-	return &Encoder{asArray: msgpack.StructAsArray}
+	return &Encoder{}
 }
 
 func (e *Encoder) MakeBytes(size int) {

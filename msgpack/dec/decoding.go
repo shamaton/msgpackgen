@@ -2,18 +2,14 @@ package dec
 
 import (
 	"fmt"
-
-	"github.com/shamaton/msgpack"
 )
 
 type Decoder struct {
-	data    []byte
-	asArray bool
-	//common.Common
+	data []byte
 }
 
 func NewDecoder(data []byte) *Decoder {
-	return &Decoder{data: data, asArray: msgpack.StructAsArray}
+	return &Decoder{data: data}
 }
 
 func (d *Decoder) Len() int { return len(d.data) }
