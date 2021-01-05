@@ -7,58 +7,82 @@ import (
 	"github.com/shamaton/msgpack/def"
 )
 
-// todo : コード生成側ですでにわかる
+// todo : delete
 func (e *Encoder) CalcStructHeader(fieldNum int) (int, error) {
-	ret := def.Byte1
-	if e.asArray {
-		if fieldNum <= 0x0f {
-			// format code only
-		} else if fieldNum <= math.MaxUint16 {
-			ret += def.Byte2
-		} else if uint(fieldNum) <= math.MaxUint32 {
-			ret += def.Byte4
-		} else {
-			// not supported error
-			return 0, fmt.Errorf("not support this array length : %d", fieldNum)
-		}
-	} else {
-
-		if fieldNum <= 0x0f {
-			// format code only
-		} else if fieldNum <= math.MaxUint16 {
-			ret += def.Byte2
-		} else if uint(fieldNum) <= math.MaxUint32 {
-			ret += def.Byte4
-		} else {
-			// not supported error
-			return 0, fmt.Errorf("not support this array length : %d", fieldNum)
-		}
+	if fieldNum <= 0x0f {
+		return e.CalcStructHeaderFix(fieldNum), nil
+	} else if fieldNum <= math.MaxUint16 {
+		return e.CalcStructHeader16(fieldNum), nil
+	} else if uint(fieldNum) <= math.MaxUint32 {
+		return e.CalcStructHeader32(fieldNum), nil
 	}
-	return ret, nil
+	return 0, fmt.Errorf("not support this array length : %d", fieldNum)
 }
 
-// todo : コード生成側ですでにわかる
-func (e *Encoder) WriteStructHeader(fieldNum, offset int) int {
-	if e.asArray {
-		if fieldNum <= 0x0f {
-			offset = e.setByte1Int(def.FixArray+fieldNum, offset)
-		} else if fieldNum <= math.MaxUint16 {
-			offset = e.setByte1Int(def.Array16, offset)
-			offset = e.setByte2Int(fieldNum, offset)
-		} else if uint(fieldNum) <= math.MaxUint32 {
-			offset = e.setByte1Int(def.Array32, offset)
-			offset = e.setByte4Int(fieldNum, offset)
-		}
+func (e *Encoder) CalcStructHeaderFix(fieldNum int) int {
+	return def.Byte1
+}
+
+func (e *Encoder) CalcStructHeader16(fieldNum int) int {
+	return def.Byte1 + def.Byte2
+}
+
+func (e *Encoder) CalcStructHeader32(fieldNum int) int {
+	return def.Byte1 + def.Byte4
+}
+
+// todo : delete
+func (e *Encoder) WriteStructHeaderAsArray(fieldNum, offset int) int {
+	if fieldNum <= 0x0f {
+		return e.WriteStructHeaderFixAsArray(fieldNum, offset)
+	} else if fieldNum <= math.MaxUint16 {
+		return e.WriteStructHeader16AsArray(fieldNum, offset)
 	} else {
-		if fieldNum <= 0x0f {
-			offset = e.setByte1Int(def.FixMap+fieldNum, offset)
-		} else if fieldNum <= math.MaxUint16 {
-			offset = e.setByte1Int(def.Map16, offset)
-			offset = e.setByte2Int(fieldNum, offset)
-		} else if uint(fieldNum) <= math.MaxUint32 {
-			offset = e.setByte1Int(def.Map32, offset)
-			offset = e.setByte4Int(fieldNum, offset)
-		}
+		return e.WriteStructHeader32AsArray(fieldNum, offset)
 	}
+}
+
+// todo : delete
+func (e *Encoder) WriteStructHeaderAsMap(fieldNum, offset int) int {
+	if fieldNum <= 0x0f {
+		return e.WriteStructHeaderFixAsMap(fieldNum, offset)
+	} else if fieldNum <= math.MaxUint16 {
+		return e.WriteStructHeader16AsMap(fieldNum, offset)
+	} else {
+		return e.WriteStructHeader32AsMap(fieldNum, offset)
+	}
+}
+
+func (e *Encoder) WriteStructHeaderFixAsArray(fieldNum, offset int) int {
+	offset = e.setByte1Int(def.FixArray+fieldNum, offset)
+	return offset
+}
+
+func (e *Encoder) WriteStructHeader16AsArray(fieldNum, offset int) int {
+	offset = e.setByte1Int(def.Array16, offset)
+	offset = e.setByte2Int(fieldNum, offset)
+	return offset
+}
+
+func (e *Encoder) WriteStructHeader32AsArray(fieldNum, offset int) int {
+	offset = e.setByte1Int(def.Array32, offset)
+	offset = e.setByte4Int(fieldNum, offset)
+	return offset
+}
+
+func (e *Encoder) WriteStructHeaderFixAsMap(fieldNum, offset int) int {
+	offset = e.setByte1Int(def.FixMap+fieldNum, offset)
+	return offset
+}
+
+func (e *Encoder) WriteStructHeader16AsMap(fieldNum, offset int) int {
+	offset = e.setByte1Int(def.Map16, offset)
+	offset = e.setByte2Int(fieldNum, offset)
+	return offset
+}
+
+func (e *Encoder) WriteStructHeader32AsMap(fieldNum, offset int) int {
+	offset = e.setByte1Int(def.Map32, offset)
+	offset = e.setByte4Int(fieldNum, offset)
 	return offset
 }

@@ -11,21 +11,23 @@ import (
 func (as *analyzedStruct) calcFunction(f *File) {
 	v := "v"
 
+	calcStruct, encStructArray, encStructMap := as.CreateStructCode(len(as.Fields))
+
 	calcArraySizeCodes := make([]Code, 0)
 	calcArraySizeCodes = append(calcArraySizeCodes, Id("size").Op(":=").Lit(0))
-	calcArraySizeCodes = append(calcArraySizeCodes, Block(as.addSizePattern2("CalcStructHeader", Lit(len(as.Fields)))...))
+	calcArraySizeCodes = append(calcArraySizeCodes, calcStruct)
 
 	calcMapSizeCodes := make([]Code, 0)
 	calcMapSizeCodes = append(calcMapSizeCodes, Id("size").Op(":=").Lit(0))
-	calcMapSizeCodes = append(calcMapSizeCodes, Block(as.addSizePattern2("CalcStructHeader", Lit(len(as.Fields)))...))
+	calcMapSizeCodes = append(calcMapSizeCodes, calcStruct)
 
 	encArrayCodes := make([]Code, 0)
 	encArrayCodes = append(encArrayCodes, Var().Err().Error())
-	encArrayCodes = append(encArrayCodes, Id("offset").Op("=").Id(idEncoder).Dot("WriteStructHeader").Call(Lit(len(as.Fields)), Id("offset")))
+	encArrayCodes = append(encArrayCodes, encStructArray)
 
 	encMapCodes := make([]Code, 0)
 	encMapCodes = append(encMapCodes, Var().Err().Error())
-	encMapCodes = append(encMapCodes, Id("offset").Op("=").Id(idEncoder).Dot("WriteStructHeader").Call(Lit(len(as.Fields)), Id("offset")))
+	encMapCodes = append(encMapCodes, encStructMap)
 
 	decArrayCodes := make([]Code, 0)
 	decArrayCodes = append(decArrayCodes, List(Id("offset"), Err()).Op(":=").Id(idDecoder).Dot("CheckStructHeader").Call(Lit(len(as.Fields)), Id("offset")))
@@ -126,9 +128,25 @@ func (as *analyzedStruct) CreateKeyStringCode(v string) (Code, Code) {
 	} else {
 		suffix = "32"
 	}
-	//	offset = encoder.WriteString("Name", offset)
+
 	return Id("size").Op("+=").Id(idEncoder).Dot("CalcString" + suffix).Call(Lit(l)),
 		Id("offset").Op("=").Id(idEncoder).Dot("WriteString"+suffix).Call(Lit(v), Lit(l), Id("offset"))
+}
+
+func (as *analyzedStruct) CreateStructCode(fieldNum int) (Code, Code, Code) {
+
+	suffix := ""
+	if fieldNum <= 0x0f {
+		suffix = "Fix"
+	} else if fieldNum <= math.MaxUint16 {
+		suffix = "16"
+	} else if uint(fieldNum) <= math.MaxUint32 {
+		suffix = "32"
+	}
+
+	return Id("size").Op("+=").Id(idEncoder).Dot("CalcStructHeader" + suffix).Call(Lit(fieldNum)),
+		Id("offset").Op("=").Id(idEncoder).Dot(" WriteStructHeader"+suffix+"AsArray").Call(Lit(fieldNum), Id("offset")),
+		Id("offset").Op("=").Id(idEncoder).Dot(" WriteStructHeader"+suffix+"AsMap").Call(Lit(fieldNum), Id("offset"))
 }
 
 func (as *analyzedStruct) createFieldCode(ast *analyzedASTFieldType, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
