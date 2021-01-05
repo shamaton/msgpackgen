@@ -12,9 +12,6 @@ type Encoder struct {
 	d       []byte
 	asArray bool
 	size    int
-	//common.Common
-	mk map[uintptr][]reflect.Value
-	mv map[uintptr][]reflect.Value
 }
 
 func NewEncoder() *Encoder {
