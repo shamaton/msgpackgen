@@ -106,11 +106,13 @@ func init() {
 		fmt.Printf("%s get import path failed", *out)
 		return
 	}
+	fmt.Println("paths", paths)
 	g.outputPackageName = paths[1]
 
 	// todo : ファイル指定オプション
 
 	fmt.Println(g.outputDir, outAbs)
+	fmt.Println("output pacagek is 222... ", g.outputPackagePrefix, g.outputPackageName)
 }
 
 func main() {
@@ -143,7 +145,7 @@ func dirwalk(dir string) []string {
 			paths = append(paths, dirwalk(filepath.Join(dir, file.Name()))...)
 			continue
 		}
-		if filepath.Ext(file.Name()) == ".go" && !strings.HasSuffix(file.Name(), "_test.go") {
+		if filepath.Ext(file.Name()) == ".go" && !strings.HasSuffix(file.Name(), "t.go") {
 			paths = append(paths, filepath.Join(dir, file.Name()))
 		}
 	}
@@ -168,7 +170,7 @@ func (g *generator) generate() {
 		funcIdMap[st.PackageName] = fmt.Sprintf("%x", sha256.Sum256([]byte(st.PackageName)))
 	}
 
-	fmt.Println(funcIdMap)
+	fmt.Println("output pacagek is ... ", g.outputPackagePrefix, g.outputPackageName)
 
 	// todo : ソースコードが存在している場所だったら、そちらにパッケージ名をあわせる
 	f := NewFilePath(g.OutputPackageFullName())
