@@ -122,14 +122,13 @@ func (g *generator) createAnalyzedStructs() error {
 			fmt.Println()
 			fmt.Println(structName, ".........................................", g.noUserQualMap[fileName])
 			fields := g.createAnalyzedFields(g.file2PackageName[fileName], structName, analyzedFieldMap, g.fileSet, parseFile)
-			if len(fields) > 0 {
-				analyzedStructs = append(analyzedStructs, analyzedStruct{
-					PackageName: g.file2FullPackageName[fileName],
-					Name:        structName,
-					Fields:      fields,
-					NoUseQual:   g.noUserQualMap[fileName],
-				})
-			}
+			analyzedStructs = append(analyzedStructs, analyzedStruct{
+				PackageName: g.file2FullPackageName[fileName],
+				Name:        structName,
+				Fields:      fields,
+				NoUseQual:   g.noUserQualMap[fileName],
+			})
+
 		}
 	}
 	return nil
