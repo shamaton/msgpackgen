@@ -2,7 +2,6 @@ package enc
 
 import (
 	"bytes"
-	"fmt"
 	"sync"
 )
 
@@ -23,18 +22,6 @@ var bufPool = bufferPool{
 			return buf
 		},
 	},
-}
-
-func init() {
-	fmt.Println("gggggggggggggggggggggget")
-	mp := map[int]*bytes.Buffer{}
-	for i := 0; i < 0; i++ {
-		mp[i] = bufPool.Get(1)
-	}
-	for _, v := range mp {
-		bufPool.Put(v)
-	}
-
 }
 
 func (b *bufferPool) Get(size int) *bytes.Buffer {

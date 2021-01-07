@@ -1,10 +1,10 @@
-package t
+package tst
 
-import "github.com/shamaton/msgpackgen/internal/t/t"
+import "github.com/shamaton/msgpackgen/internal/tst/tst"
 
 //go:generate go run github.com/shamaton/msgpackgen
 
 type A struct {
 	Int int
-	B   t.B
+	B   tst.B
 }

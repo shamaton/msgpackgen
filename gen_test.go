@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"testing"
 
-	ttt "github.com/shamaton/msgpackgen/internal/t"
+	ttt "github.com/shamaton/msgpackgen/internal/tst"
 )
 
 func init() {
