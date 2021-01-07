@@ -1,4 +1,4 @@
-package main
+package gen
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ import (
 	. "github.com/dave/jennifer/jen"
 )
 
-func (g *generator) getPackages(files []string) error {
+func (g *Generator) GetPackages(files []string) error {
 	g.fileSet = token.NewFileSet()
 	for _, file := range files {
 
@@ -60,7 +60,7 @@ func (g *generator) getPackages(files []string) error {
 	return nil
 }
 
-func (g *generator) createAnalyzedStructs() error {
+func (g *Generator) CreateAnalyzedStructs() error {
 
 	for i, parseFile := range g.parseFiles {
 		fileName := g.fileNames[i]
@@ -134,7 +134,7 @@ func (g *generator) createAnalyzedStructs() error {
 	return nil
 }
 
-func (g *generator) createAnalyzedFields(packageName, structName string, analyzedFieldMap map[string]*analyzedASTFieldType, fset *token.FileSet, file *ast.File) []analyzedField {
+func (g *Generator) createAnalyzedFields(packageName, structName string, analyzedFieldMap map[string]*analyzedASTFieldType, fset *token.FileSet, file *ast.File) []analyzedField {
 
 	// todo : ここなにか解決策あれば
 	imp := importer.Default()
@@ -310,7 +310,7 @@ func (a analyzedASTFieldType) TypeString(s ...string) string {
 	return str
 }
 
-func (g *generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFieldType, importMap map[string]string) (*analyzedASTFieldType, bool) {
+func (g *Generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFieldType, importMap map[string]string) (*analyzedASTFieldType, bool) {
 	if i, ok := expr.(*ast.Ident); ok {
 		return &analyzedASTFieldType{
 			fieldType:     fieldTypeIdent,
