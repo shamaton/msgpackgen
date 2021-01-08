@@ -13,6 +13,7 @@ var (
 	input   = flag.String("input", ".", "input directory")
 	strict  = flag.Bool("strict", false, "strict mode")
 	verbose = flag.Bool("v", false, "verbose diagnostics")
+	pointer = flag.Int("pointer", 1, "pointer level to consider")
 )
 
 func main() {
@@ -29,8 +30,12 @@ func main() {
 		*out = *input
 	}
 
+	if *pointer < 1 {
+		*pointer = 1
+	}
+
 	g := gen.NewGenerator()
-	g.Initialize(*input, *out, *strict, *verbose)
+	g.Initialize(*input, *out, *pointer, *strict, *verbose)
 
 	// todo : この呼び方やめる
 	files := g.Dirwalk(*input)

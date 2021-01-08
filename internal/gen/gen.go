@@ -44,6 +44,7 @@ type Generator struct {
 	outputPackageName   string
 	outputPackagePrefix string
 
+	pointer int
 	verbose bool
 	strict  bool
 }
@@ -77,8 +78,9 @@ func NewGenerator() *Generator {
 	}
 }
 
-func (g *Generator) Initialize(input, out string, strict, verbose bool) {
+func (g *Generator) Initialize(input, out string, pointer int, strict, verbose bool) {
 
+	g.pointer = pointer
 	g.strict = strict
 	g.verbose = verbose
 
@@ -167,8 +169,8 @@ func (g *Generator) Generate() {
 	encReturn := Return(Nil(), Nil())
 	decReturn := Return(False(), Nil())
 	if g.strict {
-		encReturn = Return(Nil(), Qual("fmt", "Errorf").Call(Lit("undefined type!!")))
-		decReturn = Return(False(), Qual("fmt", "Errorf").Call(Lit("undefined type!!")))
+		encReturn = Return(Nil(), Qual("fmt", "Errorf").Call(Lit("use strict option : undefined type")))
+		decReturn = Return(False(), Qual("fmt", "Errorf").Call(Lit("use strict option : undefined type")))
 	}
 
 	g.decodeTopTemplate("decodeAsArray", f).Block(

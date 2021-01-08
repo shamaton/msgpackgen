@@ -5,11 +5,11 @@ import (
 	"log"
 	"math"
 	"os"
+	"strings"
 	"testing"
 
-	"github.com/shamaton/msgpackgen/msgpack"
-
 	"github.com/shamaton/msgpackgen/internal/tst"
+	"github.com/shamaton/msgpackgen/msgpack"
 )
 
 func TestMain(m *testing.M) {
@@ -17,7 +17,7 @@ func TestMain(m *testing.M) {
 
 	code := m.Run()
 
-	resetGeneratedCode()
+	// resetGeneratedCode()
 
 	os.Exit(code)
 }
@@ -47,6 +47,8 @@ func RegisterGeneratedResolver() {
 
 func TestInt(t *testing.T) {
 	f := func(t *testing.T, v tst.A) {
+		//// OK
+		// encode value
 		b1, err := msgpack.Encode(v)
 		if err != nil {
 			t.Error(err)
@@ -55,6 +57,8 @@ func TestInt(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
+
+		// decode single pointer
 		var v1, v2 tst.A
 		err = msgpack.Decode(b1, &v1)
 		if err != nil {
@@ -65,6 +69,7 @@ func TestInt(t *testing.T) {
 			t.Error(err)
 		}
 
+		// encode single pointer
 		b3, err := msgpack.Encode(&v)
 		if err != nil {
 			t.Error(err)
@@ -74,32 +79,13 @@ func TestInt(t *testing.T) {
 			t.Error(err)
 		}
 
+		// decode double pointer
 		v3, v4 := new(tst.A), new(tst.A)
 		err = msgpack.Decode(b3, &v3)
 		if err != nil {
 			t.Error(err)
 		}
 		err = msgpack.DecodeAsArray(b4, &v4)
-		if err != nil {
-			t.Error(err)
-		}
-
-		b5, err := msgpack.Encode(&v3)
-		if err != nil {
-			t.Error(err)
-		}
-		b6, err := msgpack.EncodeAsArray(&v4)
-		if err != nil {
-			t.Error(err)
-		}
-
-		_v5, _v6 := new(tst.A), new(tst.A)
-		v5, v6 := &_v5, &_v6
-		err = msgpack.Decode(b5, &v5)
-		if err != nil {
-			t.Error(err)
-		}
-		err = msgpack.DecodeAsArray(b6, &v6)
 		if err != nil {
 			t.Error(err)
 		}
@@ -116,14 +102,30 @@ func TestInt(t *testing.T) {
 		if v.Int != v4.Int || v.Uint != v4.Uint {
 			t.Error("not equal v4", v, v4)
 		}
-		if vv := *v5; v.Int != vv.Int || v.Uint != vv.Uint {
-			t.Error("not equal v5", v, vv)
+
+		//// NG
+
+		// encode double pointer
+		b5, err := msgpack.Encode(&v3)
+		if err != nil && !strings.Contains(err.Error(), "strict") {
+			t.Error(err)
 		}
-		if vv := *v6; v.Int != vv.Int || v.Uint != vv.Uint {
-			t.Error("not equal v6", v, vv)
+		b6, err := msgpack.EncodeAsArray(&v4)
+		if err != nil && !strings.Contains(err.Error(), "strict") {
+			t.Error(err)
 		}
-		t.Log(v1, v2, v3, v4, *v5, *v6)
-		// todo : ダブルポインタ、トリプル
+
+		// decode triple pointer
+		_v5, _v6 := new(tst.A), new(tst.A)
+		v5, v6 := &_v5, &_v6
+		err = msgpack.Decode(b5, &v5)
+		if err != nil && !strings.Contains(err.Error(), "strict") {
+			t.Error(err)
+		}
+		err = msgpack.DecodeAsArray(b6, &v6)
+		if err != nil && !strings.Contains(err.Error(), "strict") {
+			t.Error(err)
+		}
 	}
 
 	v := tst.A{Int: -8, Uint: 8}
