@@ -325,18 +325,23 @@ func (g *Generator) encodeAsMapCases() []Code {
 func (g *Generator) decodeAsArrayCases() []Code {
 	var states []Code
 	for _, v := range analyzedStructs {
-		for _, vv := range []string{"", "*"} {
 
-			var caseStatement *Statement
-			if v.NoUseQual {
-				caseStatement = Op("*" + vv).Id(v.Name)
-			} else {
-				caseStatement = Op("*"+vv).Qual(v.PackageName, v.Name)
-			}
+		var caseStatement func(string) *Statement
+		if v.NoUseQual {
+			caseStatement = func(op string) *Statement { return Op(op).Id(v.Name) }
+		} else {
+			caseStatement = func(op string) *Statement { return Op(op).Qual(v.PackageName, v.Name) }
+		}
 
-			states = append(states, Case(caseStatement).Block(
-				List(Id("_"), Err()).Op(":=").Id(v.decodeArrayFuncName()).Call(Id(vv+"v"), Qual(pkDec, "NewDecoder").Call(Id("data")), Id("0")),
-				Return(True(), Err())))
+		states = append(states, Case(caseStatement("*")).Block(
+			List(Id("_"), Err()).Op(":=").Id(v.decodeArrayFuncName()).Call(Id("v"), Qual(pkDec, "NewDecoder").Call(Id("data")), Id("0")),
+			Return(True(), Err())))
+
+		for i := 0; i < g.pointer; i++ {
+			ptr := strings.Repeat("*", i+2)
+			states = append(states, Case(caseStatement(ptr)).Block(
+				Return(Id(privateFuncNamePattern("decodeAsArray")).Call(Id("data"), Id("*v"))),
+			))
 		}
 	}
 	return states
