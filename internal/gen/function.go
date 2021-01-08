@@ -59,7 +59,7 @@ func (as *analyzedStruct) calcFunction(f *File) {
 	decMapCodeSwitchCases = append(decMapCodeSwitchCases, Default().Block(Id("offset").Op("=").Id(idDecoder).Dot("JumpOffset").Call(Id("offset"))))
 
 	decMapCodes := make([]Code, 0)
-	decMapCodes = append(decMapCodes, List(Id("offset"), Err()).Op(":=").Id(idDecoder).Dot("CheckStructHeader").Call(Lit(len(as.Fields)), Lit(0)))
+	decMapCodes = append(decMapCodes, List(Id("offset"), Err()).Op(":=").Id(idDecoder).Dot("CheckStructHeader").Call(Lit(len(as.Fields)), Id("offset")))
 	decMapCodes = append(decMapCodes, If(Err().Op("!=").Nil()).Block(
 		Return(Lit(0), Err()),
 	))

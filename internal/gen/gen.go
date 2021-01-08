@@ -43,6 +43,9 @@ type Generator struct {
 	outputDir           string
 	outputPackageName   string
 	outputPackagePrefix string
+
+	verbose bool
+	strict  bool
 }
 
 func (g *Generator) OutputPackageFullName() string {
@@ -74,7 +77,10 @@ func NewGenerator() *Generator {
 	}
 }
 
-func (g *Generator) Initialize(input, out string) {
+func (g *Generator) Initialize(input, out string, strict, verbose bool) {
+
+	g.strict = strict
+	g.verbose = verbose
 
 	outAbs, err := filepath.Abs(out)
 	if err != nil {
@@ -158,18 +164,25 @@ func (g *Generator) Generate() {
 		),
 	)
 
+	encReturn := Return(Nil(), Nil())
+	decReturn := Return(False(), Nil())
+	if g.strict {
+		encReturn = Return(Nil(), Qual("fmt", "Errorf").Call(Lit("undefined type!!")))
+		decReturn = Return(False(), Qual("fmt", "Errorf").Call(Lit("undefined type!!")))
+	}
+
 	g.decodeTopTemplate("decodeAsArray", f).Block(
 		Switch(Id("v").Op(":=").Id("i").Assert(Type())).Block(
 			g.decodeAsArrayCases()...,
 		),
-		Return(False(), Nil()),
+		decReturn,
 	)
 
 	g.decodeTopTemplate("decodeAsMap", f).Block(
 		Switch(Id("v").Op(":=").Id("i").Assert(Type())).Block(
 			g.decodeAsMapCases()...,
 		),
-		Return(False(), Nil()),
+		decReturn,
 	)
 
 	g.encodeTopTemplate("encode", f).Block(
@@ -184,14 +197,14 @@ func (g *Generator) Generate() {
 		Switch(Id("v").Op(":=").Id("i").Assert(Type())).Block(
 			g.encodeAsArrayCases()...,
 		),
-		Return(Nil(), Nil()),
+		encReturn,
 	)
 
 	g.encodeTopTemplate("encodeAsMap", f).Block(
 		Switch(Id("v").Op(":=").Id("i").Assert(Type())).Block(
 			g.encodeAsMapCases()...,
 		),
-		Return(Nil(), Nil()),
+		encReturn,
 	)
 
 	// todo : 名称修正

@@ -30,7 +30,7 @@ func main() {
 	}
 
 	g := gen.NewGenerator()
-	g.Initialize(*input, *out)
+	g.Initialize(*input, *out, *strict, *verbose)
 
 	// todo : この呼び方やめる
 	files := g.Dirwalk(*input)

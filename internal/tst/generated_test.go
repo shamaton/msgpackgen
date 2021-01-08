@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/shamaton/msgpack"
+	"github.com/shamaton/msgpackgen/msgpack"
 
 	"github.com/shamaton/msgpackgen/internal/tst"
 )
@@ -32,16 +32,17 @@ func RegisterGeneratedResolver() {
 }
 `))
 
-	file, err := os.OpenFile("./resolver.msgpackgen.go", os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0600)
+	file, err := os.Create("./resolver.msgpackgen.go")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer file.Close()
 
-	err = tpl.Execute(file, tpl)
+	err = tpl.Execute(file, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 }
 
 func TestInt(t *testing.T) {
@@ -50,7 +51,7 @@ func TestInt(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		b2, err := msgpack.EncodeStructAsArray(v)
+		b2, err := msgpack.EncodeAsArray(v)
 		if err != nil {
 			t.Error(err)
 		}
@@ -59,7 +60,7 @@ func TestInt(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		err = msgpack.DecodeStructAsArray(b2, &v2)
+		err = msgpack.DecodeAsArray(b2, &v2)
 		if err != nil {
 			t.Error(err)
 		}
@@ -68,17 +69,37 @@ func TestInt(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		b4, err := msgpack.EncodeStructAsArray(&v)
+		b4, err := msgpack.EncodeAsArray(&v)
 		if err != nil {
 			t.Error(err)
 		}
 
-		var v3, v4 *tst.A
+		v3, v4 := new(tst.A), new(tst.A)
 		err = msgpack.Decode(b3, &v3)
 		if err != nil {
 			t.Error(err)
 		}
-		err = msgpack.DecodeStructAsArray(b4, &v4)
+		err = msgpack.DecodeAsArray(b4, &v4)
+		if err != nil {
+			t.Error(err)
+		}
+
+		b5, err := msgpack.Encode(&v3)
+		if err != nil {
+			t.Error(err)
+		}
+		b6, err := msgpack.EncodeAsArray(&v4)
+		if err != nil {
+			t.Error(err)
+		}
+
+		_v5, _v6 := new(tst.A), new(tst.A)
+		v5, v6 := &_v5, &_v6
+		err = msgpack.Decode(b5, &v5)
+		if err != nil {
+			t.Error(err)
+		}
+		err = msgpack.DecodeAsArray(b6, &v6)
 		if err != nil {
 			t.Error(err)
 		}
@@ -95,7 +116,13 @@ func TestInt(t *testing.T) {
 		if v.Int != v4.Int || v.Uint != v4.Uint {
 			t.Error("not equal v4", v, v4)
 		}
-		t.Log(v1, v2, v3, v4)
+		if vv := *v5; v.Int != vv.Int || v.Uint != vv.Uint {
+			t.Error("not equal v5", v, vv)
+		}
+		if vv := *v6; v.Int != vv.Int || v.Uint != vv.Uint {
+			t.Error("not equal v6", v, vv)
+		}
+		t.Log(v1, v2, v3, v4, *v5, *v6)
 		// todo : ダブルポインタ、トリプル
 	}
 
