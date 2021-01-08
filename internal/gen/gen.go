@@ -337,8 +337,14 @@ func (g *Generator) decodeAsArrayCases() []Code {
 			List(Id("_"), Err()).Op(":=").Id(v.decodeArrayFuncName()).Call(Id("v"), Qual(pkDec, "NewDecoder").Call(Id("data")), Id("0")),
 			Return(True(), Err())))
 
-		for i := 0; i < g.pointer; i++ {
-			ptr := strings.Repeat("*", i+2)
+		if g.pointer > 0 {
+			states = append(states, Case(caseStatement("**")).Block(
+				List(Id("_"), Err()).Op(":=").Id(v.decodeArrayFuncName()).Call(Id("*v"), Qual(pkDec, "NewDecoder").Call(Id("data")), Id("0")),
+				Return(True(), Err())))
+		}
+
+		for i := 0; i < g.pointer-1; i++ {
+			ptr := strings.Repeat("*", i+3)
 			states = append(states, Case(caseStatement(ptr)).Block(
 				Return(Id(privateFuncNamePattern("decodeAsArray")).Call(Id("data"), Id("*v"))),
 			))
