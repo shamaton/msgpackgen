@@ -247,36 +247,46 @@ func (g *Generator) encodeTopTemplate(name string, f *File) *Statement {
 func (g *Generator) encodeAsArrayCases() []Code {
 	var states []Code
 	for _, v := range analyzedStructs {
-		for _, vv := range []string{"", "*"} {
-			var caseStatement *Statement
-			var errID *Statement
-			if v.NoUseQual {
-				caseStatement = Op(vv).Id(v.Name)
-				errID = Lit(v.Name)
-			} else {
-				caseStatement = Op(vv).Qual(v.PackageName, v.Name)
-				errID = Lit(v.PackageName + "." + v.Name)
-				//errID = Id("\"").Qual(v.PackageName, v.Name).Id("\"")
-			}
 
-			states = append(states, Case(caseStatement).Block(
+		var caseStatement func(string) *Statement
+		var errID *Statement
+		if v.NoUseQual {
+			caseStatement = func(op string) *Statement { return Op(op).Id(v.Name) }
+			errID = Lit(v.Name)
+		} else {
+			caseStatement = func(op string) *Statement { return Op(op).Qual(v.PackageName, v.Name) }
+			errID = Lit(v.PackageName + "." + v.Name)
+		}
+
+		f := func(ptr string) *Statement {
+			return Case(caseStatement(ptr)).Block(
 				Id(idEncoder).Op(":=").Qual(pkEnc, "NewEncoder").Call(),
-				List(Id("size"), Err()).Op(":=").Id(v.calcArraySizeFuncName()).Call(Id(vv+"v"), Id(idEncoder)),
+				List(Id("size"), Err()).Op(":=").Id(v.calcArraySizeFuncName()).Call(Id(ptr+"v"), Id(idEncoder)),
 				If(Err().Op("!=").Nil()).Block(
 					Return(Nil(), Err()),
 				),
 				Id(idEncoder).Dot("MakeBytes").Call(Id("size")),
-				List(Id("b"), Id("offset"), Err()).Op(":=").Id(v.encodeArrayFuncName()).Call(Id(vv+"v"), Id(idEncoder), Lit(0)),
+				List(Id("b"), Id("offset"), Err()).Op(":=").Id(v.encodeArrayFuncName()).Call(Id(ptr+"v"), Id(idEncoder), Lit(0)),
 				If(Err().Op("!=").Nil()).Block(
-					Id(idEncoder).Dot("ReleaseBytes").Call(),
 					Return(Nil(), Err()),
 				),
 				If(Id("size").Op("!=").Id("offset")).Block(
-					Id(idEncoder).Dot("ReleaseBytes").Call(),
 					Return(Nil(), Qual("fmt", "Errorf").Call(Lit("%s size / offset different %d : %d"), errID, Id("size"), Id("offset"))),
 				),
-				Id(idEncoder).Dot("ReleaseBytes").Call(),
 				Return(Id("b"), Err()),
+			)
+		}
+
+		states = append(states, f(""))
+
+		if g.pointer > 0 {
+			states = append(states, f("*"))
+		}
+
+		for i := 0; i < g.pointer-1; i++ {
+			ptr := strings.Repeat("*", i+2)
+			states = append(states, Case(caseStatement(ptr)).Block(
+				Return(Id(privateFuncNamePattern("encodeAsArray")).Call(Id("*v"))),
 			))
 		}
 	}
@@ -286,36 +296,46 @@ func (g *Generator) encodeAsArrayCases() []Code {
 func (g *Generator) encodeAsMapCases() []Code {
 	var states []Code
 	for _, v := range analyzedStructs {
-		for _, vv := range []string{"", "*"} {
-			var caseStatement *Statement
-			var errID *Statement
-			if v.NoUseQual {
-				caseStatement = Op(vv).Id(v.Name)
-				errID = Lit(v.Name)
-			} else {
-				caseStatement = Op(vv).Qual(v.PackageName, v.Name)
-				errID = Lit(v.PackageName + "." + v.Name)
-				//errID = Id("\"").Qual(v.PackageName, v.Name).Id("\"")
-			}
 
-			states = append(states, Case(caseStatement).Block(
+		var caseStatement func(string) *Statement
+		var errID *Statement
+		if v.NoUseQual {
+			caseStatement = func(op string) *Statement { return Op(op).Id(v.Name) }
+			errID = Lit(v.Name)
+		} else {
+			caseStatement = func(op string) *Statement { return Op(op).Qual(v.PackageName, v.Name) }
+			errID = Lit(v.PackageName + "." + v.Name)
+		}
+
+		f := func(ptr string) *Statement {
+			return Case(caseStatement(ptr)).Block(
 				Id(idEncoder).Op(":=").Qual(pkEnc, "NewEncoder").Call(),
-				List(Id("size"), Err()).Op(":=").Id(v.calcMapSizeFuncName()).Call(Id(vv+"v"), Id(idEncoder)),
+				List(Id("size"), Err()).Op(":=").Id(v.calcMapSizeFuncName()).Call(Id(ptr+"v"), Id(idEncoder)),
 				If(Err().Op("!=").Nil()).Block(
 					Return(Nil(), Err()),
 				),
 				Id(idEncoder).Dot("MakeBytes").Call(Id("size")),
-				List(Id("b"), Id("offset"), Err()).Op(":=").Id(v.encodeMapFuncName()).Call(Id(vv+"v"), Id(idEncoder), Lit(0)),
+				List(Id("b"), Id("offset"), Err()).Op(":=").Id(v.encodeMapFuncName()).Call(Id(ptr+"v"), Id(idEncoder), Lit(0)),
 				If(Err().Op("!=").Nil()).Block(
-					Id(idEncoder).Dot("ReleaseBytes").Call(),
 					Return(Nil(), Err()),
 				),
 				If(Id("size").Op("!=").Id("offset")).Block(
-					Id(idEncoder).Dot("ReleaseBytes").Call(),
 					Return(Nil(), Qual("fmt", "Errorf").Call(Lit("%s size / offset different %d : %d"), errID, Id("size"), Id("offset"))),
 				),
-				Id(idEncoder).Dot("ReleaseBytes").Call(),
 				Return(Id("b"), Err()),
+			)
+		}
+
+		states = append(states, f(""))
+
+		if g.pointer > 0 {
+			states = append(states, f("*"))
+		}
+
+		for i := 0; i < g.pointer-1; i++ {
+			ptr := strings.Repeat("*", i+2)
+			states = append(states, Case(caseStatement(ptr)).Block(
+				Return(Id(privateFuncNamePattern("encodeAsMap")).Call(Id("*v"))),
 			))
 		}
 	}
