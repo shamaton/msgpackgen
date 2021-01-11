@@ -135,7 +135,32 @@ func privateFuncNamePattern(funcName string) string {
 	return fmt.Sprintf("___%s", funcName)
 }
 
+func (g *Generator) Checking(sts []analyzedStruct) []analyzedStruct {
+	newStructs := make([]analyzedStruct, 0)
+	allOk := true
+	for _, v := range sts {
+		ok := true
+		for _, field := range v.Fields {
+			if !field.Ast.CanGenerate() {
+				ok = false
+			}
+		}
+		if !ok {
+			fmt.Printf("can not generate %s.%s\n", v.PackageName, v.Name)
+		} else {
+			newStructs = append(newStructs, v)
+		}
+		allOk = allOk && ok
+	}
+	if !allOk {
+		return g.Checking(newStructs)
+	} else {
+		return newStructs
+	}
+}
+
 func (g *Generator) Generate() {
+	analyzedStructs = g.Checking(analyzedStructs)
 
 	for _, st := range analyzedStructs {
 		funcIdMap[st.PackageName] = fmt.Sprintf("%x", sha256.Sum256([]byte(st.PackageName)))

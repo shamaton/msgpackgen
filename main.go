@@ -49,6 +49,8 @@ func main() {
 
 	// todo : 出力対象にしない構造体が見つからなくなるまで実行する
 
+	// todo : エラーハンドリング
+
 	g.GetPackages(files)
 	g.CreateAnalyzedStructs()
 	g.Generate()

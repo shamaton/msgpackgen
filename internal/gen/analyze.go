@@ -236,6 +236,36 @@ func (a analyzedASTFieldType) KeyValue() (*analyzedASTFieldType, *analyzedASTFie
 	return a.Key, a.Value
 }
 
+func (a analyzedASTFieldType) CanGenerate() bool {
+	switch {
+	case a.IsIdentical():
+		return true
+
+	case a.IsStruct():
+		if a.ImportPath == "time" && a.StructName == "Time" {
+			return true
+		}
+		// todo : performance
+		for _, v := range analyzedStructs {
+			if v.PackageName == a.ImportPath && v.Name == a.StructName {
+				return true
+			}
+		}
+		return false
+
+	case a.IsArray():
+		return a.Elm().CanGenerate()
+
+	case a.IsMap():
+		k, v := a.KeyValue()
+		return k.CanGenerate() && v.CanGenerate()
+
+	case a.IsPointer():
+		return a.Elm().CanGenerate()
+	}
+	return false
+}
+
 func (a analyzedASTFieldType) TypeJenChain(s ...*Statement) *Statement {
 	var str *Statement
 	if len(s) > 0 {
