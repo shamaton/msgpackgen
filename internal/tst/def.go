@@ -24,5 +24,6 @@ type NotGen struct {
 	M  map[float64]uint64
 	N  NotGenStruct
 	N2 NotGeStruct2
+	D  Def2
 	//NN tst.NotNotGen
 }

@@ -350,6 +350,18 @@ func (a analyzedASTFieldType) TypeString(s ...string) string {
 func (g *Generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFieldType, importMap map[string]string) (*analyzedASTFieldType, bool) {
 	if i, ok := expr.(*ast.Ident); ok {
 		fmt.Println("HHHHHHHHHHHHHHH", i.String(), i.Obj)
+		// todo : 整理
+		// same hierarchy struct
+		if i.Obj != nil && i.Obj.Kind == ast.Typ {
+			pkgName := g.OutputPackageFullName()
+			return &analyzedASTFieldType{
+				fieldType:   fieldTypeStruct,
+				PackageName: g.OutputPackageFullName(),
+				StructName:  i.String(),
+				ImportPath:  importMap[pkgName],
+				Parent:      parent,
+			}, true
+		}
 		return &analyzedASTFieldType{
 			fieldType:     fieldTypeIdent,
 			IdenticalName: i.Name,
