@@ -2,7 +2,7 @@ package tst
 
 // todo : ドットimportに未対応
 import (
-	. "github.com/shamaton/msgpackgen/internal/tst/tst"
+	tst2 "github.com/shamaton/msgpackgen/internal/tst/tst"
 	. "github.com/shamaton/msgpackgen/internal/tst/tst/tst"
 )
 
@@ -11,7 +11,7 @@ import (
 type A struct {
 	Int  int
 	Uint uint
-	B    B
+	B    tst2.B
 	BB   C
 }
 

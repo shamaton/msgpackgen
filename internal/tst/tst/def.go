@@ -1,4 +1,4 @@
-package tst
+package tst2
 
 type B struct {
 }

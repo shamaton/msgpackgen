@@ -46,57 +46,83 @@ func (g *Generator) getPackages(files []string) error {
 		if dir == g.outputDir {
 			g.outputPackagePrefix = filepath.Dir(prefix)
 			g.outputPackageName = packageName
-			g.noUserQualMap[file] = true
+			g.noUserQualMap[prefix] = true
 		} else if packageName == "main" {
 			// todo : verbose
+			// todo : 下の処理なくてもいいか
 			continue
 		}
 
 		g.parseFiles = append(g.parseFiles, parseFile)
 		g.fileNames = append(g.fileNames, file)
-		g.file2PackageName[file] = packageName
-		g.file2FullPackageName[file] = prefix
+		g.parseFile2fullPackage[parseFile] = prefix
+		g.fullPackage2package[prefix] = packageName
 		g.targetPackages[packageName] = true
-		if _, ok := g.fullpackage2ParseFiles[prefix]; !ok {
-			g.fullpackage2ParseFiles[prefix] = make([]*ast.File, 0)
+		if _, ok := g.fullPackage2ParseFiles[prefix]; !ok {
+			g.fullPackage2ParseFiles[prefix] = make([]*ast.File, 0)
 		}
-		g.fullpackage2ParseFiles[prefix] = append(g.fullpackage2ParseFiles[prefix], parseFile)
+		g.fullPackage2ParseFiles[prefix] = append(g.fullPackage2ParseFiles[prefix], parseFile)
 	}
 	return nil
 }
 
 func (g *Generator) createAnalyzedStructs() error {
-
 	analyzedMap := map[*ast.File]bool{}
-
-	for i, parseFile := range g.parseFiles {
+	for _, parseFile := range g.parseFiles {
 		// done analysis
 		if _, ok := analyzedMap[parseFile]; ok {
 			continue
 		}
 
-		fileName := g.fileNames[i]
-		importMap, dotImports := g.createImportMap(parseFile)
-		// todo : ドットインポートが見つかった場合先にそのファイルを解析してしまうようにする
-		//
-		for _, dotImport := range dotImports {
-			pfs, ok2 := g.fullpackage2ParseFiles[dotImport]
-			if !ok2 {
-				return fmt.Errorf("%s not found parse files", dotImport)
-			}
-			for _, pf := range pfs {
-				// todo : 前後のところ含めた関数化が必要
-				structs := g.createAnalyzedStructsPerFile(pf, "hoge")
-			}
+		fullPackageName, ok := g.parseFile2fullPackage[parseFile]
+		if !ok {
+			return fmt.Errorf("not found fullPackageName")
+		}
+		packageName, ok := g.fullPackage2package[fullPackageName]
+		if !ok {
+			return fmt.Errorf("not found package name")
 		}
 
-		structs := g.createAnalyzedStructsPerFile(parseFile, fileName, importMap)
-		analyzedStructs = append(analyzedStructs, structs...)
+		err := g.hogehoge(parseFile, packageName, fullPackageName, analyzedMap)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func (g *Generator) createAnalyzedStructsPerFile(parseFile *ast.File, fileName string, importMap map[string]string) []analyzedStruct {
+func (g *Generator) hogehoge(parseFile *ast.File, packageName, fullPackageName string, analyzedMap map[*ast.File]bool) error {
+
+	importMap, dotImports := g.createImportMap(parseFile)
+	// todo : ドットインポートが見つかった場合先にそのファイルを解析してしまうようにする
+	//
+	for _, dotImport := range dotImports {
+		pfs, ok := g.fullPackage2ParseFiles[dotImport]
+		if !ok {
+			return fmt.Errorf("%s not found parse files", dotImport)
+		}
+		name, ok := g.fullPackage2package[dotImport]
+		if !ok {
+			return fmt.Errorf("not found package name")
+		}
+
+		for _, pf := range pfs {
+			// todo : 前後のところ含めた関数化が必要
+			err := g.hogehoge(pf, name, dotImport, analyzedMap)
+			if err != nil {
+				return err
+			}
+			analyzedMap[pf] = true
+		}
+	}
+
+	structs := g.createAnalyzedStructsPerFile(parseFile, packageName, fullPackageName, importMap)
+	analyzedStructs = append(analyzedStructs, structs...)
+	analyzedMap[parseFile] = true
+	return nil
+}
+
+func (g *Generator) createAnalyzedStructsPerFile(parseFile *ast.File, packageName, fullPackageName string, importMap map[string]string) []analyzedStruct {
 
 	structNames := make([]string, 0)
 	analyzedFieldMap := map[string]*analyzedASTFieldType{}
@@ -111,7 +137,7 @@ func (g *Generator) createAnalyzedStructsPerFile(parseFile *ast.File, fileName s
 
 			// todo : 出力パッケージの場所と同じならLowerでもOK
 
-			if g.file2FullPackageName[fileName] != g.outputPackageFullName() && !unicode.IsUpper(rune(x.Name.String()[0])) {
+			if fullPackageName != g.outputPackageFullName() && !unicode.IsUpper(rune(x.Name.String()[0])) {
 				return true
 			}
 
@@ -141,13 +167,13 @@ func (g *Generator) createAnalyzedStructsPerFile(parseFile *ast.File, fileName s
 	for i, structName := range structNames {
 		fmt.Println()
 		fmt.Println()
-		fmt.Println(structName, ".........................................", g.noUserQualMap[fileName])
-		fields := g.createAnalyzedFields(g.file2PackageName[fileName], structName, analyzedFieldMap, g.fileSet, parseFile)
+		fmt.Println(structName, ".........................................", g.noUserQualMap[fullPackageName])
+		fields := g.createAnalyzedFields(packageName, structName, analyzedFieldMap, g.fileSet, parseFile)
 		structs[i] = analyzedStruct{
-			PackageName: g.file2FullPackageName[fileName],
+			PackageName: fullPackageName,
 			Name:        structName,
 			Fields:      fields,
-			NoUseQual:   g.noUserQualMap[fileName],
+			NoUseQual:   g.noUserQualMap[fullPackageName],
 		}
 
 	}

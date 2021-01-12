@@ -36,9 +36,9 @@ type Generator struct {
 	targetPackages         map[string]bool
 	parseFiles             []*ast.File
 	fileNames              []string
-	file2FullPackageName   map[string]string
-	file2PackageName       map[string]string
-	fullpackage2ParseFiles map[string][]*ast.File
+	fullPackage2ParseFiles map[string][]*ast.File
+	parseFile2fullPackage  map[*ast.File]string
+	fullPackage2package    map[string]string
 	noUserQualMap          map[string]bool
 
 	outputDir           string
@@ -70,15 +70,16 @@ type analyzedField struct {
 
 func NewGenerator(pointer int, strict, verbose bool) *Generator {
 	return &Generator{
-		pointer:              pointer,
-		strict:               strict,
-		verbose:              verbose,
-		targetPackages:       map[string]bool{},
-		parseFiles:           []*ast.File{},
-		fileNames:            []string{},
-		file2FullPackageName: map[string]string{},
-		file2PackageName:     map[string]string{},
-		noUserQualMap:        map[string]bool{},
+		pointer:                pointer,
+		strict:                 strict,
+		verbose:                verbose,
+		targetPackages:         map[string]bool{},
+		parseFiles:             []*ast.File{},
+		fileNames:              []string{},
+		fullPackage2package:    map[string]string{},
+		fullPackage2ParseFiles: map[string][]*ast.File{},
+		parseFile2fullPackage:  map[*ast.File]string{},
+		noUserQualMap:          map[string]bool{},
 	}
 }
 
