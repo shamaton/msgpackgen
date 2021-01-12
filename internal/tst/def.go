@@ -1,5 +1,6 @@
 package tst
 
+// todo : ドットimportに未対応
 import "github.com/shamaton/msgpackgen/internal/tst/tst"
 
 //go:generate go run github.com/shamaton/msgpackgen -strict

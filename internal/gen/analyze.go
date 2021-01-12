@@ -139,14 +139,14 @@ func (g *Generator) createAnalyzedFields(packageName, structName string, analyze
 
 	// todo : ここなにか解決策あれば
 	imp := importer.Default()
-	_, err := imp.Import("github.com/shamaton/msgpackgen/internal/tst/tst")
-	if err != nil {
-		fmt.Println("import error", err)
-	}
+	//_, err := imp.Import("github.com/shamaton/msgpackgen/internal/tst/tst")
+	//if err != nil {
+	//	fmt.Println("import error", err)
+	//}
 	conf := types.Config{
 		Importer: imp,
 		Error: func(err error) {
-			fmt.Printf("!!! %#v\n", err)
+			// fmt.Printf("!!! %#v\n", err)
 		},
 	}
 

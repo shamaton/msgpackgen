@@ -161,6 +161,7 @@ func (a analyzedASTFieldType) TypeString(s ...string) string {
 func (g *Generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFieldType, importMap map[string]string) (*analyzedASTFieldType, bool) {
 	if i, ok := expr.(*ast.Ident); ok {
 		// todo : 整理
+		fmt.Println(i.Name, i.Obj, expr)
 		// same hierarchy struct
 		if i.Obj != nil && i.Obj.Kind == ast.Typ {
 			return &analyzedASTFieldType{
