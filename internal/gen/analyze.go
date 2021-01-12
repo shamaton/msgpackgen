@@ -236,34 +236,41 @@ func (a analyzedASTFieldType) KeyValue() (*analyzedASTFieldType, *analyzedASTFie
 	return a.Key, a.Value
 }
 
-func (a analyzedASTFieldType) CanGenerate() bool {
+func (a analyzedASTFieldType) CanGenerate(sts []analyzedStruct) (bool, []string) {
+	msgs := make([]string, 0)
+	fmt.Println(a.ImportPath, a.StructName, a.fieldType, a.IdenticalName)
 	switch {
 	case a.IsIdentical():
-		return true
+		return true, msgs
 
 	case a.IsStruct():
+		fmt.Println("GGGGGGGGGGGGGGGGGGGGGGG", a.ImportPath, a.StructName)
 		if a.ImportPath == "time" && a.StructName == "Time" {
-			return true
+			return true, msgs
 		}
 		// todo : performance
-		for _, v := range analyzedStructs {
+		for _, v := range sts {
 			if v.PackageName == a.ImportPath && v.Name == a.StructName {
-				return true
+				return true, msgs
 			}
 		}
-		return false
+		return false, append(msgs, fmt.Sprintf("struct %s.%s is not generated.", a.ImportPath, a.StructName))
 
 	case a.IsArray():
-		return a.Elm().CanGenerate()
+		return a.Elm().CanGenerate(sts)
 
 	case a.IsMap():
 		k, v := a.KeyValue()
-		return k.CanGenerate() && v.CanGenerate()
+		kb, kMsgs := k.CanGenerate(sts)
+		vb, vMsgs := v.CanGenerate(sts)
+		msgs = append(msgs, kMsgs...)
+		msgs = append(msgs, vMsgs...)
+		return kb && vb, msgs
 
 	case a.IsPointer():
-		return a.Elm().CanGenerate()
+		return a.Elm().CanGenerate(sts)
 	}
-	return false
+	return false, append(msgs, "unreachable code")
 }
 
 func (a analyzedASTFieldType) TypeJenChain(s ...*Statement) *Statement {
@@ -342,6 +349,7 @@ func (a analyzedASTFieldType) TypeString(s ...string) string {
 
 func (g *Generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFieldType, importMap map[string]string) (*analyzedASTFieldType, bool) {
 	if i, ok := expr.(*ast.Ident); ok {
+		fmt.Println("HHHHHHHHHHHHHHH", i.String(), i.Obj)
 		return &analyzedASTFieldType{
 			fieldType:     fieldTypeIdent,
 			IdenticalName: i.Name,

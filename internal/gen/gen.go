@@ -139,14 +139,18 @@ func (g *Generator) Checking(sts []analyzedStruct) []analyzedStruct {
 	newStructs := make([]analyzedStruct, 0)
 	allOk := true
 	for _, v := range sts {
+		fmt.Println("FFFFFFFFFFFFFFFFF", v.PackageName, v.Name, len(v.Fields))
 		ok := true
+		var reasons []string
 		for _, field := range v.Fields {
-			if !field.Ast.CanGenerate() {
+			if canGen, msgs := field.Ast.CanGenerate(sts); !canGen {
 				ok = false
+				reasons = append(reasons, msgs...)
 			}
 		}
 		if !ok {
 			fmt.Printf("can not generate %s.%s\n", v.PackageName, v.Name)
+			fmt.Println("reason :", strings.Join(reasons, "\n"))
 		} else {
 			newStructs = append(newStructs, v)
 		}
