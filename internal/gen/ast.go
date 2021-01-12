@@ -158,10 +158,21 @@ func (a analyzedASTFieldType) TypeString(s ...string) string {
 	return str
 }
 
-func (g *Generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFieldType, importMap map[string]string) (*analyzedASTFieldType, bool) {
+func (g *Generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFieldType, importMap map[string]string, dotStructs map[string]analyzedStruct) (*analyzedASTFieldType, bool) {
 	if i, ok := expr.(*ast.Ident); ok {
 		// todo : 整理
 		fmt.Println(i.Name, i.Obj, expr)
+
+		if dot, found := dotStructs[i.Name]; found {
+			fmt.Println("fffffffffffffind!!!")
+			return &analyzedASTFieldType{
+				fieldType:   fieldTypeStruct,
+				PackageName: dot.Name,
+				StructName:  i.String(),
+				ImportPath:  dot.PackageName,
+				Parent:      parent,
+			}, true
+		}
 		// same hierarchy struct
 		if i.Obj != nil && i.Obj.Kind == ast.Typ {
 			return &analyzedASTFieldType{
@@ -193,7 +204,7 @@ func (g *Generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 			fieldType: fieldTypeArray,
 			Parent:    parent,
 		}
-		key, check := g.checkFieldTypeRecursive(array.Elt, node, importMap)
+		key, check := g.checkFieldTypeRecursive(array.Elt, node, importMap, dotStructs)
 		node.Key = key
 		return node, check
 	}
@@ -202,8 +213,8 @@ func (g *Generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 			fieldType: fieldTypeMap,
 			Parent:    parent,
 		}
-		key, c1 := g.checkFieldTypeRecursive(mp.Key, node, importMap)
-		value, c2 := g.checkFieldTypeRecursive(mp.Value, node, importMap)
+		key, c1 := g.checkFieldTypeRecursive(mp.Key, node, importMap, dotStructs)
+		value, c2 := g.checkFieldTypeRecursive(mp.Value, node, importMap, dotStructs)
 		node.Key = key
 		node.Value = value
 		return node, c1 && c2
@@ -213,7 +224,7 @@ func (g *Generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 			fieldType: fieldTypePointer,
 			Parent:    parent,
 		}
-		key, check := g.checkFieldTypeRecursive(star.X, node, importMap)
+		key, check := g.checkFieldTypeRecursive(star.X, node, importMap, dotStructs)
 		node.Key = key
 		return node, check
 	}

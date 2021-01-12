@@ -96,6 +96,7 @@ func (g *Generator) hogehoge(parseFile *ast.File, packageName, fullPackageName s
 	importMap, dotImports := g.createImportMap(parseFile)
 	// todo : ドットインポートが見つかった場合先にそのファイルを解析してしまうようにする
 	//
+	dotStructs := map[string]analyzedStruct{}
 	for _, dotImport := range dotImports {
 		pfs, ok := g.fullPackage2ParseFiles[dotImport]
 		if !ok {
@@ -114,15 +115,21 @@ func (g *Generator) hogehoge(parseFile *ast.File, packageName, fullPackageName s
 			}
 			analyzedMap[pf] = true
 		}
+
+		for _, st := range analyzedStructs {
+			if st.PackageName == dotImport {
+				dotStructs[st.Name] = st
+			}
+		}
 	}
 
-	structs := g.createAnalyzedStructsPerFile(parseFile, packageName, fullPackageName, importMap)
+	structs := g.createAnalyzedStructsPerFile(parseFile, packageName, fullPackageName, importMap, dotStructs)
 	analyzedStructs = append(analyzedStructs, structs...)
 	analyzedMap[parseFile] = true
 	return nil
 }
 
-func (g *Generator) createAnalyzedStructsPerFile(parseFile *ast.File, packageName, fullPackageName string, importMap map[string]string) []analyzedStruct {
+func (g *Generator) createAnalyzedStructsPerFile(parseFile *ast.File, packageName, fullPackageName string, importMap map[string]string, dotStructs map[string]analyzedStruct) []analyzedStruct {
 
 	structNames := make([]string, 0)
 	analyzedFieldMap := map[string]*analyzedASTFieldType{}
@@ -150,7 +157,7 @@ func (g *Generator) createAnalyzedStructsPerFile(parseFile *ast.File, packageNam
 				}
 
 				// todo : dotImportMapが必要
-				value, ok := g.checkFieldTypeRecursive(field.Type, nil, importMap)
+				value, ok := g.checkFieldTypeRecursive(field.Type, nil, importMap, dotStructs)
 				canGen = canGen && ok
 				if ok {
 					analyzedFieldMap[key+"@"+x.Name.String()] = value
