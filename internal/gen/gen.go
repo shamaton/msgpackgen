@@ -100,8 +100,6 @@ func (g *Generator) Initialize(input, out string, pointer int, strict, verbose b
 
 	// todo : ファイル指定オプション
 
-	fmt.Println(g.outputDir, outAbs)
-	fmt.Println("output pacagek is 222... ", g.outputPackagePrefix, g.outputPackageName)
 }
 
 func (g *Generator) Dirwalk(dir string) []string {
@@ -139,7 +137,6 @@ func (g *Generator) Checking(sts []analyzedStruct) []analyzedStruct {
 	newStructs := make([]analyzedStruct, 0)
 	allOk := true
 	for _, v := range sts {
-		fmt.Println("FFFFFFFFFFFFFFFFF", v.PackageName, v.Name, len(v.Fields))
 		ok := true
 		var reasons []string
 		for _, field := range v.Fields {
