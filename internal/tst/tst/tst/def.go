@@ -1,5 +1,5 @@
 package tst
 
-type B struct {
+type C struct {
 	B int
 }

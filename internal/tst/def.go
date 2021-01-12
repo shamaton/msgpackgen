@@ -1,14 +1,18 @@
 package tst
 
 // todo : ドットimportに未対応
-import "github.com/shamaton/msgpackgen/internal/tst/tst"
+import (
+	. "github.com/shamaton/msgpackgen/internal/tst/tst"
+	. "github.com/shamaton/msgpackgen/internal/tst/tst/tst"
+)
 
 //go:generate go run github.com/shamaton/msgpackgen -strict
 
 type A struct {
 	Int  int
 	Uint uint
-	B    tst.B
+	B    B
+	BB   C
 }
 
 type NotGenStruct struct {

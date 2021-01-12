@@ -32,13 +32,14 @@ const (
 var funcIdMap = map[string]string{}
 
 type Generator struct {
-	fileSet              *token.FileSet
-	targetPackages       map[string]bool
-	parseFiles           []*ast.File
-	fileNames            []string
-	file2FullPackageName map[string]string
-	file2PackageName     map[string]string
-	noUserQualMap        map[string]bool
+	fileSet                *token.FileSet
+	targetPackages         map[string]bool
+	parseFiles             []*ast.File
+	fileNames              []string
+	file2FullPackageName   map[string]string
+	file2PackageName       map[string]string
+	fullpackage2ParseFiles map[string][]*ast.File
+	noUserQualMap          map[string]bool
 
 	outputDir           string
 	outputPackageName   string
