@@ -34,12 +34,11 @@ func main() {
 		*pointer = 1
 	}
 
-	g := gen.NewGenerator()
-	g.Initialize(*input, *out, *pointer, *strict, *verbose)
-
-	// todo : この呼び方やめる
-	files := g.Dirwalk(*input)
-	fmt.Println(files)
+	g := gen.NewGenerator(*pointer, *strict, *verbose)
+	err = g.Run(*input, *out)
+	if err != nil {
+		panic(err)
+	}
 
 	// 最初にgenerate対象のパッケージをすべて取得
 	// できればコードにエラーがない状態を知りたい
@@ -51,7 +50,4 @@ func main() {
 
 	// todo : エラーハンドリング
 
-	g.GetPackages(files)
-	g.CreateAnalyzedStructs()
-	g.Generate()
 }

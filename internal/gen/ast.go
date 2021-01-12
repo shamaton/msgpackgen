@@ -167,7 +167,7 @@ func (g *Generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 				fieldType:   fieldTypeStruct,
 				PackageName: g.outputPackageName,
 				StructName:  i.String(),
-				ImportPath:  g.OutputPackageFullName(),
+				ImportPath:  g.outputPackageFullName(),
 				Parent:      parent,
 			}, true
 		}

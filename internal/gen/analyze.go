@@ -15,7 +15,7 @@ import (
 	. "github.com/dave/jennifer/jen"
 )
 
-func (g *Generator) GetPackages(files []string) error {
+func (g *Generator) getPackages(files []string) error {
 	g.fileSet = token.NewFileSet()
 	for _, file := range files {
 
@@ -61,7 +61,7 @@ func (g *Generator) GetPackages(files []string) error {
 	return nil
 }
 
-func (g *Generator) CreateAnalyzedStructs() error {
+func (g *Generator) createAnalyzedStructs() error {
 
 	for i, parseFile := range g.parseFiles {
 		fileName := g.fileNames[i]
@@ -93,7 +93,7 @@ func (g *Generator) CreateAnalyzedStructs() error {
 
 				// todo : 出力パッケージの場所と同じならLowerでもOK
 
-				if g.file2FullPackageName[fileName] != g.OutputPackageFullName() && !unicode.IsUpper(rune(x.Name.String()[0])) {
+				if g.file2FullPackageName[fileName] != g.outputPackageFullName() && !unicode.IsUpper(rune(x.Name.String()[0])) {
 					return true
 				}
 
@@ -139,14 +139,14 @@ func (g *Generator) createAnalyzedFields(packageName, structName string, analyze
 
 	// todo : ここなにか解決策あれば
 	imp := importer.Default()
-	_, err := imp.Import("github.com/shamaton/tetest/example/item")
+	_, err := imp.Import("github.com/shamaton/msgpackgen/internal/tst/tst")
 	if err != nil {
 		fmt.Println("import error", err)
 	}
 	conf := types.Config{
 		Importer: imp,
 		Error: func(err error) {
-			//fmt.Printf("!!! %#v\n", err)
+			fmt.Printf("!!! %#v\n", err)
 		},
 	}
 
