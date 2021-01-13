@@ -98,10 +98,12 @@ func (g *Generator) createAnalyzedStructs(parseFile *ast.File, packageName, full
 	for _, dotImport := range dotImports {
 		pfs, ok := g.fullPackage2ParseFiles[dotImport]
 		if !ok {
+			continue
 			return fmt.Errorf("%s not found parse files", dotImport)
 		}
 		name, ok := g.fullPackage2package[dotImport]
 		if !ok {
+			continue
 			return fmt.Errorf("not found package name")
 		}
 

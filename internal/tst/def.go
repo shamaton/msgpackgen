@@ -1,6 +1,7 @@
 package tst
 
 import (
+	. "github.com/shamaton/msgpackgen/internal/gen"
 	tst2 "github.com/shamaton/msgpackgen/internal/tst/tst"
 	. "github.com/shamaton/msgpackgen/internal/tst/tst/tst"
 )
@@ -22,6 +23,7 @@ type A struct {
 	C    complex128
 	Emb
 	tst2.B
+	G Generator
 }
 
 //func (a A) F() { a.Emb = Emb{Val: 1} }

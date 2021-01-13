@@ -109,7 +109,10 @@ func (g *Generator) Run(input, out string) error {
 	if err != nil {
 		return err
 	}
-	g.analyze()
+	err = g.analyze()
+	if err != nil {
+		return err
+	}
 	analyzedStructs = g.filter(analyzedStructs)
 	g.generateCode()
 	return nil
@@ -213,19 +216,39 @@ func (g *Generator) generateCode() {
 		decReturn = Return(False(), Qual("fmt", "Errorf").Call(Lit("use strict option : undefined type")))
 	}
 
-	g.decodeTopTemplate("decodeAsArray", f).Block(
-		Switch(Id("v").Op(":=").Id("i").Assert(Type())).Block(
-			g.decodeAsArrayCases()...,
-		),
-		decReturn,
-	)
+	decodeAsArrayCode := []Code{decReturn}
+	decodeAsMapCode := []Code{decReturn}
+	encodeAsArrayCode := []Code{encReturn}
+	encodeAsMapCode := []Code{encReturn}
+	if len(analyzedStructs) > 0 {
+		decodeAsArrayCode = append([]Code{
+			Switch(Id("v").Op(":=").Id("i").Assert(Type())).Block(
+				g.decodeAsArrayCases()...,
+			)},
+			decodeAsArrayCode...,
+		)
+		decodeAsMapCode = append([]Code{
+			Switch(Id("v").Op(":=").Id("i").Assert(Type())).Block(
+				g.decodeAsMapCases()...,
+			)},
+			decodeAsMapCode...,
+		)
+		encodeAsArrayCode = append([]Code{
+			Switch(Id("v").Op(":=").Id("i").Assert(Type())).Block(
+				g.encodeAsArrayCases()...,
+			)},
+			encodeAsArrayCode...,
+		)
+		encodeAsMapCode = append([]Code{
+			Switch(Id("v").Op(":=").Id("i").Assert(Type())).Block(
+				g.encodeAsMapCases()...,
+			)},
+			encodeAsMapCode...,
+		)
+	}
 
-	g.decodeTopTemplate("decodeAsMap", f).Block(
-		Switch(Id("v").Op(":=").Id("i").Assert(Type())).Block(
-			g.decodeAsMapCases()...,
-		),
-		decReturn,
-	)
+	g.decodeTopTemplate("decodeAsArray", f).Block(decodeAsArrayCode...)
+	g.decodeTopTemplate("decodeAsMap", f).Block(decodeAsMapCode...)
 
 	g.encodeTopTemplate("encode", f).Block(
 		If(Qual(pkTop, "StructAsArray").Call()).Block(
@@ -235,19 +258,8 @@ func (g *Generator) generateCode() {
 		),
 	)
 
-	g.encodeTopTemplate("encodeAsArray", f).Block(
-		Switch(Id("v").Op(":=").Id("i").Assert(Type())).Block(
-			g.encodeAsArrayCases()...,
-		),
-		encReturn,
-	)
-
-	g.encodeTopTemplate("encodeAsMap", f).Block(
-		Switch(Id("v").Op(":=").Id("i").Assert(Type())).Block(
-			g.encodeAsMapCases()...,
-		),
-		encReturn,
-	)
+	g.encodeTopTemplate("encodeAsArray", f).Block(encodeAsArrayCode...)
+	g.encodeTopTemplate("encodeAsMap", f).Block(encodeAsMapCode...)
 
 	// todo : 名称修正
 	for _, st := range analyzedStructs {

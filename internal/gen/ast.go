@@ -181,18 +181,19 @@ func (g *Generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 				Parent:      parent,
 			}, true
 		}
-		// can not generate
-		// todo : error skip??
-		if i.Name == "uintptr" || i.Name == "error" {
-			return nil, false
-		}
 
 		// todo : 型を念の為判定しておく必要がありそう
-		return &analyzedASTFieldType{
-			fieldType:     fieldTypeIdent,
-			IdenticalName: i.Name,
-			Parent:        parent,
-		}, true
+		if isPrimitive(i.Name) {
+			return &analyzedASTFieldType{
+				fieldType:     fieldTypeIdent,
+				IdenticalName: i.Name,
+				Parent:        parent,
+			}, true
+		}
+
+		// can not generate
+		// todo : error skip??
+		return nil, false
 	}
 	if selector, ok := expr.(*ast.SelectorExpr); ok {
 		pkgName := fmt.Sprint(selector.X) // todo : ok?
@@ -239,4 +240,24 @@ func (g *Generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 
 	// unreachable
 	return nil, false
+}
+
+func isPrimitive(name string) bool {
+	switch name {
+	case "int", "int8", "int16", "int32", "int64":
+		return true
+
+	case "uint", "uint8", "uint16", "uint32", "uint64":
+		return true
+
+	case "float32", "float64":
+		return true
+
+	case "string", "rune":
+		return true
+
+	case "bool", "byte", "complex64", "complex128":
+		return true
+	}
+	return false
 }
