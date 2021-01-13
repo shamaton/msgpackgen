@@ -1,8 +1,6 @@
 package tst
 
 import (
-	. "time"
-
 	tst2 "github.com/shamaton/msgpackgen/internal/tst/tst"
 	. "github.com/shamaton/msgpackgen/internal/tst/tst/tst"
 )
