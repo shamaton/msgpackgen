@@ -82,7 +82,7 @@ func (g *Generator) analyze() error {
 			return fmt.Errorf("not found package name")
 		}
 
-		err := g.hogehoge(parseFile, packageName, fullPackageName, analyzedMap)
+		err := g.createAnalyzedStructs(parseFile, packageName, fullPackageName, analyzedMap)
 		if err != nil {
 			return err
 		}
@@ -90,11 +90,10 @@ func (g *Generator) analyze() error {
 	return nil
 }
 
-func (g *Generator) hogehoge(parseFile *ast.File, packageName, fullPackageName string, analyzedMap map[*ast.File]bool) error {
+func (g *Generator) createAnalyzedStructs(parseFile *ast.File, packageName, fullPackageName string, analyzedMap map[*ast.File]bool) error {
 
 	importMap, dotImports := g.createImportMap(parseFile)
-	// todo : ドットインポートが見つかった場合先にそのファイルを解析してしまうようにする
-	//
+	// dot imports
 	dotStructs := map[string]analyzedStruct{}
 	for _, dotImport := range dotImports {
 		pfs, ok := g.fullPackage2ParseFiles[dotImport]
@@ -107,8 +106,7 @@ func (g *Generator) hogehoge(parseFile *ast.File, packageName, fullPackageName s
 		}
 
 		for _, pf := range pfs {
-			// todo : 前後のところ含めた関数化が必要
-			err := g.hogehoge(pf, name, dotImport, analyzedMap)
+			err := g.createAnalyzedStructs(pf, name, dotImport, analyzedMap)
 			if err != nil {
 				return err
 			}
@@ -121,14 +119,6 @@ func (g *Generator) hogehoge(parseFile *ast.File, packageName, fullPackageName s
 			}
 		}
 	}
-
-	structs := g.createAnalyzedStructsPerFile(parseFile, packageName, fullPackageName, importMap, dotStructs)
-	analyzedStructs = append(analyzedStructs, structs...)
-	analyzedMap[parseFile] = true
-	return nil
-}
-
-func (g *Generator) createAnalyzedStructsPerFile(parseFile *ast.File, packageName, fullPackageName string, importMap map[string]string, dotStructs map[string]analyzedStruct) []analyzedStruct {
 
 	structNames := make([]string, 0)
 	analyzedFieldMap := map[string]*analyzedASTFieldType{}
@@ -180,7 +170,9 @@ func (g *Generator) createAnalyzedStructsPerFile(parseFile *ast.File, packageNam
 		}
 
 	}
-	return structs
+	analyzedStructs = append(analyzedStructs, structs...)
+	analyzedMap[parseFile] = true
+	return nil
 }
 
 func (g *Generator) createImportMap(parseFile *ast.File) (map[string]string, []string) {
