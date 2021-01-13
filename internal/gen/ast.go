@@ -51,6 +51,7 @@ func (a analyzedASTFieldType) KeyValue() (*analyzedASTFieldType, *analyzedASTFie
 
 func (a analyzedASTFieldType) CanGenerate(sts []analyzedStruct) (bool, []string) {
 	msgs := make([]string, 0)
+	fmt.Println("a is ____", a.fieldType)
 	switch {
 	case a.IsIdentical():
 		return true, msgs
@@ -61,6 +62,7 @@ func (a analyzedASTFieldType) CanGenerate(sts []analyzedStruct) (bool, []string)
 		}
 		// todo : performance
 		for _, v := range sts {
+			fmt.Println("IsStruct", a.ImportPath, a.StructName, v.PackageName, v.Name)
 			if v.PackageName == a.ImportPath && v.Name == a.StructName {
 				return true, msgs
 			}
@@ -159,11 +161,13 @@ func (a analyzedASTFieldType) TypeString(s ...string) string {
 }
 
 func (g *Generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFieldType, importMap map[string]string, dotStructs map[string]analyzedStruct) (*analyzedASTFieldType, bool) {
+
 	if i, ok := expr.(*ast.Ident); ok {
+		fmt.Println(i.Name, i.Obj)
 		// todo : 整理
-		fmt.Println(i.Name, i.Obj, expr)
 
 		if dot, found := dotStructs[i.Name]; found {
+			fmt.Println("dot struct", i.Name, dot.Name, dot.PackageName)
 			return &analyzedASTFieldType{
 				fieldType:   fieldTypeStruct,
 				PackageName: dot.Name,
@@ -192,6 +196,8 @@ func (g *Generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 			return nil, false
 		}
 
+		// todo : embedded
+
 		return &analyzedASTFieldType{
 			fieldType:     fieldTypeIdent,
 			IdenticalName: i.Name,
@@ -200,6 +206,7 @@ func (g *Generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 	}
 	if selector, ok := expr.(*ast.SelectorExpr); ok {
 		pkgName := fmt.Sprint(selector.X) // todo : ok?
+		fmt.Println("selector", pkgName, importMap[pkgName])
 		return &analyzedASTFieldType{
 			fieldType:   fieldTypeStruct,
 			PackageName: pkgName,
@@ -240,5 +247,7 @@ func (g *Generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 	if _, ok := expr.(*ast.InterfaceType); ok {
 		return nil, false
 	}
+
+	fmt.Println("undreaaaaaaaaaaaaaaaaaaaaaaaaaas", expr)
 	return nil, false
 }

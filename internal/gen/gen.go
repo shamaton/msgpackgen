@@ -110,7 +110,9 @@ func (g *Generator) Run(input, out string) error {
 		return err
 	}
 	g.createAnalyzedStructs()
+	fmt.Println(analyzedStructs)
 	analyzedStructs = g.filter(analyzedStructs)
+	fmt.Println(analyzedStructs)
 	g.generateCode()
 	return nil
 }
@@ -157,6 +159,7 @@ func (g *Generator) filter(sts []analyzedStruct) []analyzedStruct {
 		ok := true
 		var reasons []string
 		for _, field := range v.Fields {
+			fmt.Println("fiiiiiiiiield", field, field.Ast == nil)
 			if canGen, msgs := field.Ast.CanGenerate(sts); !canGen {
 				ok = false
 				reasons = append(reasons, msgs...)

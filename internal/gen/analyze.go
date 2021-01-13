@@ -148,12 +148,9 @@ func (g *Generator) createAnalyzedStructsPerFile(parseFile *ast.File, packageNam
 			}
 
 			canGen := true
-			for _, field := range st.Fields.List {
+			for i, field := range st.Fields.List {
 
-				key := ""
-				for _, name := range field.Names {
-					key = name.Name
-				}
+				key := fmt.Sprint(i)
 
 				// todo : dotImportMapが必要
 				value, ok := g.checkFieldTypeRecursive(field.Type, nil, importMap, dotStructs)
@@ -261,7 +258,7 @@ func (g *Generator) createAnalyzedFields(packageName, structName string, analyze
 				Name: name,
 				Tag:  tag,
 				Type: field.Type(),
-				Ast:  analyzedFieldMap[name+"@"+structName],
+				Ast:  analyzedFieldMap[fmt.Sprint(i)+"@"+structName],
 			})
 		}
 	}

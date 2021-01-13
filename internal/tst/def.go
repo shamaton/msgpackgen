@@ -7,33 +7,23 @@ import (
 
 //go:generate go run github.com/shamaton/msgpackgen -strict
 
+// point
+// ドットインポートできる
+// 別名インポートも出力できる
+// ワンファイル
+// msgp以上にこうそく
+
 type A struct {
 	Int  int
 	Uint uint
-	B    tst2.B
 	BB   B
 	R    rune
-	E    complex64
+	Emb
+	tst2.B
 }
 
-type H struct {
-	P uintptr
-}
+//func (a A) F() { a.Emb = Emb{Val: 1} }
 
-type NotGenStruct struct {
-	Interface interface{}
-	Int       int
-}
-
-type NotGeStruct2 struct {
-	I interface{}
-}
-
-type NotGen struct {
-	A  []float32
-	M  map[float64]uint64
-	N  NotGenStruct
-	N2 NotGeStruct2
-	D  Def2
-	//NN tst.NotNotGen
+type Emb struct {
+	Val int
 }

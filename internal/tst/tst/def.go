@@ -4,5 +4,5 @@ type B struct {
 }
 
 type NotNotGen struct {
-	I interface{}
+	//I interface{}
 }
