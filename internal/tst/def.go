@@ -10,6 +10,7 @@ import (
 // point
 // ドットインポートできる
 // 別名インポートも出力できる
+// can embedded
 // ワンファイル
 // msgp以上にこうそく
 
@@ -18,6 +19,7 @@ type A struct {
 	Uint uint
 	BB   B
 	R    rune
+	C    complex128
 	Emb
 	tst2.B
 }

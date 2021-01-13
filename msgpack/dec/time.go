@@ -13,11 +13,13 @@ func (d *Decoder) AsDateTime(offset int) (time.Time, int, error) {
 
 	switch code {
 	case def.Fixext4:
+		// todo : check -1
 		_, offset = d.readSize1(offset)
 		bs, offset := d.readSize4(offset)
 		return time.Unix(int64(binary.BigEndian.Uint32(bs)), 0), offset, nil
 
 	case def.Fixext8:
+		// todo : check -1
 		_, offset = d.readSize1(offset)
 		bs, offset := d.readSize8(offset)
 		data64 := binary.BigEndian.Uint64(bs)
@@ -28,7 +30,9 @@ func (d *Decoder) AsDateTime(offset int) (time.Time, int, error) {
 		return time.Unix(int64(data64&0x00000003ffffffff), nano), offset, nil
 
 	case def.Ext8:
+		// todo : check -1
 		_, offset = d.readSize1(offset)
+		// todo : check 12
 		_, offset = d.readSize1(offset)
 		nanobs, offset := d.readSize4(offset)
 		secbs, offset := d.readSize8(offset)

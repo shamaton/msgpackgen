@@ -191,13 +191,7 @@ func (g *Generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 			return nil, false
 		}
 
-		// todo : complex
-		if i.Name == "complex64" || i.Name == "complex128" {
-			return nil, false
-		}
-
-		// todo : embedded
-
+		// todo : 型を念の為判定しておく必要がありそう
 		return &analyzedASTFieldType{
 			fieldType:     fieldTypeIdent,
 			IdenticalName: i.Name,
