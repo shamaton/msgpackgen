@@ -161,6 +161,7 @@ func (a analyzedASTFieldType) TypeString(s ...string) string {
 func (g *Generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFieldType, importMap map[string]string, dotStructs map[string]analyzedStruct) (*analyzedASTFieldType, bool) {
 
 	if i, ok := expr.(*ast.Ident); ok {
+
 		// dot import
 		if dot, found := dotStructs[i.Name]; found {
 			return &analyzedASTFieldType{
@@ -168,6 +169,16 @@ func (g *Generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 				PackageName: dot.Name,
 				StructName:  i.String(),
 				ImportPath:  dot.PackageName,
+				Parent:      parent,
+			}, true
+		}
+		// time
+		if i.Name == "Time" {
+			return &analyzedASTFieldType{
+				fieldType:   fieldTypeStruct,
+				PackageName: "time",
+				StructName:  i.String(),
+				ImportPath:  "time",
 				Parent:      parent,
 			}, true
 		}
