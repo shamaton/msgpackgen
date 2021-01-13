@@ -13,14 +13,18 @@ func (d *Decoder) AsDateTime(offset int) (time.Time, int, error) {
 
 	switch code {
 	case def.Fixext4:
-		// todo : check -1
-		_, offset = d.readSize1(offset)
+		t, offset := d.readSize1(offset)
+		if int8(t) != def.TimeStamp {
+			return time.Time{}, 0, fmt.Errorf("fixext4. time type is diffrent %d, %d", t, def.TimeStamp)
+		}
 		bs, offset := d.readSize4(offset)
 		return time.Unix(int64(binary.BigEndian.Uint32(bs)), 0), offset, nil
 
 	case def.Fixext8:
-		// todo : check -1
-		_, offset = d.readSize1(offset)
+		t, offset := d.readSize1(offset)
+		if int8(t) != def.TimeStamp {
+			return time.Time{}, 0, fmt.Errorf("fixext8. time type is diffrent %d, %d", t, def.TimeStamp)
+		}
 		bs, offset := d.readSize8(offset)
 		data64 := binary.BigEndian.Uint64(bs)
 		nano := int64(data64 >> 34)
@@ -30,10 +34,14 @@ func (d *Decoder) AsDateTime(offset int) (time.Time, int, error) {
 		return time.Unix(int64(data64&0x00000003ffffffff), nano), offset, nil
 
 	case def.Ext8:
-		// todo : check -1
-		_, offset = d.readSize1(offset)
-		// todo : check 12
-		_, offset = d.readSize1(offset)
+		t, offset := d.readSize1(offset)
+		if int8(t) != def.TimeStamp {
+			return time.Time{}, 0, fmt.Errorf("ext8. time type is diffrent %d, %d", t, def.TimeStamp)
+		}
+		c, offset := d.readSize1(offset)
+		if int8(c) != 12 {
+			return time.Time{}, 0, fmt.Errorf("ext8. time ext length is diffrent %d, %d", c, 12)
+		}
 		nanobs, offset := d.readSize4(offset)
 		secbs, offset := d.readSize8(offset)
 		nano := binary.BigEndian.Uint32(nanobs)

@@ -109,7 +109,7 @@ func (g *Generator) Run(input, out string) error {
 	if err != nil {
 		return err
 	}
-	g.createAnalyzedStructs()
+	g.analyze()
 	fmt.Println(analyzedStructs)
 	analyzedStructs = g.filter(analyzedStructs)
 	fmt.Println(analyzedStructs)

@@ -65,7 +65,7 @@ func (g *Generator) getPackages(files []string) error {
 	return nil
 }
 
-func (g *Generator) createAnalyzedStructs() error {
+func (g *Generator) analyze() error {
 	analyzedMap := map[*ast.File]bool{}
 	for _, parseFile := range g.parseFiles {
 		// done analysis
@@ -189,8 +189,6 @@ func (g *Generator) createImportMap(parseFile *ast.File) (map[string]string, []s
 	dotImports := make([]string, 0)
 
 	for _, imp := range parseFile.Imports {
-
-		fmt.Println(imp.Name, imp.Path.Value)
 
 		value := strings.ReplaceAll(imp.Path.Value, "\"", "")
 
