@@ -54,7 +54,6 @@ func (g *Generator) getPackages(files []string) error {
 		}
 
 		g.parseFiles = append(g.parseFiles, parseFile)
-		g.fileNames = append(g.fileNames, file)
 		g.parseFile2fullPackage[parseFile] = prefix
 		g.fullPackage2package[prefix] = packageName
 		g.targetPackages[packageName] = true

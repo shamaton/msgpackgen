@@ -164,7 +164,6 @@ func (g *Generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 		fmt.Println(i.Name, i.Obj, expr)
 
 		if dot, found := dotStructs[i.Name]; found {
-			fmt.Println("fffffffffffffind!!!")
 			return &analyzedASTFieldType{
 				fieldType:   fieldTypeStruct,
 				PackageName: dot.Name,
@@ -183,6 +182,16 @@ func (g *Generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 				Parent:      parent,
 			}, true
 		}
+		// can not generate
+		if i.Name == "uintptr" || i.Name == "error" {
+			return nil, false
+		}
+
+		// todo : complex
+		if i.Name == "complex64" || i.Name == "complex128" {
+			return nil, false
+		}
+
 		return &analyzedASTFieldType{
 			fieldType:     fieldTypeIdent,
 			IdenticalName: i.Name,

@@ -35,7 +35,6 @@ type Generator struct {
 	fileSet                *token.FileSet
 	targetPackages         map[string]bool
 	parseFiles             []*ast.File
-	fileNames              []string
 	fullPackage2ParseFiles map[string][]*ast.File
 	parseFile2fullPackage  map[*ast.File]string
 	fullPackage2package    map[string]string
@@ -75,7 +74,6 @@ func NewGenerator(pointer int, strict, verbose bool) *Generator {
 		verbose:                verbose,
 		targetPackages:         map[string]bool{},
 		parseFiles:             []*ast.File{},
-		fileNames:              []string{},
 		fullPackage2package:    map[string]string{},
 		fullPackage2ParseFiles: map[string][]*ast.File{},
 		parseFile2fullPackage:  map[*ast.File]string{},

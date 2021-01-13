@@ -1,6 +1,5 @@
 package tst
 
-// todo : ドットimportに未対応
 import (
 	tst2 "github.com/shamaton/msgpackgen/internal/tst/tst"
 	. "github.com/shamaton/msgpackgen/internal/tst/tst/tst"
@@ -12,7 +11,13 @@ type A struct {
 	Int  int
 	Uint uint
 	B    tst2.B
-	BB   C
+	BB   B
+	R    rune
+	E    complex64
+}
+
+type H struct {
+	P uintptr
 }
 
 type NotGenStruct struct {
