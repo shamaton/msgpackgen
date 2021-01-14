@@ -5,7 +5,7 @@ import (
 	. "github.com/shamaton/msgpackgen/internal/tst/tst/tst"
 )
 
-//go:generate go run github.com/shamaton/msgpackgen -strict
+//go:generate go run github.com/shamaton/msgpackgen -st -input=hoge
 
 // point
 // ドットインポートできる

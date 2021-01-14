@@ -1,4 +1,4 @@
-package gen
+package generator
 
 import (
 	"fmt"
@@ -158,7 +158,7 @@ func (a analyzedASTFieldType) TypeString(s ...string) string {
 	return str
 }
 
-func (g *Generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFieldType, importMap map[string]string, dotStructs map[string]analyzedStruct) (*analyzedASTFieldType, bool) {
+func (g *generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFieldType, importMap map[string]string, dotStructs map[string]analyzedStruct) (*analyzedASTFieldType, bool) {
 
 	if i, ok := expr.(*ast.Ident); ok {
 

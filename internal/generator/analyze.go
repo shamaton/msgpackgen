@@ -1,4 +1,4 @@
-package gen
+package generator
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ import (
 	. "github.com/dave/jennifer/jen"
 )
 
-func (g *Generator) getPackages(files []string) error {
+func (g *generator) getPackages(files []string) error {
 	g.fileSet = token.NewFileSet()
 	for _, file := range files {
 
@@ -65,7 +65,7 @@ func (g *Generator) getPackages(files []string) error {
 	return nil
 }
 
-func (g *Generator) analyze() error {
+func (g *generator) analyze() error {
 	analyzedMap := map[*ast.File]bool{}
 	for _, parseFile := range g.parseFiles {
 		// done analysis
@@ -90,7 +90,7 @@ func (g *Generator) analyze() error {
 	return nil
 }
 
-func (g *Generator) createAnalyzedStructs(parseFile *ast.File, packageName, fullPackageName string, analyzedMap map[*ast.File]bool) error {
+func (g *generator) createAnalyzedStructs(parseFile *ast.File, packageName, fullPackageName string, analyzedMap map[*ast.File]bool) error {
 
 	importMap, dotImports := g.createImportMap(parseFile)
 	// dot imports
@@ -177,7 +177,7 @@ func (g *Generator) createAnalyzedStructs(parseFile *ast.File, packageName, full
 	return nil
 }
 
-func (g *Generator) createImportMap(parseFile *ast.File) (map[string]string, []string) {
+func (g *generator) createImportMap(parseFile *ast.File) (map[string]string, []string) {
 
 	importMap := map[string]string{}
 	dotImports := make([]string, 0)
@@ -199,7 +199,7 @@ func (g *Generator) createImportMap(parseFile *ast.File) (map[string]string, []s
 	return importMap, dotImports
 }
 
-func (g *Generator) createAnalyzedFields(packageName, structName string, analyzedFieldMap map[string]*analyzedASTFieldType, fset *token.FileSet, file *ast.File) []analyzedField {
+func (g *generator) createAnalyzedFields(packageName, structName string, analyzedFieldMap map[string]*analyzedASTFieldType, fset *token.FileSet, file *ast.File) []analyzedField {
 
 	// todo : ここなにか解決策あれば
 	imp := importer.Default()

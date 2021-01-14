@@ -3,28 +3,34 @@ package main
 import (
 	"flag"
 
-	"github.com/shamaton/msgpackgen/internal/gen"
+	"github.com/shamaton/msgpackgen/internal/generator"
 )
 
 var (
-	out     string
-	input   string
-	strict  bool
-	verbose bool
-	pointer int
+	input    string
+	output   string
+	filename string
+	strict   bool
+	verbose  bool
+	pointer  int
+)
+
+const (
+	defaultFileName     = "resolver.msgpackgen.go"
+	defaultPointerLevel = 1
 )
 
 func main() {
 
-	flag.StringVar(&out, "output", "", "output directory")
-	flag.StringVar(&input, "input", ".", "input directory")
-	flag.BoolVar(&strict, "strict", false, "strict mode")
+	flag.StringVar(&input, "i", ".", "input directory")
+	flag.StringVar(&output, "o", input, "output directory")
+	flag.StringVar(&filename, "g", defaultFileName, "generated file name")
+	flag.IntVar(&pointer, "p", defaultPointerLevel, "pointer level to consider")
+	flag.BoolVar(&strict, "s", false, "strict mode")
 	flag.BoolVar(&verbose, "v", false, "verbose diagnostics")
-	flag.IntVar(&pointer, "pointer", 1, "pointer level to consider")
 	flag.Parse()
 
-	g := gen.NewGenerator(pointer, strict, verbose)
-	err := g.Run(input, out)
+	err := generator.Run(input, output, pointer, strict, verbose)
 	if err != nil {
 		panic(err)
 	}

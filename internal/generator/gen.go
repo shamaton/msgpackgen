@@ -1,4 +1,4 @@
-package gen
+package generator
 
 import (
 	"crypto/sha256"
@@ -31,7 +31,7 @@ const (
 
 var funcIdMap = map[string]string{}
 
-type Generator struct {
+type generator struct {
 	fileSet                *token.FileSet
 	targetPackages         map[string]bool
 	parseFiles             []*ast.File
@@ -49,7 +49,7 @@ type Generator struct {
 	strict  bool
 }
 
-func (g *Generator) outputPackageFullName() string {
+func (g *generator) outputPackageFullName() string {
 	return fmt.Sprintf("%s/%s", g.outputPackagePrefix, g.outputPackageName)
 }
 
@@ -67,13 +67,22 @@ type analyzedField struct {
 	Ast  *analyzedASTFieldType
 }
 
-func NewGenerator(pointer int, strict, verbose bool) *Generator {
+func Run(input, out string, pointer int, strict, verbose bool) error {
+
+	_, err := os.Stat(input)
+	if err != nil {
+		return err
+	}
+
+	if out == "" {
+		out = input
+	}
 
 	if pointer < 1 {
 		pointer = 1
 	}
 
-	return &Generator{
+	g := generator{
 		pointer:                pointer,
 		strict:                 strict,
 		verbose:                verbose,
@@ -84,17 +93,10 @@ func NewGenerator(pointer int, strict, verbose bool) *Generator {
 		parseFile2fullPackage:  map[*ast.File]string{},
 		noUserQualMap:          map[string]bool{},
 	}
+	return g.run(input, out)
 }
 
-func (g *Generator) Run(input, out string) error {
-	_, err := os.Stat(input)
-	if err != nil {
-		return err
-	}
-
-	if out == "" {
-		out = input
-	}
+func (g *generator) run(input, out string) error {
 
 	outAbs, err := filepath.Abs(out)
 	if err != nil {
@@ -131,7 +133,7 @@ func (g *Generator) Run(input, out string) error {
 	return nil
 }
 
-func (g *Generator) getTargetFiles(dir string) ([]string, error) {
+func (g *generator) getTargetFiles(dir string) ([]string, error) {
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return nil, err
@@ -166,7 +168,7 @@ func privateFuncNamePattern(funcName string) string {
 	return fmt.Sprintf("___%s", funcName)
 }
 
-func (g *Generator) filter(sts []analyzedStruct) []analyzedStruct {
+func (g *generator) filter(sts []analyzedStruct) []analyzedStruct {
 	newStructs := make([]analyzedStruct, 0)
 	allOk := true
 	for _, v := range sts {
@@ -193,7 +195,7 @@ func (g *Generator) filter(sts []analyzedStruct) []analyzedStruct {
 	}
 }
 
-func (g *Generator) generateCode() {
+func (g *generator) generateCode() {
 
 	for _, st := range analyzedStructs {
 		funcIdMap[st.PackageName] = fmt.Sprintf("%x", sha256.Sum256([]byte(st.PackageName)))
@@ -299,17 +301,17 @@ func (g *Generator) generateCode() {
 
 }
 
-func (g *Generator) decodeTopTemplate(name string, f *File) *Statement {
+func (g *generator) decodeTopTemplate(name string, f *File) *Statement {
 	return f.Comment(fmt.Sprintf("// %s\n", name)).
 		Func().Id(privateFuncNamePattern(name)).Params(Id("data").Index().Byte(), Id("i").Interface()).Params(Bool(), Error())
 }
 
-func (g *Generator) encodeTopTemplate(name string, f *File) *Statement {
+func (g *generator) encodeTopTemplate(name string, f *File) *Statement {
 	return f.Comment(fmt.Sprintf("// %s\n", name)).
 		Func().Id(privateFuncNamePattern(name)).Params(Id("i").Interface()).Params(Index().Byte(), Error())
 }
 
-func (g *Generator) encodeAsArrayCases() []Code {
+func (g *generator) encodeAsArrayCases() []Code {
 	var states []Code
 	for _, v := range analyzedStructs {
 
@@ -358,7 +360,7 @@ func (g *Generator) encodeAsArrayCases() []Code {
 	return states
 }
 
-func (g *Generator) encodeAsMapCases() []Code {
+func (g *generator) encodeAsMapCases() []Code {
 	var states []Code
 	for _, v := range analyzedStructs {
 
@@ -407,7 +409,7 @@ func (g *Generator) encodeAsMapCases() []Code {
 	return states
 }
 
-func (g *Generator) decodeAsArrayCases() []Code {
+func (g *generator) decodeAsArrayCases() []Code {
 	var states []Code
 	for _, v := range analyzedStructs {
 
@@ -438,7 +440,7 @@ func (g *Generator) decodeAsArrayCases() []Code {
 	return states
 }
 
-func (g *Generator) decodeAsMapCases() []Code {
+func (g *generator) decodeAsMapCases() []Code {
 	var states []Code
 	for _, v := range analyzedStructs {
 
