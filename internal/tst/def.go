@@ -5,7 +5,7 @@ import (
 	. "github.com/shamaton/msgpackgen/internal/tst/tst/tst"
 )
 
-//go:generate go run github.com/shamaton/msgpackgen -s
+//go:generate go run github.com/shamaton/msgpackgen -s -p 2
 
 // point
 // ドットインポートできる
@@ -14,18 +14,27 @@ import (
 // ワンファイル
 // msgp以上にこうそく
 
-type A struct {
+type Int struct {
 	Int  int
 	Uint uint
-	BB   B
-	R    rune
-	C    complex128
+	i    int
+}
+
+type Float struct {
+	Float32 float32
+	Float64 float64
+}
+
+//func (a Int) F() { a.Emb = Emb{Val: 1} }
+
+type AA struct {
+	BB B
+	R  rune
+	C  complex128
 	Emb
 	tst2.B
 	G Time
 }
-
-//func (a A) F() { a.Emb = Emb{Val: 1} }
 
 type Emb struct {
 	Val int

@@ -485,7 +485,7 @@ func (g *generator) decodeAsMapCases() []Code {
 		for i := 0; i < g.pointer-1; i++ {
 			ptr := strings.Repeat("*", i+3)
 			states = append(states, Case(caseStatement(ptr)).Block(
-				Return(Id(privateFuncNamePattern("decodeAsArray")).Call(Id("data"), Id("*v"))),
+				Return(Id(privateFuncNamePattern("decodeAsMap")).Call(Id("data"), Id("*v"))),
 			))
 		}
 	}
