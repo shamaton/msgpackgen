@@ -11,8 +11,6 @@ import (
 	"reflect"
 	"strings"
 	"unicode"
-
-	. "github.com/dave/jennifer/jen"
 )
 
 func (g *generator) getPackages(files []string) error {

@@ -231,3 +231,46 @@ func TestFloat(t *testing.T) {
 	f(t, v)
 
 }
+
+func TestString(t *testing.T) {
+	f := func(t *testing.T, v tst.String) {
+
+		b1, b2, err1, err2 := marshal(&v, &v)
+		if err1 != nil {
+			t.Error(err1)
+		}
+		if err2 != nil {
+			t.Error(err2)
+		}
+
+		// decode double pointer
+		v1, v2 := new(tst.String), new(tst.String)
+		err1, err2 = unmarshal(b1, b2, &v1, &v2)
+		if err1 != nil {
+			t.Error(err1)
+		}
+		if err2 != nil {
+			t.Error(err2)
+		}
+
+		if v.String != v1.String {
+			t.Error("not equal v1", v, v1)
+		}
+		if v.String != v2.String {
+			t.Error("not equal v2", v, v2)
+		}
+	}
+
+	base := "abcdefghijklmnopqrstuvwxyz12345"
+	v := tst.String{String: ""}
+	f(t, v)
+	v = tst.String{String: strings.Repeat(base, 1)}
+	f(t, v)
+	v = tst.String{String: strings.Repeat(base, 8)}
+	f(t, v)
+	v = tst.String{String: strings.Repeat(base, (math.MaxUint16/len(base))-1)}
+	f(t, v)
+	v = tst.String{String: strings.Repeat(base, (math.MaxUint16/len(base))+1)}
+	f(t, v)
+
+}

@@ -25,6 +25,10 @@ type Float struct {
 	Float64 float64
 }
 
+type String struct {
+	String string
+}
+
 //func (a Int) F() { a.Emb = Emb{Val: 1} }
 
 type AA struct {
