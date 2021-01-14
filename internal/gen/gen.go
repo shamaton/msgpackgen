@@ -68,6 +68,11 @@ type analyzedField struct {
 }
 
 func NewGenerator(pointer int, strict, verbose bool) *Generator {
+
+	if pointer < 1 {
+		pointer = 1
+	}
+
 	return &Generator{
 		pointer:                pointer,
 		strict:                 strict,
@@ -82,6 +87,14 @@ func NewGenerator(pointer int, strict, verbose bool) *Generator {
 }
 
 func (g *Generator) Run(input, out string) error {
+	_, err := os.Stat(input)
+	if err != nil {
+		return err
+	}
+
+	if out == "" {
+		out = input
+	}
 
 	outAbs, err := filepath.Abs(out)
 	if err != nil {
