@@ -30,7 +30,7 @@ func main() {
 	flag.BoolVar(&verbose, "v", false, "verbose diagnostics")
 	flag.Parse()
 
-	err := generator.Run(input, output, pointer, strict, verbose)
+	err := generator.Run(input, output, filename, pointer, strict, verbose)
 	if err != nil {
 		panic(err)
 	}
