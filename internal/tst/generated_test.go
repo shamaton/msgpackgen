@@ -1,10 +1,12 @@
 package tst_test
 
 import (
+	"fmt"
 	"html/template"
 	"log"
 	"math"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -45,6 +47,362 @@ func RegisterGeneratedResolver() {
 
 }
 
+func TestInt(t *testing.T) {
+	v := tst.ValueChecking{Int: -8, Int8: math.MinInt8, Int16: math.MinInt16}
+	if err := checkValue(v); err != nil {
+		t.Error(err)
+	}
+	v = tst.ValueChecking{Int: -108, Int8: math.MaxInt8, Int16: math.MaxInt16}
+	if err := checkValue(v); err != nil {
+		t.Error(err)
+	}
+	v = tst.ValueChecking{Int: -30108, Int32: math.MinInt32, Int64: math.MinInt64}
+	if err := checkValue(v); err != nil {
+		t.Error(err)
+	}
+	v = tst.ValueChecking{Int: -1030108, Int32: math.MaxInt32, Int64: math.MaxInt64}
+	if err := checkValue(v); err != nil {
+		t.Error(err)
+	}
+	v = tst.ValueChecking{Int: math.MinInt64 + 12345}
+	if err := checkValue(v); err != nil {
+		t.Error(err)
+	}
+
+}
+
+func TestUint(t *testing.T) {
+	v := tst.ValueChecking{Uint: 8, Uint8: math.MaxUint8}
+	if err := checkValue(v); err != nil {
+		t.Error(err)
+	}
+	v = tst.ValueChecking{Uint: 130, Uint16: math.MaxUint16}
+	if err := checkValue(v); err != nil {
+		t.Error(err)
+	}
+	v = tst.ValueChecking{Uint: 30130, Uint32: math.MaxUint32}
+	if err := checkValue(v); err != nil {
+		t.Error(err)
+	}
+	v = tst.ValueChecking{Uint: 1030130, Uint64: math.MaxUint64}
+	if err := checkValue(v); err != nil {
+		t.Error(err)
+	}
+	v = tst.ValueChecking{Uint: math.MaxUint64 - 12345}
+	if err := checkValue(v); err != nil {
+		t.Error(err)
+	}
+
+}
+
+func TestFloat(t *testing.T) {
+	v := tst.ValueChecking{Float32: 0, Float64: 0}
+	if err := checkValue(v); err != nil {
+		t.Error(err)
+	}
+	v = tst.ValueChecking{Float32: -1, Float64: -1}
+	if err := checkValue(v); err != nil {
+		t.Error(err)
+	}
+	v = tst.ValueChecking{Float32: math.SmallestNonzeroFloat32, Float64: math.SmallestNonzeroFloat64}
+	if err := checkValue(v); err != nil {
+		t.Error(err)
+	}
+	v = tst.ValueChecking{Float32: math.MaxFloat32, Float64: math.MaxFloat64}
+	if err := checkValue(v); err != nil {
+		t.Error(err)
+	}
+
+}
+
+func TestString(t *testing.T) {
+	base := "abcdefghijklmnopqrstuvwxyz12345"
+	v := tst.ValueChecking{String: ""}
+	if err := checkValue(v); err != nil {
+		t.Error(err)
+	}
+	v = tst.ValueChecking{String: strings.Repeat(base, 1)}
+	if err := checkValue(v); err != nil {
+		t.Error(err)
+	}
+	v = tst.ValueChecking{String: strings.Repeat(base, 8)}
+	if err := checkValue(v); err != nil {
+		t.Error(err)
+	}
+	v = tst.ValueChecking{String: strings.Repeat(base, (math.MaxUint16/len(base))-1)}
+	if err := checkValue(v); err != nil {
+		t.Error(err)
+	}
+	v = tst.ValueChecking{String: strings.Repeat(base, (math.MaxUint16/len(base))+1)}
+	if err := checkValue(v); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestBool(t *testing.T) {
+	v := tst.ValueChecking{Bool: true}
+	if err := checkValue(v); err != nil {
+		t.Error(err)
+	}
+	v = tst.ValueChecking{Bool: false}
+	if err := checkValue(v); err != nil {
+		t.Error(err)
+	}
+
+}
+
+func TestByteRune(t *testing.T) {
+	v := tst.ValueChecking{Byte: 127, Rune: 'a'}
+	if err := checkValue(v); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestComplex(t *testing.T) {
+	v := tst.ValueChecking{Complex64: complex(1, 2), Complex128: complex(3, 4)}
+	if err := checkValue(v); err != nil {
+		t.Error(err)
+	}
+	v = tst.ValueChecking{
+		Complex64:  complex(math.MaxFloat32, math.SmallestNonzeroFloat32),
+		Complex128: complex(math.MaxFloat64, math.SmallestNonzeroFloat64),
+	}
+	if err := checkValue(v); err != nil {
+		t.Error(err)
+	}
+}
+
+func checkValue(v tst.ValueChecking) error {
+	b1, b2, err1, err2 := marshal(&v, &v)
+	if err1 != nil {
+		return fmt.Errorf("marshal to b1 failed %v", err1)
+	}
+	if err2 != nil {
+		return fmt.Errorf("marshal to b2 failed %v", err2)
+	}
+
+	var v1, v2 tst.ValueChecking
+	err1, err2 = unmarshal(b1, b2, &v1, &v2)
+	if err1 != nil {
+		return fmt.Errorf("unmarshal to v1 failed %v", err1)
+	}
+	if err2 != nil {
+		return fmt.Errorf("unmarshal to v2 failed %v", err2)
+	}
+
+	if !reflect.DeepEqual(v, v1) {
+		return fmt.Errorf("not equal v1 %v, %v", v, v1)
+	}
+	if !reflect.DeepEqual(v, v2) {
+		return fmt.Errorf("not equal v2 %v, %v", v, v2)
+	}
+	return nil
+}
+
+func TestPointer(t *testing.T) {
+
+	v := tst.ValueChecking{Int: -1, Uint: 1}
+
+	//// OK
+	// encode single pointer
+	b1, b2, err1, err2 := marshal(&v, &v)
+	if err1 != nil {
+		t.Error(err1)
+	}
+	if err2 != nil {
+		t.Error(err2)
+	}
+
+	// decode double pointer
+	v1, v2 := new(tst.ValueChecking), new(tst.ValueChecking)
+	err1, err2 = unmarshal(b1, b2, &v1, &v2)
+	if err1 != nil {
+		t.Error(err1)
+	}
+	if err2 != nil {
+		t.Error(err2)
+	}
+
+	// encode double pointer
+	b3, b4, err1, err2 := marshal(&v1, &v2)
+	if err1 != nil {
+		t.Error(err1)
+	}
+	if err2 != nil {
+		t.Error(err2)
+	}
+
+	// decode triple pointer
+	_v3, _v4 := new(tst.ValueChecking), new(tst.ValueChecking)
+	v3, v4 := &_v3, &_v4
+	err1, err2 = unmarshal(b3, b4, &v3, &v4)
+	if err1 != nil {
+		t.Error(err1)
+	}
+	if err2 != nil {
+		t.Error(err2)
+	}
+
+	if !reflect.DeepEqual(v, *v1) {
+		t.Error("not equal v1", v, *v1)
+	}
+	if !reflect.DeepEqual(v, *v2) {
+		t.Error("not equal v2", v, *v2)
+	}
+	if _v := *v3; !reflect.DeepEqual(v, *_v) {
+		t.Error("not equal v3", v, _v)
+	}
+	if _v := *v4; !reflect.DeepEqual(v, *_v) {
+		t.Error("not equal v4", v, _v)
+	}
+
+	//// NG
+	// encode triple pointer
+	b5, b6, err1, err2 := marshal(&v3, &v4)
+	if err1 != nil && !strings.Contains(err1.Error(), "strict") {
+		t.Error(err1)
+	}
+	if err1 == nil {
+		t.Error("error should occur at marshalling v3 pointer")
+	}
+	if err2 != nil && !strings.Contains(err2.Error(), "strict") {
+		t.Error(err2)
+	}
+	if err2 == nil {
+		t.Error("error should occur at marshalling v4 pointer")
+	}
+
+	// decode quad pointer
+	__v5, __v6 := new(tst.ValueChecking), new(tst.ValueChecking)
+	_v5, _v6 := &__v5, &__v6
+	v5, v6 := &_v5, &_v6
+	err1, err2 = unmarshal(b5, b6, &v5, &v6)
+	if err1 != nil && !strings.Contains(err1.Error(), "strict") {
+		t.Error(err1)
+	}
+	if err1 == nil {
+		t.Error("error should occur at unmarshalling b5 pointer")
+	}
+	if err2 != nil && !strings.Contains(err2.Error(), "strict") {
+		t.Error(err2)
+	}
+	if err2 == nil {
+		t.Error("error should occur at unmarshalling b6 pointer")
+	}
+}
+
+func TestNotGenerated(t *testing.T) {
+	err := checkUndefined(tst.NotGenerated1{}, tst.NotGenerated2{}, &tst.NotGenerated1{}, &tst.NotGenerated2{})
+	if err != nil {
+		t.Error(err)
+	}
+	err = checkUndefined(tst.NotGenerated3{}, tst.NotGenerated4{}, &tst.NotGenerated3{}, &tst.NotGenerated4{})
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestPrivate(t *testing.T) {
+	v := tst.Private{}
+	b1, b2, err1, err2 := marshal(v, v)
+	if err1 != nil || err2 != nil {
+		t.Errorf("somthing wrong %v, %v", err1, err2)
+	}
+	if len(b1) != 1 || b1[0] != 0x80 {
+		t.Errorf("data is wrong % x", b1)
+	}
+	if len(b2) != 1 || b2[0] != 0x90 {
+		t.Errorf("data is wrong % x", b2)
+	}
+
+	vc1 := &v
+	vc2 := &vc1
+	vc3 := &vc2
+	vc4 := &vc3
+	err := forCoverage(vc1, vc2, vc3, vc4)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func forCoverage(v1, v2, v3, v4 interface{}) error {
+
+	// encode single pointer
+	b1, b2, err1, err2 := marshal(v1, v1)
+	if err1 != nil {
+		return fmt.Errorf("marshal to b1 error %v", err1)
+	}
+	if err2 != nil {
+		return fmt.Errorf("marshal to b2 error %v", err2)
+	}
+
+	// decode double pointer
+	err1, err2 = unmarshal(b1, b2, v2, v2)
+	if err1 != nil {
+		return fmt.Errorf("unmarshal from b1 error %v", err1)
+	}
+	if err2 != nil {
+		return fmt.Errorf("unmarshal from b2 error %v", err2)
+	}
+
+	// encode double pointer
+	b3, b4, err1, err2 := marshal(v2, v2)
+	if err1 != nil {
+		return fmt.Errorf("marshal to b3 error %v", err1)
+	}
+	if err2 != nil {
+		return fmt.Errorf("marshal to b4 error %v", err2)
+	}
+
+	// decode triple pointer
+	err1, err2 = unmarshal(b3, b4, v3, v3)
+	if err1 != nil {
+		return fmt.Errorf("unmarshal from b3 error %v", err1)
+	}
+	if err2 != nil {
+		return fmt.Errorf("unmarshal from b4 error %v", err2)
+	}
+
+	//// NG
+	// encode triple pointer / decode quad pointer
+	err := checkUndefined(v3, v3, v4, v4)
+	if err != nil {
+		return fmt.Errorf("for coverage; %v", err)
+	}
+	return nil
+}
+
+func checkUndefined(m1, m2, u1, u2 interface{}) error {
+	b1, b2, err1, err2 := marshal(m1, m2)
+	if err1 != nil && !strings.Contains(err1.Error(), "use strict option") {
+		return fmt.Errorf("check undefined: marshal to b1 error %v", err1)
+	}
+	if err1 == nil {
+		return fmt.Errorf("check undefined: error should occur at marshalling m1")
+	}
+	if err2 != nil && !strings.Contains(err2.Error(), "use strict option") {
+		return fmt.Errorf("check undefined: marshal to b2 error %v", err2)
+	}
+	if err2 == nil {
+		return fmt.Errorf("check undefined: error should occur at marshalling m2")
+	}
+
+	err1, err2 = unmarshal(b1, b2, u1, u2)
+	if err1 != nil && !strings.Contains(err1.Error(), "use strict option") {
+		return fmt.Errorf("check undefined: unmarshal to u1 error %v", err1)
+	}
+	if err1 == nil {
+		return fmt.Errorf("check undefined: error should occur at unmarshalling u1")
+	}
+	if err2 != nil && !strings.Contains(err2.Error(), "use strict option") {
+		return fmt.Errorf("ucheck undefined: unmarshal to u2 error %v", err2)
+	}
+	if err2 == nil {
+		return fmt.Errorf("check undefined: error should occur at unmarshalling u2")
+	}
+	return nil
+}
+
 func marshal(v1, v2 interface{}) ([]byte, []byte, error, error) {
 	b1, e1 := msgpack.Encode(v1)
 	b2, e2 := msgpack.EncodeAsArray(v2)
@@ -53,224 +411,4 @@ func marshal(v1, v2 interface{}) ([]byte, []byte, error, error) {
 
 func unmarshal(b1, b2 []byte, v1, v2 interface{}) (error, error) {
 	return msgpack.Decode(b1, v1), msgpack.DecodeAsArray(b2, v2)
-}
-
-func TestPointer(t *testing.T) {
-	f := func(t *testing.T, v tst.Int) {
-		//// OK
-		// encode single pointer
-		b1, b2, err1, err2 := marshal(&v, &v)
-		if err1 != nil {
-			t.Error(err1)
-		}
-		if err2 != nil {
-			t.Error(err2)
-		}
-
-		// decode double pointer
-		v1, v2 := new(tst.Int), new(tst.Int)
-		err1, err2 = unmarshal(b1, b2, &v1, &v2)
-		if err1 != nil {
-			t.Error(err1)
-		}
-		if err2 != nil {
-			t.Error(err2)
-		}
-
-		// encode double pointer
-		b3, b4, err1, err2 := marshal(&v1, &v2)
-		if err1 != nil {
-			t.Error(err1)
-		}
-		if err2 != nil {
-			t.Error(err2)
-		}
-
-		// decode triple pointer
-		_v3, _v4 := new(tst.Int), new(tst.Int)
-		v3, v4 := &_v3, &_v4
-		err1, err2 = unmarshal(b3, b4, &v3, &v4)
-		if err1 != nil {
-			t.Error(err1)
-		}
-		if err2 != nil {
-			t.Error(err2)
-		}
-
-		if v.Int != v1.Int || v.Uint != v1.Uint {
-			t.Error("not equal v1", v, v1)
-		}
-		if v.Int != v2.Int || v.Uint != v2.Uint {
-			t.Error("not equal v2", v, v2)
-		}
-		if _v := *v3; v.Int != _v.Int || v.Uint != _v.Uint {
-			t.Error("not equal v3", v, _v)
-		}
-		if _v := *v4; v.Int != _v.Int || v.Uint != _v.Uint {
-			t.Error("not equal v4", v, _v)
-		}
-
-		//// NG
-
-		// encode triple pointer
-		b5, b6, err1, err2 := marshal(&v3, &v4)
-		if err1 != nil && !strings.Contains(err1.Error(), "strict") {
-			t.Error(err1)
-		}
-		if err2 != nil && !strings.Contains(err2.Error(), "strict") {
-			t.Error(err2)
-		}
-
-		// decode quad pointer
-		__v5, __v6 := new(tst.Int), new(tst.Int)
-		_v5, _v6 := &__v5, &__v6
-		v5, v6 := &_v5, &_v6
-		err1, err2 = unmarshal(b5, b6, &v5, &v6)
-		if err1 != nil && !strings.Contains(err1.Error(), "strict") {
-			t.Error(err1)
-		}
-		if err2 != nil && !strings.Contains(err2.Error(), "strict") {
-			t.Error(err2)
-		}
-	}
-
-	v := tst.Int{Int: -1, Uint: 1}
-	f(t, v)
-
-}
-
-func TestInt(t *testing.T) {
-	f := func(t *testing.T, v tst.Int) {
-		//// OK
-		// encode value
-		b1, err := msgpack.Encode(v)
-		if err != nil {
-			t.Error(err)
-		}
-		b2, err := msgpack.EncodeAsArray(v)
-		if err != nil {
-			t.Error(err)
-		}
-
-		// decode single pointer
-		var v1, v2 tst.Int
-		err = msgpack.Decode(b1, &v1)
-		if err != nil {
-			t.Error(err)
-		}
-		err = msgpack.DecodeAsArray(b2, &v2)
-		if err != nil {
-			t.Error(err)
-		}
-
-		if v.Int != v1.Int || v.Uint != v1.Uint {
-			t.Error("not equal v1", v, v1)
-		}
-		if v.Int != v2.Int || v.Uint != v2.Uint {
-			t.Error("not equal v2", v, v2)
-		}
-
-	}
-
-	v := tst.Int{Int: -8, Uint: 8}
-	f(t, v)
-	v.Int = -108
-	v.Uint = 130
-	f(t, v)
-	v.Int = -30108
-	v.Uint = 30130
-	f(t, v)
-	v.Int = -1030108
-	v.Uint = 1030130
-	f(t, v)
-	v.Int = math.MinInt64 + 12345
-	v.Uint = math.MaxUint64 - 12345
-	f(t, v)
-
-}
-
-func TestFloat(t *testing.T) {
-	f := func(t *testing.T, v tst.Float) {
-		//// OK
-		// encode value
-		b1, err := msgpack.Encode(v)
-		if err != nil {
-			t.Error(err)
-		}
-		b2, err := msgpack.EncodeAsArray(v)
-		if err != nil {
-			t.Error(err)
-		}
-
-		// decode single pointer
-		var v1, v2 tst.Float
-		err = msgpack.Decode(b1, &v1)
-		if err != nil {
-			t.Error(err)
-		}
-		err = msgpack.DecodeAsArray(b2, &v2)
-		if err != nil {
-			t.Error(err)
-		}
-
-		if v.Float32 != v1.Float32 || v.Float64 != v1.Float64 {
-			t.Error("not equal v1", v, v1)
-		}
-		if v.Float32 != v2.Float32 || v.Float64 != v2.Float64 {
-			t.Error("not equal v2", v, v2)
-		}
-	}
-
-	v := tst.Float{Float32: 0, Float64: 0}
-	f(t, v)
-	v = tst.Float{Float32: -1, Float64: -1}
-	f(t, v)
-	v = tst.Float{Float32: math.SmallestNonzeroFloat32, Float64: math.SmallestNonzeroFloat64}
-	f(t, v)
-	v = tst.Float{Float32: math.MaxFloat32, Float64: math.MaxFloat64}
-	f(t, v)
-
-}
-
-func TestString(t *testing.T) {
-	f := func(t *testing.T, v tst.String) {
-
-		b1, b2, err1, err2 := marshal(&v, &v)
-		if err1 != nil {
-			t.Error(err1)
-		}
-		if err2 != nil {
-			t.Error(err2)
-		}
-
-		// decode double pointer
-		v1, v2 := new(tst.String), new(tst.String)
-		err1, err2 = unmarshal(b1, b2, &v1, &v2)
-		if err1 != nil {
-			t.Error(err1)
-		}
-		if err2 != nil {
-			t.Error(err2)
-		}
-
-		if v.String != v1.String {
-			t.Error("not equal v1", v, v1)
-		}
-		if v.String != v2.String {
-			t.Error("not equal v2", v, v2)
-		}
-	}
-
-	base := "abcdefghijklmnopqrstuvwxyz12345"
-	v := tst.String{String: ""}
-	f(t, v)
-	v = tst.String{String: strings.Repeat(base, 1)}
-	f(t, v)
-	v = tst.String{String: strings.Repeat(base, 8)}
-	f(t, v)
-	v = tst.String{String: strings.Repeat(base, (math.MaxUint16/len(base))-1)}
-	f(t, v)
-	v = tst.String{String: strings.Repeat(base, (math.MaxUint16/len(base))+1)}
-	f(t, v)
-
 }

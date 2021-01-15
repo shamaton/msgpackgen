@@ -25,7 +25,7 @@ func (e *Encoder) WriteComplex64(v complex64, offset int) int {
 }
 
 func (e *Encoder) WriteComplex128(v complex128, offset int) int {
-	offset = e.setByte1Int(def.Fixext8, offset)
+	offset = e.setByte1Int(def.Fixext16, offset)
 	offset = e.setByte1Int(complexType, offset)
 	offset = e.setByte8Uint64(math.Float64bits(real(v)), offset)
 	offset = e.setByte8Uint64(math.Float64bits(imag(v)), offset)

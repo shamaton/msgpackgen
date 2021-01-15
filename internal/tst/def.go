@@ -14,32 +14,66 @@ import (
 // ワンファイル
 // msgp以上にこうそく
 
-type Int struct {
-	Int  int
-	Uint uint
-	i    int
+type ValueChecking struct {
+	Int        int
+	Int8       int8
+	Int16      int16
+	Int32      int32
+	Int64      int64
+	Uint       uint
+	Uint8      uint8
+	Uint16     uint16
+	Uint32     uint32
+	Uint64     uint64
+	Float32    float32
+	Float64    float64
+	String     string
+	Bool       bool
+	Byte       byte
+	Rune       rune
+	Complex64  complex64
+	Complex128 complex128
 }
 
-type Float struct {
-	Float32 float32
-	Float64 float64
+func (v ValueChecking) Function() int {
+	return v.Int + v.Int
 }
 
-type String struct {
-	String string
-}
-
-//func (a Int) F() { a.Emb = Emb{Val: 1} }
-
-type AA struct {
+type Complexity struct {
+	// array / map / pointer
 	BB B
-	R  rune
-	C  complex128
 	Emb
 	tst2.B
-	G Time
+	G *Time
+}
+
+type embedded struct {
 }
 
 type Emb struct {
 	Val int
+}
+
+type Private struct {
+	i int
+}
+
+type NotGenerated1 struct {
+	Int       int
+	Interface interface{}
+}
+
+type NotGenerated2 struct {
+	Int int
+	Ptr uintptr
+}
+
+type NotGenerated3 struct {
+	Error error
+	Int   int
+}
+
+type NotGenerated4 struct {
+	Child tst2.NotGeneratedChild
+	Int   int
 }

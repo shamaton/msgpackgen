@@ -3,6 +3,6 @@ package tst2
 type B struct {
 }
 
-type NotNotGen struct {
-	//I interface{}
+type NotGeneratedChild struct {
+	Interface interface{}
 }

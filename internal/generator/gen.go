@@ -27,6 +27,8 @@ const (
 
 // todo : tagをmapのcaseに使いつつ、変数に代入するようにしないといけない
 
+// todo : ドットインポートのコンフリクトチェック
+
 var funcIdMap = map[string]string{}
 
 type generator struct {
