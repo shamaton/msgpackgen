@@ -155,8 +155,11 @@ func (as *analyzedStruct) createFieldCode(ast *analyzedASTFieldType, fieldName s
 	case ast.IsIdentical():
 		return as.createBasicCode(ast, fieldName, isRoot)
 
-	case ast.IsArray():
+	case ast.IsSlice():
 		return as.createSliceCode(ast, fieldName, isRoot)
+
+	case ast.IsArray():
+		return as.createArrayCode(ast, fieldName, isRoot)
 
 	case ast.IsMap():
 		return as.createMapCode(ast, fieldName, isRoot)
@@ -416,6 +419,89 @@ func (as *analyzedStruct) createSliceCode(ast *analyzedASTFieldType, fieldName s
 	return cArray, cArray, eArray, eArray, dArray, dArray, nil
 }
 
+func (as *analyzedStruct) createArrayCode(ast *analyzedASTFieldType, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
+
+	name, childName := "", ""
+	if isRoot {
+		name = "v." + fieldName
+		childName = "vv"
+	} else {
+		childName = fieldName + "v"
+	}
+
+	ptrOp := ""
+	andOp := ""
+	node := ast
+	for {
+		if node.HasParent() && node.Parent.IsPointer() {
+			ptrOp += "*"
+			andOp += "&"
+			node = node.Parent
+		} else {
+			break
+		}
+	}
+
+	ca, _, ea, _, da, _, _ := as.createFieldCode(ast.Elm(), childName, false)
+	isChildByte := ast.Elm().IsIdentical() && ast.Elm().IdenticalName == "byte"
+
+	calcCodes := as.addSizePattern2("CalcSliceLength", Len(Op(ptrOp).Id(name)), Lit(isChildByte))
+	calcCodes = append(calcCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Op(ptrOp).Id(name)).Block(
+		ca...,
+	))
+
+	cArray = append(cArray /* If(Op(ptrOp).Id(name).Op("!=").Nil()).*/, Block(
+		calcCodes...,
+	), /*.Else().Block(
+		as.addSizePattern1("CalcNil"),
+	)*/)
+
+	encCodes := make([]Code, 0)
+	encCodes = append(encCodes, Id("offset").Op("=").Id(idEncoder).Dot("WriteSliceLength").Call(Len(Op(ptrOp).Id(name)), Id("offset"), Lit(isChildByte)))
+	encCodes = append(encCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Op(ptrOp).Id(name)).Block(
+		ea...,
+	))
+
+	eArray = append(eArray /*If(Op(ptrOp).Id(name).Op("!=").Nil()).*/, Block(
+		encCodes...,
+	), /*.Else().Block(
+		Id("offset").Op("=").Id(idEncoder).Dot("WriteNil").Call(Id("offset")),
+	)*/)
+
+	decCodes := make([]Code, 0)
+	decCodes = append(decCodes, ast.TypeJenChain(Var().Id(childName)))
+	decCodes = append(decCodes, Var().Id(childName+"l").Int())
+	decCodes = append(decCodes, List(Id(childName+"l"), Id("offset"), Err()).Op("=").Id(idDecoder).Dot("SliceLength").Call(Id("offset")))
+	decCodes = append(decCodes, If(Err().Op("!=").Nil()).Block(
+		Return(Lit(0), Err()),
+	))
+	decCodes = append(decCodes, If(Id(childName+"l").Op(">").Id(fmt.Sprint(ast.ArrayLen))).Block(
+		Return(Lit(0), Qual("fmt", "Errorf").Call(Lit("length size(%d) is over array size(%d)"), Id(childName+"l"), Id(fmt.Sprint(ast.ArrayLen)))),
+	))
+
+	da = append([]Code{ast.Elm().TypeJenChain(Var().Id(childName + "v"))}, da...)
+	da = append(da, Id(childName).Index(Id(childName+"i")).Op("=").Id(childName+"v"))
+
+	decCodes = append(decCodes, For(Id(childName+"i").Op(":=").Range().Id(childName).Index(Id(":"+childName+"l"))).Block(
+		da...,
+	))
+	decCodes = append(decCodes, Id(name).Op("=").Op(andOp).Id(childName))
+
+	// todo : ようかくにん、重複コードをスキップ
+	if ast.HasParent() && ast.Parent.IsPointer() {
+		dArray = decCodes
+	} else {
+
+		dArray = append(dArray /*If(Op("!").Id(idDecoder).Dot("IsCodeNil").Call(Id("offset"))).*/, Block(
+			decCodes...,
+		), /*.Else().Block(
+			Id("offset").Op("++"),
+		)*/)
+	}
+
+	return cArray, cArray, eArray, eArray, dArray, dArray, nil
+}
+
 func (as *analyzedStruct) createBasicCode(ast *analyzedASTFieldType, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
 
 	offset := "offset"
@@ -518,7 +604,7 @@ func (as *analyzedStruct) decodeBasicPattern(ast *analyzedASTFieldType, fieldNam
 			node = node.Parent
 			if node.IsPointer() {
 				ptrCount++
-			} else if node.IsArray() || node.IsMap() {
+			} else if node.IsSlice() || node.IsArray() || node.IsMap() {
 				isParentTypeArrayOrMap = true
 				break
 			} else {
@@ -696,7 +782,7 @@ func (as *analyzedStruct) decodeNamedPattern(ast *analyzedASTFieldType, fieldNam
 			node = node.Parent
 			if node.IsPointer() {
 				ptrCount++
-			} else if node.IsArray() || node.IsMap() {
+			} else if node.IsSlice() || node.IsArray() || node.IsMap() {
 				isParentTypeArrayOrMap = true
 				break
 			} else {

@@ -3,12 +3,15 @@ package generator
 import (
 	"fmt"
 	"go/ast"
+	"math/big"
+	"strings"
 
 	. "github.com/dave/jennifer/jen"
 )
 
 const (
 	fieldTypeIdent = iota + 1
+	fieldTypeSlice
 	fieldTypeArray
 	fieldTypeStruct
 	fieldTypeMap
@@ -21,6 +24,9 @@ type analyzedASTFieldType struct {
 
 	// for identical
 	IdenticalName string
+
+	// for array
+	ArrayLen uint64
 
 	// for struct
 	ImportPath  string
@@ -37,6 +43,7 @@ type analyzedASTFieldType struct {
 func (a analyzedASTFieldType) HasParent() bool { return a.Parent != nil }
 
 func (a analyzedASTFieldType) IsIdentical() bool { return a.fieldType == fieldTypeIdent }
+func (a analyzedASTFieldType) IsSlice() bool     { return a.fieldType == fieldTypeSlice }
 func (a analyzedASTFieldType) IsArray() bool     { return a.fieldType == fieldTypeArray }
 func (a analyzedASTFieldType) IsStruct() bool    { return a.fieldType == fieldTypeStruct }
 func (a analyzedASTFieldType) IsMap() bool       { return a.fieldType == fieldTypeMap }
@@ -66,6 +73,9 @@ func (a analyzedASTFieldType) CanGenerate(sts []analyzedStruct) (bool, []string)
 			}
 		}
 		return false, append(msgs, fmt.Sprintf("struct %s.%s is not generated.", a.ImportPath, a.StructName))
+
+	case a.IsSlice():
+		return a.Elm().CanGenerate(sts)
 
 	case a.IsArray():
 		return a.Elm().CanGenerate(sts)
@@ -110,8 +120,12 @@ func (a analyzedASTFieldType) TypeJenChain(s ...*Statement) *Statement {
 			str = str.Qual(a.ImportPath, a.StructName)
 		}
 
-	case a.IsArray():
+	case a.IsSlice():
 		str = str.Id("[]")
+		str = a.Elm().TypeJenChain(str)
+
+	case a.IsArray():
+		str = str.Id(fmt.Sprintf("[%d]", a.ArrayLen))
 		str = a.Elm().TypeJenChain(str)
 
 	case a.IsMap():
@@ -128,6 +142,7 @@ func (a analyzedASTFieldType) TypeJenChain(s ...*Statement) *Statement {
 	return str
 }
 
+// todo : delete
 func (a analyzedASTFieldType) TypeString(s ...string) string {
 	str := ""
 	if len(s) > 0 {
@@ -140,7 +155,7 @@ func (a analyzedASTFieldType) TypeString(s ...string) string {
 
 	case a.IsStruct():
 
-	case a.IsArray():
+	case a.IsSlice():
 		str += "[]"
 		str = a.Elm().TypeString(str)
 
@@ -217,9 +232,32 @@ func (g *generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 		}, true
 	}
 	if array, ok := expr.(*ast.ArrayType); ok {
-		node := &analyzedASTFieldType{
-			fieldType: fieldTypeArray,
-			Parent:    parent,
+		var node *analyzedASTFieldType
+		if array.Len == nil {
+			node = &analyzedASTFieldType{
+				fieldType: fieldTypeSlice,
+				Parent:    parent,
+			}
+		} else {
+			lit := array.Len.(*ast.BasicLit)
+			// todo : 処理されなかった場合はエラー
+			// todo : box数値以外あればエラーでもいい
+			// parse num
+			n := new(big.Int)
+			if litValie := strings.ToLower(lit.Value); strings.HasPrefix(litValie, "0b") {
+				n.SetString(strings.ReplaceAll(litValie, "0b", ""), 2)
+			} else if strings.HasPrefix(litValie, "0o") {
+				n.SetString(strings.ReplaceAll(litValie, "0o", ""), 8)
+			} else if strings.HasPrefix(litValie, "0x") {
+				n.SetString(strings.ReplaceAll(litValie, "0x", ""), 16)
+			} else {
+				n.SetString(litValie, 10)
+			}
+			node = &analyzedASTFieldType{
+				fieldType: fieldTypeArray,
+				ArrayLen:  n.Uint64(),
+				Parent:    parent,
+			}
 		}
 		key, check := g.checkFieldTypeRecursive(array.Elt, node, importMap, dotStructs)
 		node.Key = key

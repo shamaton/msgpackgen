@@ -33,14 +33,25 @@ type ValueChecking struct {
 	Rune       rune
 	Complex64  complex64
 	Complex128 complex128
+	Slice      []int
+	// chan
+	// func
 }
 
 func (v ValueChecking) Function() int {
 	return v.Int + v.Int
 }
 
+type SliceArray struct {
+	Slice  []int
+	Array1 [0xff]float32
+	Array2 [31280]string
+	Array3 [1031280]bool
+}
+
 type Complexity struct {
 	// array / map / pointer
+	// double array pointer
 	BB B
 	Emb
 	tst2.B
