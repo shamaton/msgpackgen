@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"log"
 	"math"
+	"math/rand"
 	"os"
 	"reflect"
 	"strings"
@@ -173,7 +174,83 @@ func TestComplex(t *testing.T) {
 }
 
 func checkValue(v tst.ValueChecking) error {
-	b1, b2, err1, err2 := marshal(&v, &v)
+	var v1, v2 tst.ValueChecking
+	return _checkValue(v, &v1, &v2)
+}
+
+func TestSliceArray(t *testing.T) {
+
+	f := func(l int) []int {
+		slice := make([]int, l)
+		for i := range slice {
+			slice[i] = rand.Intn(math.MaxInt32)
+		}
+		return slice
+	}
+
+	check := func(v tst.SliceArray) error {
+		var v1, v2 tst.SliceArray
+		return _checkValue(v, &v1, &v2)
+	}
+
+	v := tst.SliceArray{Slice: f(15)}
+	if err := check(v); err != nil {
+		t.Error(err)
+	}
+	v = tst.SliceArray{Slice: f(30015)}
+	if err := check(v); err != nil {
+		t.Error(err)
+	}
+	v = tst.SliceArray{Slice: f(1030015)}
+	if err := check(v); err != nil {
+		t.Error(err)
+	}
+	v = tst.SliceArray{}
+	for i := range v.Array1 {
+		v.Array1[i] = float32(rand.Intn(0xff))
+	}
+	if err := check(v); err != nil {
+		t.Error(err)
+	}
+	v = tst.SliceArray{}
+	for i := range v.Array2 {
+		v.Array2[i] = "a"
+	}
+	if err := check(v); err != nil {
+		t.Error(err)
+	}
+	v = tst.SliceArray{}
+	for i := range v.Array3 {
+		v.Array3[i] = rand.Intn(0xff) > 0x7f
+	}
+	if err := check(v); err != nil {
+		t.Error(err)
+	}
+	v = tst.SliceArray{}
+	for i := range v.Array4 {
+		v.Array4[i] = rand.Intn(math.MaxInt32)
+	}
+	if err := check(v); err != nil {
+		t.Error(err)
+	}
+	v = tst.SliceArray{}
+	for i := range v.Array5 {
+		v.Array5[i] = rand.Intn(math.MaxInt32)
+	}
+	if err := check(v); err != nil {
+		t.Error(err)
+	}
+	v = tst.SliceArray{}
+	for i := range v.Array6 {
+		v.Array6[i] = rand.Intn(math.MaxInt32)
+	}
+	if err := check(v); err != nil {
+		t.Error(err)
+	}
+}
+
+func _checkValue(v interface{}, u1, u2 interface{}) error {
+	b1, b2, err1, err2 := marshal(v, v)
 	if err1 != nil {
 		return fmt.Errorf("marshal to b1 failed %v", err1)
 	}
@@ -181,20 +258,19 @@ func checkValue(v tst.ValueChecking) error {
 		return fmt.Errorf("marshal to b2 failed %v", err2)
 	}
 
-	var v1, v2 tst.ValueChecking
-	err1, err2 = unmarshal(b1, b2, &v1, &v2)
+	err1, err2 = unmarshal(b1, b2, u1, u2)
 	if err1 != nil {
-		return fmt.Errorf("unmarshal to v1 failed %v", err1)
+		return fmt.Errorf("unmarshal to u1 failed %v", err1)
 	}
 	if err2 != nil {
-		return fmt.Errorf("unmarshal to v2 failed %v", err2)
+		return fmt.Errorf("unmarshal to u2 failed %v", err2)
 	}
 
-	if !reflect.DeepEqual(v, v1) {
-		return fmt.Errorf("not equal v1 %v, %v", v, v1)
+	if !reflect.DeepEqual(v, reflect.ValueOf(u1).Elem().Interface()) {
+		return fmt.Errorf("not equal u1 %v, %v", v, u1)
 	}
-	if !reflect.DeepEqual(v, v2) {
-		return fmt.Errorf("not equal v2 %v, %v", v, v2)
+	if !reflect.DeepEqual(v, reflect.ValueOf(u2).Elem().Interface()) {
+		return fmt.Errorf("not equal u2 %v, %v", v, u2)
 	}
 	return nil
 }

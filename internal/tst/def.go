@@ -44,9 +44,12 @@ func (v ValueChecking) Function() int {
 
 type SliceArray struct {
 	Slice  []int
-	Array1 [0xff]float32
+	Array1 [8]float32
 	Array2 [31280]string
 	Array3 [1031280]bool
+	Array4 [0b11]int
+	Array5 [0o22]int
+	Array6 [0x33]int
 }
 
 type Complexity struct {
