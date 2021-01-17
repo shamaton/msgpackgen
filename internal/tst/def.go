@@ -50,6 +50,7 @@ type SliceArray struct {
 	Array4 [0b11]int
 	Array5 [0o22]int
 	Array6 [0x33]int
+	Ints   **[]**int
 }
 
 type Complexity struct {
@@ -88,6 +89,16 @@ type NotGenerated3 struct {
 }
 
 type NotGenerated4 struct {
+	Chan chan int
+	Int  int
+}
+
+type NotGenerated5 struct {
+	Func func() int
+	Int  int
+}
+
+type NotGenerated6 struct {
 	Child tst2.NotGeneratedChild
 	Int   int
 }
