@@ -492,11 +492,11 @@ func (as *analyzedStruct) createArrayCode(ast *analyzedASTFieldType, fieldName s
 		dArray = decCodes
 	} else {
 
-		dArray = append(dArray /*If(Op("!").Id(idDecoder).Dot("IsCodeNil").Call(Id("offset"))).*/, Block(
+		dArray = append(dArray, If(Op("!").Id(idDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
 			decCodes...,
-		), /*.Else().Block(
+		).Else().Block(
 			Id("offset").Op("++"),
-		)*/)
+		))
 	}
 
 	return cArray, cArray, eArray, eArray, dArray, dArray, nil
