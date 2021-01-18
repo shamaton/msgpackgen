@@ -416,7 +416,6 @@ func (as *analyzedStruct) createSliceCode(ast *analyzedASTFieldType, encodeField
 		name = n
 	}
 
-	// todo ; ここのandOP
 	decCodes = append(decCodes, Id(decodeFieldName).Op("=").Op(andOp).Id(name))
 
 	// todo : ようかくにん、重複コードをスキップ
@@ -444,19 +443,6 @@ func (as *analyzedStruct) createArrayCode(ast *analyzedASTFieldType, encodeField
 	decodeChildName := decodeFieldName + "v"
 	if isRootField(decodeFieldName) {
 		decodeChildName = "vv"
-	}
-
-	//ptrOp := ""
-	andOp := ""
-	node := ast
-	for {
-		if node.HasParent() && node.Parent.IsPointer() {
-			//ptrOp += "*"
-			andOp += "&"
-			node = node.Parent
-		} else {
-			break
-		}
 	}
 
 	ca, _, ea, _, da, _, _ := as.createFieldCode(ast.Elm(), encodeChildName, decodeChildName)
@@ -502,7 +488,34 @@ func (as *analyzedStruct) createArrayCode(ast *analyzedASTFieldType, encodeField
 	decCodes = append(decCodes, For(Id(decodeChildName+"i").Op(":=").Range().Id(decodeChildName).Index(Id(":"+decodeChildName+"l"))).Block(
 		da...,
 	))
-	decCodes = append(decCodes, Id(decodeFieldName).Op("=").Op(andOp).Id(decodeChildName))
+
+	// todo : 不要なコードがあるはず
+	ptrOp := ""
+	andOp := ""
+	prtCount := 0
+	node := ast
+	for {
+		if node.HasParent() && node.Parent.IsPointer() {
+			ptrOp += "*"
+			andOp += "&"
+			prtCount++
+			node = node.Parent
+		} else {
+			break
+		}
+	}
+
+	name := decodeChildName
+	if prtCount > 0 {
+		andOp = "&"
+	}
+	for i := 0; i < prtCount-1; i++ {
+		n := "_" + name
+		decCodes = append(decCodes, Id(n).Op(":=").Op("&").Id(name))
+		name = n
+	}
+
+	decCodes = append(decCodes, Id(decodeFieldName).Op("=").Op(andOp).Id(name))
 
 	// todo : ようかくにん、重複コードをスキップ
 	if ast.HasParent() && ast.Parent.IsPointer() {

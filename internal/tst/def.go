@@ -15,8 +15,7 @@ import (
 // msgp以上にこうそく
 
 type S struct {
-	Ints **[]**int
-	// G *Time
+	Array1 **[8]**float32
 }
 
 type ValueChecking struct {
@@ -39,8 +38,7 @@ type ValueChecking struct {
 	Complex64  complex64
 	Complex128 complex128
 	Slice      []int
-	// chan
-	// func
+	// time
 	I interface{}
 }
 
