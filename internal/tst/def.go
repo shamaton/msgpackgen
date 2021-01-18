@@ -15,7 +15,7 @@ import (
 // msgp以上にこうそく
 
 type S struct {
-	Array1 **[8]**float32
+	Map **map[string]**int
 }
 
 type ValueChecking struct {
