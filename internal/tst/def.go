@@ -50,7 +50,7 @@ type SliceArray struct {
 	Array4 [0b11]int
 	Array5 [0o22]int
 	Array6 [0x33]int
-	Ints   **[]**int
+	//Ints   **[]**int
 }
 
 type Complexity struct {

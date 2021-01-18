@@ -38,6 +38,7 @@ func (as *analyzedStruct) calcFunction(f *File) {
 	decMapCodeSwitchCases := make([]Code, 0)
 
 	for _, field := range as.Fields {
+
 		calcKeyStringCode, writeKeyStringCode := as.CreateKeyStringCode(field.Tag)
 		calcMapSizeCodes = append(calcMapSizeCodes, calcKeyStringCode)
 		encMapCodes = append(encMapCodes, writeKeyStringCode)
@@ -149,20 +150,25 @@ func (as *analyzedStruct) CreateStructCode(fieldNum int) (Code, Code, Code) {
 		Id("offset").Op("=").Id(idEncoder).Dot(" WriteStructHeader"+suffix+"AsMap").Call(Lit(fieldNum), Id("offset"))
 }
 
-func (as *analyzedStruct) createFieldCode(ast *analyzedASTFieldType, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
+func (as *analyzedStruct) createFieldCode(ast *analyzedASTFieldType, name string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
+
+	vName := name
+	if isRoot {
+		vName = "v." + name
+	}
 
 	switch {
 	case ast.IsIdentical():
-		return as.createBasicCode(ast, fieldName, isRoot)
+		return as.createBasicCode(ast, vName, isRoot)
 
 	case ast.IsSlice():
-		return as.createSliceCode(ast, fieldName, isRoot)
+		return as.createSliceCode(ast, vName, isRoot)
 
 	case ast.IsArray():
-		return as.createArrayCode(ast, fieldName, isRoot)
+		return as.createArrayCode(ast, vName, isRoot)
 
 	case ast.IsMap():
-		return as.createMapCode(ast, fieldName, isRoot)
+		return as.createMapCode(ast, vName, isRoot)
 
 	case ast.IsStruct():
 
@@ -177,9 +183,9 @@ func (as *analyzedStruct) createFieldCode(ast *analyzedASTFieldType, fieldName s
 			}
 		}
 
-		fieldValue := Op(ptrOp).Id(fieldName)
+		fieldValue := Op(ptrOp).Id(vName)
 		if isRoot {
-			fieldValue = Op(ptrOp).Id("v").Dot(fieldName)
+			fieldValue = Op(ptrOp).Id("v").Dot(vName)
 		}
 
 		// todo : ポインタでの動作検証
@@ -190,15 +196,15 @@ func (as *analyzedStruct) createFieldCode(ast *analyzedASTFieldType, fieldName s
 			cMap = append(cMap, as.addSizePattern1("CalcTime", fieldValue))
 			eMap = append(eMap, as.encPattern1("WriteTime", fieldValue, Id("offset")))
 
-			dArray = append(dArray, as.decodeBasicPattern(ast, fieldName, "offset", "AsDateTime", isRoot)...)
-			dMap = append(dMap, as.decodeBasicPattern(ast, fieldName, "offset", "AsDateTime", isRoot)...)
+			dArray = append(dArray, as.decodeBasicPattern(ast, vName, "offset", "AsDateTime", isRoot)...)
+			dMap = append(dMap, as.decodeBasicPattern(ast, vName, "offset", "AsDateTime", isRoot)...)
 		} else {
 			// todo : 対象のパッケージかどうかをちゃんと判断する
-			cArray, cMap, eArray, eMap, dArray, dMap = as.createNamedCode(fieldName, ast, fieldValue, isRoot)
+			cArray, cMap, eArray, eMap, dArray, dMap = as.createNamedCode(vName, ast, isRoot)
 		}
 
 	case ast.IsPointer():
-		return as.createPointerCode(ast, fieldName, isRoot)
+		return as.createPointerCode(ast, vName, isRoot)
 
 	default:
 		// todo : error
@@ -210,47 +216,42 @@ func (as *analyzedStruct) createFieldCode(ast *analyzedASTFieldType, fieldName s
 
 func (as *analyzedStruct) createPointerCode(ast *analyzedASTFieldType, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
 
-	ptrOp := ""
-	node := ast
-	for {
-		if node.HasParent() && node.Parent.IsPointer() {
-			ptrOp += "*"
-			node = node.Parent
-		} else {
-			break
-		}
+	vName := fieldName + "p"
+	if isRoot {
+		vName = "vp"
 	}
 
-	name := fieldName
-	if isRoot {
-		name = "v." + fieldName
-	}
-	ca, _, ea, _, da, _, _ := as.createFieldCode(ast.Elm(), fieldName, isRoot)
+	ca, _, ea, _, da, _, _ := as.createFieldCode(ast.Elm(), vName, false)
 
 	cArray = make([]Code, 0)
-	cArray = append(cArray, If(Op(ptrOp).Id(name).Op("!=").Nil()).Block(
-		ca...,
+	cArray = append(cArray, If(Id(fieldName).Op("!=").Nil()).Block(
+		append([]Code{
+			Id(vName).Op(":=").Op("*").Id(fieldName),
+		}, ca...)...,
 	).Else().Block(
 		Id("size").Op("+=").Id(idEncoder).Dot("CalcNil").Call(),
 	))
 
 	eArray = make([]Code, 0)
-	eArray = append(eArray, If(Op(ptrOp).Id(name).Op("!=").Nil()).Block(
-		ea...,
+	eArray = append(eArray, If(Id(fieldName).Op("!=").Nil()).Block(
+		append([]Code{
+			Id(vName).Op(":=").Op("*").Id(fieldName),
+		}, ea...)...,
 	).Else().Block(
 		Id("offset").Op("=").Id(idEncoder).Dot("WriteNil").Call(Id("offset")),
 	))
 
 	// todo : ようかくにん、重複コードをスキップ
-	if len(ptrOp) < 1 {
+	isParentPointer := ast.HasParent() && ast.Parent.IsPointer()
+	if isParentPointer {
+		dArray = da
+	} else {
 		dArray = make([]Code, 0)
 		dArray = append(dArray, If(Op("!").Id(idDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
 			da...,
 		).Else().Block(
 			Id("offset").Op("++"),
 		))
-	} else {
-		dArray = da
 	}
 
 	return cArray, cArray, eArray, eArray, dArray, dArray, err
@@ -340,20 +341,19 @@ func (as *analyzedStruct) createMapCode(ast *analyzedASTFieldType, fieldName str
 
 func (as *analyzedStruct) createSliceCode(ast *analyzedASTFieldType, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
 
-	name, childName := "", ""
+	childName := ""
 	if isRoot {
-		name = "v." + fieldName
 		childName = "vv"
 	} else {
 		childName = fieldName + "v"
 	}
 
-	ptrOp := ""
+	//ptrOp := ""
 	andOp := ""
 	node := ast
 	for {
 		if node.HasParent() && node.Parent.IsPointer() {
-			ptrOp += "*"
+			//ptrOp += "*"
 			andOp += "&"
 			node = node.Parent
 		} else {
@@ -364,24 +364,24 @@ func (as *analyzedStruct) createSliceCode(ast *analyzedASTFieldType, fieldName s
 	ca, _, ea, _, da, _, _ := as.createFieldCode(ast.Elm(), childName, false)
 	isChildByte := ast.Elm().IsIdentical() && ast.Elm().IdenticalName == "byte"
 
-	calcCodes := as.addSizePattern2("CalcSliceLength", Len(Op(ptrOp).Id(name)), Lit(isChildByte))
-	calcCodes = append(calcCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Op(ptrOp).Id(name)).Block(
+	calcCodes := as.addSizePattern2("CalcSliceLength", Len( /*Op(ptrOp).*/ Id(fieldName)), Lit(isChildByte))
+	calcCodes = append(calcCodes, For(List(Id("_"), Id(childName)).Op(":=").Range(). /*Op(ptrOp).*/ Id(fieldName)).Block(
 		ca...,
 	))
 
-	cArray = append(cArray, If(Op(ptrOp).Id(name).Op("!=").Nil()).Block(
+	cArray = append(cArray, If( /*Op(ptrOp).*/ Id(fieldName).Op("!=").Nil()).Block(
 		calcCodes...,
 	).Else().Block(
 		as.addSizePattern1("CalcNil"),
 	))
 
 	encCodes := make([]Code, 0)
-	encCodes = append(encCodes, Id("offset").Op("=").Id(idEncoder).Dot("WriteSliceLength").Call(Len(Op(ptrOp).Id(name)), Id("offset"), Lit(isChildByte)))
-	encCodes = append(encCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Op(ptrOp).Id(name)).Block(
+	encCodes = append(encCodes, Id("offset").Op("=").Id(idEncoder).Dot("WriteSliceLength").Call(Len( /*Op(ptrOp).*/ Id(fieldName)), Id("offset"), Lit(isChildByte)))
+	encCodes = append(encCodes, For(List(Id("_"), Id(childName)).Op(":=").Range(). /*Op(ptrOp).*/ Id(fieldName)).Block(
 		ea...,
 	))
 
-	eArray = append(eArray, If(Op(ptrOp).Id(name).Op("!=").Nil()).Block(
+	eArray = append(eArray, If( /*Op(ptrOp).*/ Id(fieldName).Op("!=").Nil()).Block(
 		encCodes...,
 	).Else().Block(
 		Id("offset").Op("=").Id(idEncoder).Dot("WriteNil").Call(Id("offset")),
@@ -402,7 +402,7 @@ func (as *analyzedStruct) createSliceCode(ast *analyzedASTFieldType, fieldName s
 	decCodes = append(decCodes, For(Id(childName+"i").Op(":=").Range().Id(childName)).Block(
 		da...,
 	))
-	decCodes = append(decCodes, Id(name).Op("=").Op(andOp).Id(childName))
+	decCodes = append(decCodes, Id(fieldName).Op("=").Op(andOp).Id(childName))
 
 	// todo : ようかくにん、重複コードをスキップ
 	if ast.HasParent() && ast.Parent.IsPointer() {
@@ -421,20 +421,19 @@ func (as *analyzedStruct) createSliceCode(ast *analyzedASTFieldType, fieldName s
 
 func (as *analyzedStruct) createArrayCode(ast *analyzedASTFieldType, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
 
-	name, childName := "", ""
+	childName := ""
 	if isRoot {
-		name = "v." + fieldName
 		childName = "vv"
 	} else {
 		childName = fieldName + "v"
 	}
 
-	ptrOp := ""
+	//ptrOp := ""
 	andOp := ""
 	node := ast
 	for {
 		if node.HasParent() && node.Parent.IsPointer() {
-			ptrOp += "*"
+			//ptrOp += "*"
 			andOp += "&"
 			node = node.Parent
 		} else {
@@ -445,8 +444,8 @@ func (as *analyzedStruct) createArrayCode(ast *analyzedASTFieldType, fieldName s
 	ca, _, ea, _, da, _, _ := as.createFieldCode(ast.Elm(), childName, false)
 	isChildByte := ast.Elm().IsIdentical() && ast.Elm().IdenticalName == "byte"
 
-	calcCodes := as.addSizePattern2("CalcSliceLength", Len(Op(ptrOp).Id(name)), Lit(isChildByte))
-	calcCodes = append(calcCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Op(ptrOp).Id(name)).Block(
+	calcCodes := as.addSizePattern2("CalcSliceLength", Len( /*Op(ptrOp).*/ Id(fieldName)), Lit(isChildByte))
+	calcCodes = append(calcCodes, For(List(Id("_"), Id(childName)).Op(":=").Range(). /*Op(ptrOp).*/ Id(fieldName)).Block(
 		ca...,
 	))
 
@@ -457,8 +456,8 @@ func (as *analyzedStruct) createArrayCode(ast *analyzedASTFieldType, fieldName s
 	)*/)
 
 	encCodes := make([]Code, 0)
-	encCodes = append(encCodes, Id("offset").Op("=").Id(idEncoder).Dot("WriteSliceLength").Call(Len(Op(ptrOp).Id(name)), Id("offset"), Lit(isChildByte)))
-	encCodes = append(encCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Op(ptrOp).Id(name)).Block(
+	encCodes = append(encCodes, Id("offset").Op("=").Id(idEncoder).Dot("WriteSliceLength").Call(Len( /*Op(ptrOp).*/ Id(fieldName)), Id("offset"), Lit(isChildByte)))
+	encCodes = append(encCodes, For(List(Id("_"), Id(childName)).Op(":=").Range(). /*Op(ptrOp).*/ Id(fieldName)).Block(
 		ea...,
 	))
 
@@ -485,7 +484,7 @@ func (as *analyzedStruct) createArrayCode(ast *analyzedASTFieldType, fieldName s
 	decCodes = append(decCodes, For(Id(childName+"i").Op(":=").Range().Id(childName).Index(Id(":"+childName+"l"))).Block(
 		da...,
 	))
-	decCodes = append(decCodes, Id(name).Op("=").Op(andOp).Id(childName))
+	decCodes = append(decCodes, Id(fieldName).Op("=").Op(andOp).Id(childName))
 
 	// todo : ようかくにん、重複コードをスキップ
 	if ast.HasParent() && ast.Parent.IsPointer() {
@@ -505,21 +504,21 @@ func (as *analyzedStruct) createArrayCode(ast *analyzedASTFieldType, fieldName s
 func (as *analyzedStruct) createBasicCode(ast *analyzedASTFieldType, fieldName string, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
 
 	offset := "offset"
+	//
+	//ptrOp := ""
+	//node := ast
+	//for {
+	//	if node.HasParent() && node.Parent.IsPointer() {
+	//		ptrOp += "*"
+	//		node = node.Parent
+	//	} else {
+	//		break
+	//	}
+	//}
 
-	ptrOp := ""
-	node := ast
-	for {
-		if node.HasParent() && node.Parent.IsPointer() {
-			ptrOp += "*"
-			node = node.Parent
-		} else {
-			break
-		}
-	}
-
-	fieldValue := Op(ptrOp).Id(fieldName)
+	fieldValue := /* Op(ptrOp). */ Id(fieldName)
 	if isRoot {
-		fieldValue = Op(ptrOp).Id("v").Dot(fieldName)
+		//fieldValue = /* Op(ptrOp). */ Id("v").Dot(fieldName)
 	}
 
 	var (
@@ -593,7 +592,7 @@ func (as *analyzedStruct) encPattern1(funcName string, params ...Code) Code {
 func (as *analyzedStruct) decodeBasicPattern(ast *analyzedASTFieldType, fieldName, offsetName, decoderFuncName string, isRoot bool) []Code {
 
 	// todo : ポインタの場合, vvp / vvvを使う必要
-	varName, setVarName := as.decodeVarPattern(fieldName, isRoot)
+	varName, _ /*setVarName*/ := as.decodeVarPattern(fieldName, isRoot)
 
 	node := ast
 	ptrCount := 0
@@ -645,7 +644,7 @@ func (as *analyzedStruct) decodeBasicPattern(ast *analyzedASTFieldType, fieldNam
 		),
 	)
 
-	codes = as.createDecodeSetVarPattern(ptrCount, varName, setVarName, isParentTypeArrayOrMap, codes)
+	codes = as.createDecodeSetVarPattern(ptrCount, varName, fieldName /*setVarName*/, isParentTypeArrayOrMap, codes)
 
 	// array or map
 	if isParentTypeArrayOrMap {
@@ -698,32 +697,37 @@ func (as *analyzedStruct) createDecodeSetVarPattern(ptrCount int, varName, setVa
 	return codes
 }
 
-func (as *analyzedStruct) createNamedCode(fieldName string, ast *analyzedASTFieldType, fieldValue Code, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code) {
+func (as *analyzedStruct) createNamedCode(fieldName string, ast *analyzedASTFieldType, isRoot bool) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code) {
+
+	sizeName := "size_" + fieldName
+	if isRoot {
+		sizeName = strings.ReplaceAll(sizeName, ".", "_")
+	}
 
 	cArray = []Code{
-		List(Id("size"+fieldName), Err()).
+		List(Id(sizeName), Err()).
 			Op(":=").
-			Id(createFuncName("calcArraySize", ast.StructName, ast.ImportPath)).Call(fieldValue, Id(idEncoder)),
+			Id(createFuncName("calcArraySize", ast.StructName, ast.ImportPath)).Call(Id(fieldName), Id(idEncoder)),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Lit(0), Err()),
 		),
-		Id("size").Op("+=").Id("size" + fieldName),
+		Id("size").Op("+=").Id(sizeName),
 	}
 
 	cMap = []Code{
-		List(Id("size"+fieldName), Err()).
+		List(Id(sizeName), Err()).
 			Op(":=").
-			Id(createFuncName("calcMapSize", ast.StructName, ast.ImportPath)).Call(fieldValue, Id(idEncoder)),
+			Id(createFuncName("calcMapSize", ast.StructName, ast.ImportPath)).Call(Id(fieldName), Id(idEncoder)),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Lit(0), Err()),
 		),
-		Id("size").Op("+=").Id("size" + fieldName),
+		Id("size").Op("+=").Id(sizeName),
 	}
 
 	eArray = []Code{
 		List(Id("_"), Id("offset"), Err()).
 			Op("=").
-			Id(createFuncName("encodeArray", ast.StructName, ast.ImportPath)).Call(fieldValue, Id(idEncoder), Id("offset")),
+			Id(createFuncName("encodeArray", ast.StructName, ast.ImportPath)).Call(Id(fieldName), Id(idEncoder), Id("offset")),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Nil(), Lit(0), Err()),
 		),
@@ -732,7 +736,7 @@ func (as *analyzedStruct) createNamedCode(fieldName string, ast *analyzedASTFiel
 	eMap = []Code{
 		List(Id("_"), Id("offset"), Err()).
 			Op("=").
-			Id(createFuncName("encodeMap", ast.StructName, ast.ImportPath)).Call(fieldValue, Id(idEncoder), Id("offset")),
+			Id(createFuncName("encodeMap", ast.StructName, ast.ImportPath)).Call(Id(fieldName), Id(idEncoder), Id("offset")),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Nil(), Lit(0), Err()),
 		),
@@ -771,7 +775,7 @@ func (as *analyzedStruct) createNamedCode(fieldName string, ast *analyzedASTFiel
 func (as *analyzedStruct) decodeNamedPattern(ast *analyzedASTFieldType, fieldName, decodeFuncName string, isRoot bool) []Code {
 
 	// todo : ポインタの場合, vvp / vvvを使う必要
-	varName, setVarName := as.decodeVarPattern(fieldName, isRoot)
+	varName, _ /*setVarName*/ := as.decodeVarPattern(fieldName, isRoot)
 
 	node := ast
 	ptrCount := 0
@@ -847,7 +851,7 @@ func (as *analyzedStruct) decodeNamedPattern(ast *analyzedASTFieldType, fieldNam
 		),
 	)
 
-	codes = as.createDecodeSetVarPattern(ptrCount, varName, setVarName, isParentTypeArrayOrMap, codes)
+	codes = as.createDecodeSetVarPattern(ptrCount, varName, fieldName /*setVarName*/, isParentTypeArrayOrMap, codes)
 
 	// array or map
 	if isParentTypeArrayOrMap {
