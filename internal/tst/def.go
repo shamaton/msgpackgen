@@ -53,6 +53,9 @@ type ValueChecking struct {
 	Pint      *int
 	P2string  **string
 	P3float32 ***float32
+
+	IntPointers []*int
+	MapPointers map[*uint]**string
 }
 
 type ValueCheckin struct {

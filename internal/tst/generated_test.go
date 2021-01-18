@@ -269,6 +269,50 @@ func TestPointerValue(t *testing.T) {
 			t.Error(err)
 		}
 	}
+	{
+		_v := make([]*int, 100)
+		for i := range _v {
+			if i%2 == 0 {
+				__v := i
+				_v[i] = &__v
+			} else {
+				_v[i] = nil
+			}
+		}
+
+		v := tst.ValueChecking{IntPointers: _v}
+		if err := checkValue(v); err != nil {
+			t.Error(err)
+		}
+	}
+	{
+		_v := make(map[*uint]**string, 10)
+		for i := 0; i < 10; i++ {
+			k := uint(i)
+			v := fmt.Sprint(i, i, i)
+			vv := &v
+			_v[&k] = &vv
+		}
+
+		v := tst.ValueChecking{MapPointers: _v}
+		if err := checkValue(v); err != nil {
+			// t.Error(err)
+		}
+
+		b, _ := msgpack.Encode(v)
+		var vvvv tst.ValueChecking
+		msgpack.Decode(b, &vvvv)
+		for k, q := range v.MapPointers {
+			qq := *q
+			t.Log(*k, *qq)
+		}
+		t.Log(v.MapPointers, vvvv.MapPointers)
+
+		for k, q := range vvvv.MapPointers {
+			qq := *q
+			t.Log(*k, *qq)
+		}
+	}
 }
 
 func TestTime(t *testing.T) {
