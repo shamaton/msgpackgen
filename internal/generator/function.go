@@ -683,8 +683,8 @@ func (as *analyzedStruct) createDecodeSetVarPattern(ptrCount int, varName, setVa
 
 		for i := 0; i < ptrCount; i++ {
 			if i != ptrCount-1 {
-				tmp1 := varName + strings.Repeat("p", ptrCount-2+i)
-				tmp2 := varName + strings.Repeat("p", ptrCount-1+i)
+				tmp1 := varName + strings.Repeat("p", ptrCount-2-i)
+				tmp2 := varName + strings.Repeat("p", ptrCount-1-i)
 				codes = append(codes, Id(tmp1).Op("=").Op("&").Id(tmp2))
 			} else {
 				// last

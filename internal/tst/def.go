@@ -48,7 +48,15 @@ type ValueChecking struct {
 	Array5 [0o22]int
 	Array6 [0x33]int
 
-	MapIntInt map[int]int
+	MapIntInt map[string]int
+
+	Pint      *int
+	P2string  **string
+	P3float32 ***float32
+}
+
+type ValueCheckin struct {
+	P3float32 ***float32
 }
 
 func (v ValueChecking) Function() int {

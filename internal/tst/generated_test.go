@@ -176,29 +176,98 @@ func TestComplex(t *testing.T) {
 
 func TestMap(t *testing.T) {
 	v := tst.ValueChecking{
-		MapIntInt: map[int]int{1: 2, 3: 4, 5: 6, 7: 8, 9: 10},
+		MapIntInt: map[string]int{"1": 2, "3": 4, "5": 6, "7": 8, "9": 10},
 	}
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
 	v = tst.ValueChecking{
-		MapIntInt: make(map[int]int, 1000),
+		MapIntInt: make(map[string]int, 1000),
 	}
 	for i := 0; i < len(v.MapIntInt); i++ {
-		v.MapIntInt[i] = i + 1
+		v.MapIntInt[fmt.Sprint(i)] = i + 1
 	}
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
 
 	v = tst.ValueChecking{
-		MapIntInt: make(map[int]int, math.MaxUint16+1),
+		MapIntInt: make(map[string]int, math.MaxUint16+1),
 	}
 	for i := 0; i < len(v.MapIntInt); i++ {
-		v.MapIntInt[i] = i + 1
+		v.MapIntInt[fmt.Sprint(i)] = i + 1
 	}
 	if err := checkValue(v); err != nil {
 		t.Error(err)
+	}
+	v = tst.ValueChecking{
+		MapIntInt: nil,
+	}
+	if err := checkValue(v); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestPointerValue(t *testing.T) {
+	{
+		_v := 123
+		v := tst.ValueChecking{Pint: &_v}
+		if err := checkValue(v); err != nil {
+			t.Error(err)
+		}
+	}
+	{
+		_v := "this is pointer"
+		__v := &_v
+		v := tst.ValueChecking{P2string: &__v}
+		if err := checkValue(v); err != nil {
+			t.Error(err)
+		}
+	}
+	{
+		_v := float32(1.234)
+		__v := &_v
+		___v := &__v
+		____v := &___v
+		v := tst.ValueChecking{P3float32: ____v}
+		if err := checkValue(v); err != nil {
+			t.Error(err)
+		}
+	}
+
+	check := func(v tst.ValueChecking) error {
+		var v1, v2 tst.ValueChecking
+		f1 := func() (bool, interface{}, interface{}) {
+			return v1.P3float32 == nil, v1.P3float32, nil
+		}
+		f2 := func() (bool, interface{}, interface{}) {
+			return v2.P3float32 == nil, v1.P3float32, nil
+		}
+
+		return _checkValue(v, &v1, &v2, f1, f2)
+	}
+	{
+
+		_v := float32(1.234)
+		__v := &_v
+		___v := &__v
+		____v := &___v
+
+		__v = nil
+		v := tst.ValueChecking{P3float32: ____v}
+		if err := check(v); err != nil {
+			t.Error(err)
+		}
+		___v = nil
+		v = tst.ValueChecking{P3float32: ____v}
+		if err := check(v); err != nil {
+			t.Error(err)
+		}
+		____v = nil
+		v = tst.ValueChecking{P3float32: ____v}
+		if err := check(v); err != nil {
+			t.Error(err)
+		}
 	}
 }
 
@@ -232,9 +301,9 @@ func TestTime(t *testing.T) {
 	}
 }
 
-func checkValue(v tst.ValueChecking) error {
+func checkValue(v tst.ValueChecking, eqs ...func() (bool, interface{}, interface{})) error {
 	var v1, v2 tst.ValueChecking
-	return _checkValue(v, &v1, &v2)
+	return _checkValue(v, &v1, &v2, eqs...)
 }
 
 func TestSliceArray(t *testing.T) {
@@ -312,7 +381,7 @@ func TestSliceArray(t *testing.T) {
 	}
 }
 
-func _checkValue(v interface{}, u1, u2 interface{}) error {
+func _checkValue(v interface{}, u1, u2 interface{}, eqs ...func() (bool, interface{}, interface{})) error {
 	b1, b2, err1, err2 := marshal(v, v)
 	if err1 != nil {
 		return fmt.Errorf("marshal to b1 failed %v", err1)
@@ -329,11 +398,20 @@ func _checkValue(v interface{}, u1, u2 interface{}) error {
 		return fmt.Errorf("unmarshal to u2 failed %v", err2)
 	}
 
-	if !reflect.DeepEqual(v, reflect.ValueOf(u1).Elem().Interface()) {
-		return fmt.Errorf("not equal u1 %v, %v", v, u1)
-	}
-	if !reflect.DeepEqual(v, reflect.ValueOf(u2).Elem().Interface()) {
-		return fmt.Errorf("not equal u2 %v, %v", v, u2)
+	if len(eqs) < 2 {
+		if !reflect.DeepEqual(v, reflect.ValueOf(u1).Elem().Interface()) {
+			return fmt.Errorf("not equal u1 %v, %v", v, u1)
+		}
+		if !reflect.DeepEqual(v, reflect.ValueOf(u2).Elem().Interface()) {
+			return fmt.Errorf("not equal u2 %v, %v", v, u2)
+		}
+	} else {
+		if b, _v1, _v2 := eqs[0](); !b {
+			return fmt.Errorf("not equal u1 %v, %v", _v1, _v2)
+		}
+		if b, _v1, _v2 := eqs[1](); !b {
+			return fmt.Errorf("not equal u2 %v, %v", _v1, _v2)
+		}
 	}
 	return nil
 }
