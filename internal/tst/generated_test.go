@@ -174,6 +174,34 @@ func TestComplex(t *testing.T) {
 	}
 }
 
+func TestMap(t *testing.T) {
+	v := tst.ValueChecking{
+		MapIntInt: map[int]int{1: 2, 3: 4, 5: 6, 7: 8, 9: 10},
+	}
+	if err := checkValue(v); err != nil {
+		t.Error(err)
+	}
+	v = tst.ValueChecking{
+		MapIntInt: make(map[int]int, 1000),
+	}
+	for i := 0; i < len(v.MapIntInt); i++ {
+		v.MapIntInt[i] = i + 1
+	}
+	if err := checkValue(v); err != nil {
+		t.Error(err)
+	}
+
+	v = tst.ValueChecking{
+		MapIntInt: make(map[int]int, math.MaxUint16+1),
+	}
+	for i := 0; i < len(v.MapIntInt); i++ {
+		v.MapIntInt[i] = i + 1
+	}
+	if err := checkValue(v); err != nil {
+		t.Error(err)
+	}
+}
+
 func TestTime(t *testing.T) {
 	v := tst.TimeChecking{Time: time.Now()}
 	b, err := msgpack.Encode(v)
@@ -219,59 +247,63 @@ func TestSliceArray(t *testing.T) {
 		return slice
 	}
 
-	check := func(v tst.SliceArray) error {
-		var v1, v2 tst.SliceArray
+	check := func(v tst.ValueChecking) error {
+		var v1, v2 tst.ValueChecking
 		return _checkValue(v, &v1, &v2)
 	}
 
-	v := tst.SliceArray{Slice: f(15)}
+	v := tst.ValueChecking{Slice: f(15)}
 	if err := check(v); err != nil {
 		t.Error(err)
 	}
-	v = tst.SliceArray{Slice: f(30015)}
+	v = tst.ValueChecking{Slice: f(30015)}
 	if err := check(v); err != nil {
 		t.Error(err)
 	}
-	v = tst.SliceArray{Slice: f(1030015)}
+	v = tst.ValueChecking{Slice: f(1030015)}
 	if err := check(v); err != nil {
 		t.Error(err)
 	}
-	v = tst.SliceArray{}
+	v = tst.ValueChecking{Slice: nil}
+	if err := check(v); err != nil {
+		t.Error(err)
+	}
+	v = tst.ValueChecking{}
 	for i := range v.Array1 {
 		v.Array1[i] = float32(rand.Intn(0xff))
 	}
 	if err := check(v); err != nil {
 		t.Error(err)
 	}
-	v = tst.SliceArray{}
+	v = tst.ValueChecking{}
 	for i := range v.Array2 {
 		v.Array2[i] = "a"
 	}
 	if err := check(v); err != nil {
 		t.Error(err)
 	}
-	v = tst.SliceArray{}
+	v = tst.ValueChecking{}
 	for i := range v.Array3 {
 		v.Array3[i] = rand.Intn(0xff) > 0x7f
 	}
 	if err := check(v); err != nil {
 		t.Error(err)
 	}
-	v = tst.SliceArray{}
+	v = tst.ValueChecking{}
 	for i := range v.Array4 {
 		v.Array4[i] = rand.Intn(math.MaxInt32)
 	}
 	if err := check(v); err != nil {
 		t.Error(err)
 	}
-	v = tst.SliceArray{}
+	v = tst.ValueChecking{}
 	for i := range v.Array5 {
 		v.Array5[i] = rand.Intn(math.MaxInt32)
 	}
 	if err := check(v); err != nil {
 		t.Error(err)
 	}
-	v = tst.SliceArray{}
+	v = tst.ValueChecking{}
 	for i := range v.Array6 {
 		v.Array6[i] = rand.Intn(math.MaxInt32)
 	}
