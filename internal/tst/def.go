@@ -14,6 +14,11 @@ import (
 // ワンファイル
 // msgp以上にこうそく
 
+type S struct {
+	Ints **[]**int
+	// G *Time
+}
+
 type ValueChecking struct {
 	Int        int
 	Int8       int8
@@ -36,6 +41,7 @@ type ValueChecking struct {
 	Slice      []int
 	// chan
 	// func
+	I interface{}
 }
 
 func (v ValueChecking) Function() int {
@@ -50,7 +56,7 @@ type SliceArray struct {
 	Array4 [0b11]int
 	Array5 [0o22]int
 	Array6 [0x33]int
-	//Ints   **[]**int
+	I      interface{}
 }
 
 type Complexity struct {
