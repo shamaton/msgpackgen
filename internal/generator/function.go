@@ -393,19 +393,31 @@ func (as *analyzedStruct) createSliceCode(ast *analyzedASTFieldType, encodeField
 	// todo : 不要なコードがあるはず
 	ptrOp := ""
 	andOp := ""
+	prtCount := 0
 	node := ast
 	for {
 		if node.HasParent() && node.Parent.IsPointer() {
 			ptrOp += "*"
 			andOp += "&"
+			prtCount++
 			node = node.Parent
 		} else {
 			break
 		}
 	}
 
+	name := decodeChildName
+	if prtCount > 0 {
+		andOp = "&"
+	}
+	for i := 0; i < prtCount-1; i++ {
+		n := "_" + name
+		decCodes = append(decCodes, Id(n).Op(":=").Op("&").Id(name))
+		name = n
+	}
+
 	// todo ; ここのandOP
-	decCodes = append(decCodes, Id(decodeFieldName).Op("=").Op(andOp).Id(decodeChildName))
+	decCodes = append(decCodes, Id(decodeFieldName).Op("=").Op(andOp).Id(name))
 
 	// todo : ようかくにん、重複コードをスキップ
 	if ast.HasParent() && ast.Parent.IsPointer() {
