@@ -34,13 +34,13 @@ func (d *Decoder) AsDateTime(offset int) (time.Time, int, error) {
 		return time.Unix(int64(data64&0x00000003ffffffff), nano), offset, nil
 
 	case def.Ext8:
-		t, offset := d.readSize1(offset)
-		if int8(t) != def.TimeStamp {
-			return time.Time{}, 0, fmt.Errorf("ext8. time type is diffrent %d, %d", t, def.TimeStamp)
-		}
 		c, offset := d.readSize1(offset)
 		if int8(c) != 12 {
 			return time.Time{}, 0, fmt.Errorf("ext8. time ext length is diffrent %d, %d", c, 12)
+		}
+		t, offset := d.readSize1(offset)
+		if int8(t) != def.TimeStamp {
+			return time.Time{}, 0, fmt.Errorf("ext8. time type is diffrent %d, %d", t, def.TimeStamp)
 		}
 		nanobs, offset := d.readSize4(offset)
 		secbs, offset := d.readSize8(offset)

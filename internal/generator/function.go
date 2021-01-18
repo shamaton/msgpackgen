@@ -182,7 +182,7 @@ func (as *analyzedStruct) createFieldCode(ast *analyzedASTFieldType, encodeField
 			}
 		}
 
-		fieldValue := Op(ptrOp).Id(encodeFieldName)
+		fieldValue := Id(encodeFieldName)
 
 		// todo : ポインタでの動作検証
 		if ast.ImportPath == "time" {

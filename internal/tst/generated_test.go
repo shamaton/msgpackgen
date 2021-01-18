@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/shamaton/msgpackgen/internal/tst"
 	"github.com/shamaton/msgpackgen/msgpack"
@@ -170,6 +171,36 @@ func TestComplex(t *testing.T) {
 	}
 	if err := checkValue(v); err != nil {
 		t.Error(err)
+	}
+}
+
+func TestTime(t *testing.T) {
+	v := tst.TimeChecking{Time: time.Now()}
+	b, err := msgpack.Encode(v)
+	if err != nil {
+		t.Error(err)
+	}
+	var _v tst.TimeChecking
+	err = msgpack.Decode(b, &_v)
+	if err != nil {
+		t.Error(err)
+	}
+	if v.Time.UnixNano() != _v.Time.UnixNano() {
+		t.Errorf("time different %v, %v", v.Time, _v.Time)
+	}
+
+	vv := tst.TimeChecking{}
+	b, err = msgpack.EncodeAsArray(vv)
+	if err != nil {
+		t.Error(err)
+	}
+	var _vv tst.TimeChecking
+	err = msgpack.DecodeAsArray(b, &_vv)
+	if err != nil {
+		t.Error(err)
+	}
+	if vv.Time.UnixNano() != _vv.Time.UnixNano() {
+		t.Errorf("time different %v, %v", vv.Time, _vv.Time)
 	}
 }
 

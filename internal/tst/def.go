@@ -1,6 +1,8 @@
 package tst
 
 import (
+	"time"
+
 	tst2 "github.com/shamaton/msgpackgen/internal/tst/tst"
 	. "github.com/shamaton/msgpackgen/internal/tst/tst/tst"
 )
@@ -15,7 +17,7 @@ import (
 // msgp以上にこうそく
 
 type S struct {
-	Map **map[string]**int
+	Time **time.Time
 }
 
 type ValueChecking struct {
@@ -37,9 +39,10 @@ type ValueChecking struct {
 	Rune       rune
 	Complex64  complex64
 	Complex128 complex128
-	Slice      []int
-	// time
-	I interface{}
+}
+
+type TimeChecking struct {
+	Time time.Time
 }
 
 func (v ValueChecking) Function() int {
