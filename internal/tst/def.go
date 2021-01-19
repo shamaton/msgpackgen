@@ -3,7 +3,7 @@ package tst
 import (
 	"time"
 
-	tst2 "github.com/shamaton/msgpackgen/internal/tst/tst"
+	other "github.com/shamaton/msgpackgen/internal/tst/tst"
 	. "github.com/shamaton/msgpackgen/internal/tst/tst/tst"
 )
 
@@ -58,10 +58,6 @@ type ValueChecking struct {
 	MapPointers map[*uint]**string
 }
 
-type ValueCheckin struct {
-	P3float32 ***float32
-}
-
 func (v ValueChecking) Function() int {
 	return v.Int + v.Int
 }
@@ -70,31 +66,37 @@ type TimeChecking struct {
 	Time time.Time
 }
 
-type SliceArray struct {
-	Slice  []int
-	Array1 [8]float32
-	Array2 [31280]string
-	Array3 [1031280]bool
-	Array4 [0b11]int
-	Array5 [0o22]int
-	Array6 [0x33]int
-	I      interface{}
+type A struct {
+	Int int
+
+	// tag
+	Int2 int ``
+	Omit int ``
+
+	// embedded
+	Embedded
+	Emb embedded
+
+	// package name
+	other.A
+
+	// dot import
+	BB DotImport
+	*Time
 }
 
-type Complexity struct {
-	// array / map / pointer
-	// double array pointer
-	BB B
-	Emb
-	tst2.B
-	G *Time
+type B struct {
+	C struct {
+		Int int
+	}
 }
 
 type embedded struct {
+	Int int
 }
 
-type Emb struct {
-	Val int
+type Embedded struct {
+	Int int
 }
 
 type Private struct {
@@ -127,6 +129,11 @@ type NotGenerated5 struct {
 }
 
 type NotGenerated6 struct {
-	Child tst2.NotGeneratedChild
+	Child other.NotGeneratedChild
+	Int   int
+}
+
+type NotGenerated7 struct {
+	Child other.NotGeneratedChild // todo : outside struct
 	Int   int
 }

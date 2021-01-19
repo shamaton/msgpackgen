@@ -175,6 +175,13 @@ func (a analyzedASTFieldType) TypeString(s ...string) string {
 
 func (g *generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFieldType, importMap map[string]string, dotStructs map[string]analyzedStruct) (*analyzedASTFieldType, bool) {
 
+	if i, ok := expr.(*ast.StructType); ok {
+		fmt.Println(">>>>>>>>>>>>>>>>>>>>>>", i.Fields)
+		for _, f := range i.Fields.List {
+			fmt.Println(*f)
+		}
+		// todo : nested struct not support comment
+	}
 	if i, ok := expr.(*ast.Ident); ok {
 
 		// dot import

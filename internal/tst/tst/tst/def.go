@@ -1,7 +1,7 @@
 package tst
 
-type B struct {
-	B int
+type DotImport struct {
+	Int int
 }
 
 type Time struct {

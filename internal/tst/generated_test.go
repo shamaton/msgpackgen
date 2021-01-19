@@ -285,6 +285,41 @@ func TestPointerValue(t *testing.T) {
 			t.Error(err)
 		}
 	}
+
+	check2 := func(v tst.ValueChecking) error {
+		var v1, v2 tst.ValueChecking
+		f1 := func() (bool, interface{}, interface{}) {
+			mp := map[uint]string{}
+			for _k, _v := range v1.MapPointers {
+				__v := *_v
+				mp[*_k] = *__v
+			}
+			for _k, _v := range v.MapPointers {
+				__v := *_v
+				if str, ok := mp[*_k]; !ok || str != *__v {
+					return false, str, *__v
+				}
+			}
+			return true, nil, nil
+		}
+
+		f2 := func() (bool, interface{}, interface{}) {
+			mp := map[uint]string{}
+			for _k, _v := range v2.MapPointers {
+				__v := *_v
+				mp[*_k] = *__v
+			}
+			for _k, _v := range v.MapPointers {
+				__v := *_v
+				if str, ok := mp[*_k]; !ok || str != *__v {
+					return false, str, *__v
+				}
+			}
+			return true, nil, nil
+		}
+
+		return _checkValue(v, &v1, &v2, f1, f2)
+	}
 	{
 		_v := make(map[*uint]**string, 10)
 		for i := 0; i < 10; i++ {
@@ -295,22 +330,8 @@ func TestPointerValue(t *testing.T) {
 		}
 
 		v := tst.ValueChecking{MapPointers: _v}
-		if err := checkValue(v); err != nil {
-			// t.Error(err)
-		}
-
-		b, _ := msgpack.Encode(v)
-		var vvvv tst.ValueChecking
-		msgpack.Decode(b, &vvvv)
-		for k, q := range v.MapPointers {
-			qq := *q
-			t.Log(*k, *qq)
-		}
-		t.Log(v.MapPointers, vvvv.MapPointers)
-
-		for k, q := range vvvv.MapPointers {
-			qq := *q
-			t.Log(*k, *qq)
+		if err := check2(v); err != nil {
+			t.Error(err)
 		}
 	}
 }
