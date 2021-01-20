@@ -2,14 +2,16 @@ name: go-ci
 
 on: [push]
 
+env:
+  GOPATH: ${{ github.workspace }}
+  
+defaults:
+  run:
+    working-directory: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
+
 jobs:
   # 共通処理
   setup:
-    env:
-      GOPATH: ${{ github.workspace }}
-    defaults:
-      run:
-        working-directory: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
     runs-on: ubuntu-latest
     steps:
       - name: set up
@@ -48,7 +50,6 @@ jobs:
  #     run:
  #       working-directory: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
     steps:
- #     - uses: actions/checkout@v2
       - name: Generate resolver
         run: cd internal/tst && go generate
 
