@@ -39,8 +39,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: test
-        run: go test ./... -v
+      - name: Generate resolver
+        run: cd internal/tst && go generate
+
+      - name: Test With Coverage
+        run: go test -v  -coverprofile=coverage.txt -covermode=atomic ./...
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
 
   # lintを通す
   lint:
