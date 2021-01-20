@@ -14,6 +14,8 @@ jobs:
         id: go
       - name: check out
         uses: actions/checkout@v2
+        with:
+          path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
 
       # 処理を高速化するために環境をキャッシュ
       - name: Cache
@@ -37,8 +39,11 @@ jobs:
   test:
     needs: setup
     runs-on: ubuntu-latest
+ #   defaults:
+ #     run:
+ #       working-directory: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
     steps:
-      - uses: actions/checkout@v2
+ #     - uses: actions/checkout@v2
       - name: Generate resolver
         run: cd internal/tst && go generate
 
