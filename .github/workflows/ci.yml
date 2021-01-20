@@ -5,6 +5,11 @@ on: [push]
 jobs:
   # 共通処理
   setup:
+    env:
+      GOPATH: ${{ github.workspace }}
+    defaults:
+      run:
+        working-directory: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
     runs-on: ubuntu-latest
     steps:
       - name: set up
