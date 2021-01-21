@@ -107,17 +107,29 @@ func (a analyzedASTFieldType) TypeJenChain(s ...*Statement) *Statement {
 		str = str.Id(a.IdenticalName)
 
 	case a.IsStruct():
-		// todo : performance
-		var asRef analyzedStruct
-		for _, v := range analyzedStructs {
-			if v.PackageName == a.ImportPath && v.Name == a.StructName {
-				asRef = v
-			}
-		}
-		if asRef.NoUseQual {
-			str = str.Id(a.StructName)
-		} else {
+		if a.ImportPath == "time" && a.StructName == "Time" {
 			str = str.Qual(a.ImportPath, a.StructName)
+		} else {
+			// todo : performance
+			found := false
+			asRef := analyzedStruct{}
+			for _, v := range analyzedStructs {
+				if v.PackageName == a.ImportPath && v.Name == a.StructName {
+					found = true
+					asRef = v
+					break
+				}
+			}
+			if !found {
+				// unreachable
+				panic(fmt.Sprintf("not found struct %s.%s", a.ImportPath, a.StructName))
+			}
+
+			if asRef.NoUseQual {
+				str = str.Id(a.StructName)
+			} else {
+				str = str.Qual(a.ImportPath, a.StructName)
+			}
 		}
 
 	case a.IsSlice():
@@ -138,37 +150,6 @@ func (a analyzedASTFieldType) TypeJenChain(s ...*Statement) *Statement {
 	case a.IsPointer():
 		str = str.Id("*")
 		str = a.Elm().TypeJenChain(str)
-	}
-	return str
-}
-
-// todo : delete
-func (a analyzedASTFieldType) TypeString(s ...string) string {
-	str := ""
-	if len(s) > 0 {
-		str += s[0]
-	}
-
-	switch {
-	case a.IsIdentical():
-		str += a.IdenticalName
-
-	case a.IsStruct():
-
-	case a.IsSlice():
-		str += "[]"
-		str = a.Elm().TypeString(str)
-
-	case a.IsMap():
-		str += "map["
-		k, v := a.KeyValue()
-		str = k.TypeString(str)
-		str += "]"
-		str = v.TypeString(str)
-
-	case a.IsPointer():
-		str += "*"
-		str = a.Elm().TypeString(str)
 	}
 	return str
 }

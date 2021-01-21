@@ -44,6 +44,7 @@ jobs:
         run: |
           cd internal/tst
           go generate
+          cd ../../
           go test -race --coverprofile=coverage.coverprofile --covermode=atomic ./...
 
       - name: Upload coverage to Codecov
