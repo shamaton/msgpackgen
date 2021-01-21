@@ -40,20 +40,20 @@ jobs:
       - name: Build
         run: go build -v ./...
 
-      - name: Test
-        run: |
-          cd internal/tst
-          go generate
-          cd ../../
-          go test -race --coverprofile=coverage.coverprofile --covermode=atomic ./...
-
-      - name: Upload coverage to Codecov
-        if: success() && matrix.go == 1.15 && matrix.os == 'ubuntu-latest'
-        uses: codecov/codecov-action@v1
-        with:
-          token:
-          fail_ci_if_error: false
-          working-directory: ${{ env.WORKSPACE }}
+#      - name: Test
+#        run: |
+#          cd internal/tst
+#          go generate
+#          cd ../../
+#          go test -race --coverprofile=coverage.coverprofile --covermode=atomic ./...
+#
+#      - name: Upload coverage to Codecov
+#        if: success() && matrix.go == 1.15 && matrix.os == 'ubuntu-latest'
+#        uses: codecov/codecov-action@v1
+#        with:
+#          token:
+#          fail_ci_if_error: false
+#          working-directory: ${{ env.WORKSPACE }}
 
   lint:
     needs: test
