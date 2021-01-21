@@ -207,6 +207,8 @@ func (g *generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 
 		// can not generate
 		// todo : error skip??
+		// todo : 同じ階層で別ファイルのstructがここに来てしまう
+		fmt.Println("shamoto0000000000000000000000000000000000", i.Obj, i.Name)
 		return nil, false
 	}
 	if selector, ok := expr.(*ast.SelectorExpr); ok {

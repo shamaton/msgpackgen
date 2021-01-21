@@ -142,13 +142,14 @@ func (g *generator) createAnalyzedStructs(parseFile *ast.File, packageName, full
 
 				key := fmt.Sprint(i)
 
-				// todo : dotImportMapが必要
+				// todo : cangenじゃない理由を保存する
 				value, ok := g.checkFieldTypeRecursive(field.Type, nil, importMap, dotStructs)
 				canGen = canGen && ok
 				if ok {
 					analyzedFieldMap[key+"@"+x.Name.String()] = value
 				}
 			}
+			fmt.Println("cangen ------->", canGen, fullPackageName, x.Name.String())
 			if canGen {
 				structNames = append(structNames, x.Name.String())
 			}
