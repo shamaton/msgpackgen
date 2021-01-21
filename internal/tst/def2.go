@@ -1,5 +1,9 @@
 package tst
 
-type Def2 struct {
-	D int
+type embedded struct {
+	Int int
+}
+
+type Embedded struct {
+	Int int
 }

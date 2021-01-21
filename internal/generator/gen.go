@@ -58,6 +58,8 @@ type analyzedStruct struct {
 	Name        string
 	Fields      []analyzedField
 	NoUseQual   bool
+
+	others []analyzedStruct
 }
 
 type analyzedField struct {
@@ -131,6 +133,10 @@ func (g *generator) run(input, out, fileName string) error {
 	}
 
 	analyzedStructs = g.filter(analyzedStructs)
+	err = g.setOthers()
+	if err != nil {
+		return err
+	}
 	f := g.generateCode()
 
 	err = g.output(f, fileName)
@@ -202,6 +208,24 @@ func (g *generator) filter(sts []analyzedStruct) []analyzedStruct {
 	} else {
 		return newStructs
 	}
+}
+
+func (g *generator) setOthers() error {
+	for i := range analyzedStructs {
+		others := make([]analyzedStruct, len(analyzedStructs)-1)
+		index := 0
+		for _, v := range analyzedStructs {
+			if v.PackageName != analyzedStructs[i].PackageName || v.Name != analyzedStructs[i].Name {
+				others[index] = v
+				index++
+			}
+		}
+		if index != len(others) {
+			return fmt.Errorf("other package should be %d. but result is %d", len(others), index)
+		}
+		analyzedStructs[i].others = others
+	}
+	return nil
 }
 
 func (g *generator) generateCode() *File {

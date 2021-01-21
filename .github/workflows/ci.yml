@@ -1,21 +1,29 @@
-name: go-ci
+name: test
 
 on: [push]
 
+env:
+  GOPATH: ${{ github.workspace }}
+  WORKSPACE: ${{ github.workspace }}/src/github.com/${{ github.repository }}
+
 jobs:
-  # 共通処理
-  setup:
-    runs-on: ubuntu-latest
+
+  test:
+    defaults:
+      run:
+        working-directory: ${{ env.WORKSPACE }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        go: [1.13, 1.14, 1.15]
+    name: ${{ matrix.os }} @ Go ${{ matrix.go }}
+    runs-on: ${{ matrix.os }}
     steps:
-      - name: set up
+      - name: Set up Go ${{ matrix.go }}
         uses: actions/setup-go@v2
         with:
-          go-version: ^1.13
-        id: go
-      - name: check out
-        uses: actions/checkout@v2
+          go-version: ${{ matrix.go }}
 
-      # 処理を高速化するために環境をキャッシュ
       - name: Cache
         uses: actions/cache@v2.1.0
         with:
@@ -24,31 +32,35 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-  # buildテスト
-  build:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: build
-        run: go build ./...
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          path: ${{ env.WORKSPACE }}
 
-  # testを通す
-  test:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: test
-        run: go test ./... -v
+      - name: Build
+        run: go build -v ./...
 
-  # lintを通す
+      - name: Test
+        run: go test -race --coverprofile=coverage.coverprofile --covermode=atomic ./...
+
+      - name: Upload coverage to Codecov
+        if: success() && matrix.go == 1.15 && matrix.os == 'ubuntu-latest'
+        uses: codecov/codecov-action@v1
+        with:
+          token:
+          fail_ci_if_error: false
+          working-directory: ${{ env.WORKSPACE }}
+
   lint:
-    needs: setup
+    needs: test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          path: ${{ env.WORKSPACE }}
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v2
         with:
           version: v1.29
+          working-directory: ${{ env.WORKSPACE }}

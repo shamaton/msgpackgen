@@ -70,8 +70,10 @@ type A struct {
 	Int int
 
 	// tag
-	Int2 int ``
-	Omit int ``
+	Int2      int `msgpack:"my_name_is_int"`
+	Ignore    int `msgpack:"ignore"`
+	OmitEmpty int `msgpack:"omit_empty,omitempty"`
+	Omit      int `msgpack:"-"`
 
 	// embedded
 	Embedded
@@ -89,14 +91,6 @@ type B struct {
 	C struct {
 		Int int
 	}
-}
-
-type embedded struct {
-	Int int
-}
-
-type Embedded struct {
-	Int int
 }
 
 type Private struct {
