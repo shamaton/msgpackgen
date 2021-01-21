@@ -94,7 +94,7 @@ func (a analyzedASTFieldType) CanGenerate(sts []analyzedStruct) (bool, []string)
 	return false, append(msgs, "unreachable code")
 }
 
-func (a analyzedASTFieldType) TypeJenChain(s ...*Statement) *Statement {
+func (a analyzedASTFieldType) TypeJenChain(sts []analyzedStruct, s ...*Statement) *Statement {
 	var str *Statement
 	if len(s) > 0 {
 		str = s[0]
@@ -113,7 +113,7 @@ func (a analyzedASTFieldType) TypeJenChain(s ...*Statement) *Statement {
 			// todo : performance
 			found := false
 			asRef := analyzedStruct{}
-			for _, v := range analyzedStructs {
+			for _, v := range sts {
 				if v.PackageName == a.ImportPath && v.Name == a.StructName {
 					found = true
 					asRef = v
@@ -134,22 +134,22 @@ func (a analyzedASTFieldType) TypeJenChain(s ...*Statement) *Statement {
 
 	case a.IsSlice():
 		str = str.Id("[]")
-		str = a.Elm().TypeJenChain(str)
+		str = a.Elm().TypeJenChain(sts, str)
 
 	case a.IsArray():
 		str = str.Id(fmt.Sprintf("[%d]", a.ArrayLen))
-		str = a.Elm().TypeJenChain(str)
+		str = a.Elm().TypeJenChain(sts, str)
 
 	case a.IsMap():
 		str = str.Id("map[")
 		k, v := a.KeyValue()
-		str = k.TypeJenChain(str)
+		str = k.TypeJenChain(sts, str)
 		str = str.Id("]")
-		str = v.TypeJenChain(str)
+		str = v.TypeJenChain(sts, str)
 
 	case a.IsPointer():
 		str = str.Id("*")
-		str = a.Elm().TypeJenChain(str)
+		str = a.Elm().TypeJenChain(sts, str)
 	}
 	return str
 }

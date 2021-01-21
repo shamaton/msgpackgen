@@ -293,17 +293,17 @@ func (as *analyzedStruct) createMapCode(ast *analyzedASTFieldType, encodeFieldNa
 	))
 
 	decCodes := make([]Code, 0)
-	decCodes = append(decCodes, ast.TypeJenChain(Var().Id(decodeChildValue)))
+	decCodes = append(decCodes, ast.TypeJenChain(as.others, Var().Id(decodeChildValue)))
 	decCodes = append(decCodes, Var().Id(decodeChildValue+"l").Int())
 	decCodes = append(decCodes, List(Id(decodeChildValue+"l"), Id("offset"), Err()).Op("=").Id(idDecoder).Dot("MapLength").Call(Id("offset")))
 	decCodes = append(decCodes, If(Err().Op("!=").Nil()).Block(
 		Return(Lit(0), Err()),
 	))
-	decCodes = append(decCodes, Id(decodeChildValue).Op("=").Make(ast.TypeJenChain(), Id(decodeChildValue+"l")))
+	decCodes = append(decCodes, Id(decodeChildValue).Op("=").Make(ast.TypeJenChain(as.others), Id(decodeChildValue+"l")))
 
-	da := []Code{ast.Key.TypeJenChain(Var().Id(decodeChildKey + "v"))}
+	da := []Code{ast.Key.TypeJenChain(as.others, Var().Id(decodeChildKey+"v"))}
 	da = append(da, daKey...)
-	da = append(da, ast.Value.TypeJenChain(Var().Id(decodeChildValue+"v")))
+	da = append(da, ast.Value.TypeJenChain(as.others, Var().Id(decodeChildValue+"v")))
 	da = append(da, daValue...)
 	da = append(da, Id(decodeChildValue).Index(Id(decodeChildKey+"v")).Op("=").Id(decodeChildValue+"v"))
 
@@ -395,15 +395,15 @@ func (as *analyzedStruct) createSliceCode(ast *analyzedASTFieldType, encodeField
 	))
 
 	decCodes := make([]Code, 0)
-	decCodes = append(decCodes, ast.TypeJenChain(Var().Id(decodeChildName)))
+	decCodes = append(decCodes, ast.TypeJenChain(as.others, Var().Id(decodeChildName)))
 	decCodes = append(decCodes, Var().Id(decodeChildLengthName).Int())
 	decCodes = append(decCodes, List(Id(decodeChildLengthName), Id("offset"), Err()).Op("=").Id(idDecoder).Dot("SliceLength").Call(Id("offset")))
 	decCodes = append(decCodes, If(Err().Op("!=").Nil()).Block(
 		Return(Lit(0), Err()),
 	))
-	decCodes = append(decCodes, Id(decodeChildName).Op("=").Make(ast.TypeJenChain(), Id(decodeChildLengthName)))
+	decCodes = append(decCodes, Id(decodeChildName).Op("=").Make(ast.TypeJenChain(as.others), Id(decodeChildLengthName)))
 
-	da = append([]Code{ast.Elm().TypeJenChain(Var().Id(decodeChildChildName))}, da...)
+	da = append([]Code{ast.Elm().TypeJenChain(as.others, Var().Id(decodeChildChildName))}, da...)
 	da = append(da, Id(decodeChildName).Index(Id(decodeChildIndexName)).Op("=").Id(decodeChildChildName))
 
 	decCodes = append(decCodes, For(Id(decodeChildIndexName).Op(":=").Range().Id(decodeChildName)).Block(
@@ -492,7 +492,7 @@ func (as *analyzedStruct) createArrayCode(ast *analyzedASTFieldType, encodeField
 	)*/)
 
 	decCodes := make([]Code, 0)
-	decCodes = append(decCodes, ast.TypeJenChain(Var().Id(decodeChildName)))
+	decCodes = append(decCodes, ast.TypeJenChain(as.others, Var().Id(decodeChildName)))
 	decCodes = append(decCodes, Var().Id(decodeChildName+"l").Int())
 	decCodes = append(decCodes, List(Id(decodeChildName+"l"), Id("offset"), Err()).Op("=").Id(idDecoder).Dot("SliceLength").Call(Id("offset")))
 	decCodes = append(decCodes, If(Err().Op("!=").Nil()).Block(
@@ -502,7 +502,7 @@ func (as *analyzedStruct) createArrayCode(ast *analyzedASTFieldType, encodeField
 		Return(Lit(0), Qual("fmt", "Errorf").Call(Lit("length size(%d) is over array size(%d)"), Id(decodeChildName+"l"), Id(fmt.Sprint(ast.ArrayLen)))),
 	))
 
-	da = append([]Code{ast.Elm().TypeJenChain(Var().Id(decodeChildName + "v"))}, da...)
+	da = append([]Code{ast.Elm().TypeJenChain(as.others, Var().Id(decodeChildName+"v"))}, da...)
 	da = append(da, Id(decodeChildName).Index(Id(decodeChildName+"i")).Op("=").Id(decodeChildName+"v"))
 
 	decCodes = append(decCodes, For(Id(decodeChildName+"i").Op(":=").Range().Id(decodeChildName).Index(Id(":"+decodeChildName+"l"))).Block(
@@ -622,20 +622,20 @@ func (as *analyzedStruct) decodeBasicPattern(ast *analyzedASTFieldType, fieldNam
 	recieverName := varName
 
 	if ptrCount < 1 && !isParentTypeArrayOrMap {
-		codes = append(codes, ast.TypeJenChain(Var().Id(recieverName)))
+		codes = append(codes, ast.TypeJenChain(as.others, Var().Id(recieverName)))
 	} else if isParentTypeArrayOrMap {
 
 		for i := 0; i < ptrCount; i++ {
 			p := strings.Repeat("p", i+1)
 			kome := strings.Repeat("*", ptrCount-1-i)
-			codes = append(codes, ast.TypeJenChain(Var().Id(varName+p).Op(kome)))
+			codes = append(codes, ast.TypeJenChain(as.others, Var().Id(varName+p).Op(kome)))
 		}
 		recieverName = varName + strings.Repeat("p", ptrCount)
 	} else {
 		for i := 0; i < ptrCount; i++ {
 			p := strings.Repeat("p", i)
 			kome := strings.Repeat("*", ptrCount-1-i)
-			codes = append(codes, ast.TypeJenChain(Var().Id(varName+p).Op(kome)))
+			codes = append(codes, ast.TypeJenChain(as.others, Var().Id(varName+p).Op(kome)))
 		}
 		recieverName = varName + strings.Repeat("p", ptrCount-1)
 	}
@@ -806,14 +806,14 @@ func (as *analyzedStruct) decodeNamedPattern(ast *analyzedASTFieldType, fieldNam
 	recieverName := varName
 
 	if ptrCount < 1 && !isParentTypeArrayOrMap {
-		codes = append(codes, ast.TypeJenChain(Var().Id(recieverName)))
+		codes = append(codes, ast.TypeJenChain(as.others, Var().Id(recieverName)))
 	} else if isParentTypeArrayOrMap {
 
 		for i := 0; i < ptrCount; i++ {
 			p := strings.Repeat("p", i+1)
 			kome := strings.Repeat("*", ptrCount-1-i)
 
-			codes = append(codes, ast.TypeJenChain(Var().Id(varName+p).Op(kome)))
+			codes = append(codes, ast.TypeJenChain(as.others, Var().Id(varName+p).Op(kome)))
 		}
 		recieverName = varName + strings.Repeat("p", ptrCount)
 	} else {
@@ -821,7 +821,7 @@ func (as *analyzedStruct) decodeNamedPattern(ast *analyzedASTFieldType, fieldNam
 			p := strings.Repeat("p", i)
 			kome := strings.Repeat("*", ptrCount-1-i)
 
-			codes = append(codes, ast.TypeJenChain(Var().Id(varName+p).Op(kome)))
+			codes = append(codes, ast.TypeJenChain(as.others, Var().Id(varName+p).Op(kome)))
 		}
 		recieverName = varName + strings.Repeat("p", ptrCount-1)
 	}

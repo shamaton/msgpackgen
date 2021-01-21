@@ -132,7 +132,16 @@ func (g *generator) run(input, out, fileName string) error {
 		return err
 	}
 
+	fmt.Println("=========== before ==========")
+	for _, v := range analyzedStructs {
+		fmt.Println(v.PackageName, v.Name)
+	}
+
 	analyzedStructs = g.filter(analyzedStructs)
+	fmt.Println("=========== after ==========")
+	for _, v := range analyzedStructs {
+		fmt.Println(v.PackageName, v.Name)
+	}
 	err = g.setOthers()
 	if err != nil {
 		return err
