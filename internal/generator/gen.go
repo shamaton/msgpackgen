@@ -29,6 +29,10 @@ const (
 
 // todo : ドットインポートのコンフリクトチェック
 
+// todo : complexのext値を変更できるようにする
+
+// todo : full package name -> import path
+
 var funcIdMap = map[string]string{}
 
 type generator struct {
@@ -39,6 +43,9 @@ type generator struct {
 	parseFile2fullPackage  map[*ast.File]string
 	fullPackage2package    map[string]string
 	noUserQualMap          map[string]bool
+
+	parseFile2ImportMap    map[*ast.File]map[string]string
+	parseFile2DotImportMap map[*ast.File]map[string]analyzedStruct
 
 	outputDir           string
 	outputPackageName   string
@@ -54,12 +61,17 @@ func (g *generator) outputPackageFullName() string {
 }
 
 type analyzedStruct struct {
-	PackageName string
-	Name        string
-	Fields      []analyzedField
-	NoUseQual   bool
+	ImportPath string
+	Package    string
+	Name       string
+	Fields     []analyzedField
+	NoUseQual  bool
 
 	others []analyzedStruct
+	file   *ast.File
+
+	CanGen  bool
+	Reasons []string
 }
 
 type analyzedField struct {
@@ -94,6 +106,9 @@ func Run(input, out, fileName string, pointer int, strict, verbose bool) error {
 		fullPackage2ParseFiles: map[string][]*ast.File{},
 		parseFile2fullPackage:  map[*ast.File]string{},
 		noUserQualMap:          map[string]bool{},
+
+		parseFile2ImportMap:    map[*ast.File]map[string]string{},
+		parseFile2DotImportMap: map[*ast.File]map[string]analyzedStruct{},
 	}
 	return g.run(input, out, fileName)
 }
@@ -134,13 +149,13 @@ func (g *generator) run(input, out, fileName string) error {
 
 	fmt.Println("=========== before ==========")
 	for _, v := range analyzedStructs {
-		fmt.Println(v.PackageName, v.Name)
+		fmt.Println(v.ImportPath, v.Name)
 	}
 
 	analyzedStructs = g.filter(analyzedStructs)
 	fmt.Println("=========== after ==========")
 	for _, v := range analyzedStructs {
-		fmt.Println(v.PackageName, v.Name)
+		fmt.Println(v.ImportPath, v.Name)
 	}
 	err = g.setOthers()
 	if err != nil {
@@ -198,18 +213,27 @@ func (g *generator) filter(sts []analyzedStruct) []analyzedStruct {
 	for _, v := range sts {
 		ok := true
 		var reasons []string
-		for _, field := range v.Fields {
-			if canGen, msgs := field.Ast.CanGenerate(sts); !canGen {
-				ok = false
-				reasons = append(reasons, msgs...)
+
+		if v.CanGen {
+			for _, field := range v.Fields {
+				if canGen, msgs := field.Ast.CanGenerate(sts); !canGen {
+					ok = false
+					reasons = append(reasons, msgs...)
+				}
 			}
-		}
-		if !ok {
-			fmt.Printf("can not generate %s.%s\n", v.PackageName, v.Name)
-			fmt.Println("reason :", strings.Join(reasons, "\n"))
+			if ok {
+				newStructs = append(newStructs, v)
+			}
 		} else {
-			newStructs = append(newStructs, v)
+			ok = false
+			reasons = append(reasons, v.Reasons...)
 		}
+
+		if !ok {
+			fmt.Printf("can not generate %s.%s\n", v.ImportPath, v.Name)
+			fmt.Println("reason :", strings.Join(reasons, "\n"))
+		}
+
 		allOk = allOk && ok
 	}
 	if !allOk {
@@ -224,7 +248,7 @@ func (g *generator) setOthers() error {
 		others := make([]analyzedStruct, len(analyzedStructs)-1)
 		index := 0
 		for _, v := range analyzedStructs {
-			if v.PackageName != analyzedStructs[i].PackageName || v.Name != analyzedStructs[i].Name {
+			if v.ImportPath != analyzedStructs[i].ImportPath || v.Name != analyzedStructs[i].Name {
 				others[index] = v
 				index++
 			}
@@ -240,7 +264,7 @@ func (g *generator) setOthers() error {
 func (g *generator) generateCode() *File {
 
 	for _, st := range analyzedStructs {
-		funcIdMap[st.PackageName] = fmt.Sprintf("%x", sha256.Sum256([]byte(st.PackageName)))
+		funcIdMap[st.ImportPath] = fmt.Sprintf("%x", sha256.Sum256([]byte(st.ImportPath)))
 	}
 
 	// todo : ソースコードが存在している場所だったら、そちらにパッケージ名をあわせる
@@ -377,8 +401,8 @@ func (g *generator) encodeAsArrayCases() []Code {
 			caseStatement = func(op string) *Statement { return Op(op).Id(v.Name) }
 			errID = Lit(v.Name)
 		} else {
-			caseStatement = func(op string) *Statement { return Op(op).Qual(v.PackageName, v.Name) }
-			errID = Lit(v.PackageName + "." + v.Name)
+			caseStatement = func(op string) *Statement { return Op(op).Qual(v.ImportPath, v.Name) }
+			errID = Lit(v.ImportPath + "." + v.Name)
 		}
 
 		f := func(ptr string) *Statement {
@@ -426,8 +450,8 @@ func (g *generator) encodeAsMapCases() []Code {
 			caseStatement = func(op string) *Statement { return Op(op).Id(v.Name) }
 			errID = Lit(v.Name)
 		} else {
-			caseStatement = func(op string) *Statement { return Op(op).Qual(v.PackageName, v.Name) }
-			errID = Lit(v.PackageName + "." + v.Name)
+			caseStatement = func(op string) *Statement { return Op(op).Qual(v.ImportPath, v.Name) }
+			errID = Lit(v.ImportPath + "." + v.Name)
 		}
 
 		f := func(ptr string) *Statement {
@@ -473,7 +497,7 @@ func (g *generator) decodeAsArrayCases() []Code {
 		if v.NoUseQual {
 			caseStatement = func(op string) *Statement { return Op(op).Id(v.Name) }
 		} else {
-			caseStatement = func(op string) *Statement { return Op(op).Qual(v.PackageName, v.Name) }
+			caseStatement = func(op string) *Statement { return Op(op).Qual(v.ImportPath, v.Name) }
 		}
 
 		states = append(states, Case(caseStatement("*")).Block(
@@ -504,7 +528,7 @@ func (g *generator) decodeAsMapCases() []Code {
 		if v.NoUseQual {
 			caseStatement = func(op string) *Statement { return Op(op).Id(v.Name) }
 		} else {
-			caseStatement = func(op string) *Statement { return Op(op).Qual(v.PackageName, v.Name) }
+			caseStatement = func(op string) *Statement { return Op(op).Qual(v.ImportPath, v.Name) }
 		}
 
 		states = append(states, Case(caseStatement("*")).Block(
@@ -528,27 +552,27 @@ func (g *generator) decodeAsMapCases() []Code {
 }
 
 func (as *analyzedStruct) calcArraySizeFuncName() string {
-	return createFuncName("calcArraySize", as.Name, as.PackageName)
+	return createFuncName("calcArraySize", as.Name, as.ImportPath)
 }
 
 func (as *analyzedStruct) calcMapSizeFuncName() string {
-	return createFuncName("calcMapSize", as.Name, as.PackageName)
+	return createFuncName("calcMapSize", as.Name, as.ImportPath)
 }
 
 func (as *analyzedStruct) encodeArrayFuncName() string {
-	return createFuncName("encodeArray", as.Name, as.PackageName)
+	return createFuncName("encodeArray", as.Name, as.ImportPath)
 }
 
 func (as *analyzedStruct) encodeMapFuncName() string {
-	return createFuncName("encodeMap", as.Name, as.PackageName)
+	return createFuncName("encodeMap", as.Name, as.ImportPath)
 }
 
 func (as *analyzedStruct) decodeArrayFuncName() string {
-	return createFuncName("decodeArray", as.Name, as.PackageName)
+	return createFuncName("decodeArray", as.Name, as.ImportPath)
 }
 
 func (as *analyzedStruct) decodeMapFuncName() string {
-	return createFuncName("decodeMap", as.Name, as.PackageName)
+	return createFuncName("decodeMap", as.Name, as.ImportPath)
 }
 
 func createFuncName(prefix, name, packageName string) string {

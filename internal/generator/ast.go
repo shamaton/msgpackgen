@@ -68,7 +68,7 @@ func (a analyzedASTFieldType) CanGenerate(sts []analyzedStruct) (bool, []string)
 		}
 		// todo : performance
 		for _, v := range sts {
-			if v.PackageName == a.ImportPath && v.Name == a.StructName {
+			if v.ImportPath == a.ImportPath && v.Name == a.StructName {
 				return true, msgs
 			}
 		}
@@ -114,7 +114,7 @@ func (a analyzedASTFieldType) TypeJenChain(sts []analyzedStruct, s ...*Statement
 			found := false
 			asRef := analyzedStruct{}
 			for _, v := range sts {
-				if v.PackageName == a.ImportPath && v.Name == a.StructName {
+				if v.ImportPath == a.ImportPath && v.Name == a.StructName {
 					found = true
 					asRef = v
 					break
@@ -154,7 +154,7 @@ func (a analyzedASTFieldType) TypeJenChain(sts []analyzedStruct, s ...*Statement
 	return str
 }
 
-func (g *generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFieldType, importMap map[string]string, dotStructs map[string]analyzedStruct) (*analyzedASTFieldType, bool) {
+func (g *generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFieldType, importMap map[string]string, dotStructs map[string]analyzedStruct, sameHierarchyStructs map[string]bool) (*analyzedASTFieldType, bool) {
 
 	if i, ok := expr.(*ast.StructType); ok {
 		fmt.Println(">>>>>>>>>>>>>>>>>>>>>>", i.Fields)
@@ -171,7 +171,7 @@ func (g *generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 				fieldType:   fieldTypeStruct,
 				PackageName: dot.Name,
 				StructName:  i.String(),
-				ImportPath:  dot.PackageName,
+				ImportPath:  dot.ImportPath,
 				Parent:      parent,
 			}, true
 		}
@@ -185,8 +185,19 @@ func (g *generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 				Parent:      parent,
 			}, true
 		}
-		// same hierarchy struct
+		// same hierarchy struct in same file
 		if i.Obj != nil && i.Obj.Kind == ast.Typ {
+			return &analyzedASTFieldType{
+				fieldType:   fieldTypeStruct,
+				PackageName: g.outputPackageName,
+				StructName:  i.String(),
+				ImportPath:  g.outputPackageFullName(),
+				Parent:      parent,
+			}, true
+		}
+
+		// same hierarchy struct in other file
+		if _, found := sameHierarchyStructs[i.Name]; found {
 			return &analyzedASTFieldType{
 				fieldType:   fieldTypeStruct,
 				PackageName: g.outputPackageName,
@@ -249,7 +260,7 @@ func (g *generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 				Parent:    parent,
 			}
 		}
-		key, check := g.checkFieldTypeRecursive(array.Elt, node, importMap, dotStructs)
+		key, check := g.checkFieldTypeRecursive(array.Elt, node, importMap, dotStructs, sameHierarchyStructs)
 		node.Key = key
 		return node, check
 	}
@@ -258,8 +269,8 @@ func (g *generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 			fieldType: fieldTypeMap,
 			Parent:    parent,
 		}
-		key, c1 := g.checkFieldTypeRecursive(mp.Key, node, importMap, dotStructs)
-		value, c2 := g.checkFieldTypeRecursive(mp.Value, node, importMap, dotStructs)
+		key, c1 := g.checkFieldTypeRecursive(mp.Key, node, importMap, dotStructs, sameHierarchyStructs)
+		value, c2 := g.checkFieldTypeRecursive(mp.Value, node, importMap, dotStructs, sameHierarchyStructs)
 		node.Key = key
 		node.Value = value
 		return node, c1 && c2
@@ -269,7 +280,7 @@ func (g *generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 			fieldType: fieldTypePointer,
 			Parent:    parent,
 		}
-		key, check := g.checkFieldTypeRecursive(star.X, node, importMap, dotStructs)
+		key, check := g.checkFieldTypeRecursive(star.X, node, importMap, dotStructs, sameHierarchyStructs)
 		node.Key = key
 		return node, check
 	}

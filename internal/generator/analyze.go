@@ -85,10 +85,11 @@ func (g *generator) analyze() error {
 			return err
 		}
 	}
+	g.setFieldToStruct()
 	return nil
 }
 
-func (g *generator) createAnalyzedStructs(parseFile *ast.File, packageName, fullPackageName string, analyzedMap map[*ast.File]bool) error {
+func (g *generator) createAnalyzedStructs(parseFile *ast.File, packageName, importPath string, analyzedMap map[*ast.File]bool) error {
 
 	importMap, dotImports := g.createImportMap(parseFile)
 	// dot imports
@@ -97,12 +98,10 @@ func (g *generator) createAnalyzedStructs(parseFile *ast.File, packageName, full
 		pfs, ok := g.fullPackage2ParseFiles[dotImport]
 		if !ok {
 			continue
-			return fmt.Errorf("%s not found parse files", dotImport)
 		}
 		name, ok := g.fullPackage2package[dotImport]
 		if !ok {
 			continue
-			return fmt.Errorf("not found package name")
 		}
 
 		for _, pf := range pfs {
@@ -114,14 +113,13 @@ func (g *generator) createAnalyzedStructs(parseFile *ast.File, packageName, full
 		}
 
 		for _, st := range analyzedStructs {
-			if st.PackageName == dotImport {
+			if st.ImportPath == dotImport {
 				dotStructs[st.Name] = st
 			}
 		}
 	}
 
 	structNames := make([]string, 0)
-	analyzedFieldMap := map[string]*analyzedASTFieldType{}
 	ast.Inspect(parseFile, func(n ast.Node) bool {
 
 		x, ok := n.(*ast.TypeSpec)
@@ -129,51 +127,86 @@ func (g *generator) createAnalyzedStructs(parseFile *ast.File, packageName, full
 			return true
 		}
 
-		if st, ok := x.Type.(*ast.StructType); ok {
+		if _, ok := x.Type.(*ast.StructType); ok {
 
-			// todo : 出力パッケージの場所と同じならLowerでもOK
-
-			if fullPackageName != g.outputPackageFullName() && !unicode.IsUpper(rune(x.Name.String()[0])) {
+			structName := x.Name.String()
+			if importPath != g.outputPackageFullName() && !unicode.IsUpper(rune(structName[0])) {
 				return true
 			}
-
-			canGen := true
-			for i, field := range st.Fields.List {
-
-				key := fmt.Sprint(i)
-
-				// todo : cangenじゃない理由を保存する
-				value, ok := g.checkFieldTypeRecursive(field.Type, nil, importMap, dotStructs)
-				canGen = canGen && ok
-				if ok {
-					analyzedFieldMap[key+"@"+x.Name.String()] = value
-				}
-			}
-			fmt.Println("cangen ------->", canGen, fullPackageName, x.Name.String())
-			if canGen {
-				structNames = append(structNames, x.Name.String())
-			}
+			structNames = append(structNames, structName)
 		}
 		return true
 	})
 
 	structs := make([]analyzedStruct, len(structNames))
 	for i, structName := range structNames {
-		fmt.Println()
-		fmt.Println()
-		fmt.Println(structName, ".........................................", g.noUserQualMap[fullPackageName])
-		fields := g.createAnalyzedFields(packageName, structName, analyzedFieldMap, g.fileSet, parseFile)
 		structs[i] = analyzedStruct{
-			PackageName: fullPackageName,
-			Name:        structName,
-			Fields:      fields,
-			NoUseQual:   g.noUserQualMap[fullPackageName],
+			ImportPath: importPath,
+			Package:    packageName,
+			Name:       structName,
+			NoUseQual:  g.noUserQualMap[importPath],
+			file:       parseFile,
 		}
-
 	}
 	analyzedStructs = append(analyzedStructs, structs...)
 	analyzedMap[parseFile] = true
+
+	g.parseFile2ImportMap[parseFile] = importMap
+	g.parseFile2DotImportMap[parseFile] = dotStructs
 	return nil
+}
+
+func (g *generator) setFieldToStruct() {
+	for i, analyzedStruct := range analyzedStructs {
+
+		importMap := g.parseFile2ImportMap[analyzedStruct.file]
+		dotStructs := g.parseFile2DotImportMap[analyzedStruct.file]
+
+		sameHierarchyStructs := map[string]bool{}
+		for _, aast := range analyzedStructs {
+			if analyzedStruct.ImportPath == aast.ImportPath {
+				sameHierarchyStructs[aast.Name] = true
+			}
+		}
+
+		analyzedFieldMap := map[string]*analyzedASTFieldType{}
+		ast.Inspect(analyzedStruct.file, func(n ast.Node) bool {
+
+			x, ok := n.(*ast.TypeSpec)
+			if !ok {
+				return true
+			}
+
+			if st, ok := x.Type.(*ast.StructType); ok {
+				if x.Name.String() != analyzedStruct.Name {
+					return true
+				}
+
+				canGen := true
+				for i, field := range st.Fields.List {
+
+					key := fmt.Sprint(i)
+
+					value, ok := g.checkFieldTypeRecursive(field.Type, nil, importMap, dotStructs, sameHierarchyStructs)
+					canGen = canGen && ok
+					if ok {
+						analyzedFieldMap[key+"@"+x.Name.String()] = value
+					}
+				}
+
+				if canGen {
+					analyzedStructs[i].CanGen = true
+					analyzedStructs[i].Fields = g.createAnalyzedFields(analyzedStruct.Package, analyzedStruct.Name, analyzedFieldMap, g.fileSet, analyzedStruct.file)
+				} else {
+					analyzedStructs[i].CanGen = false
+					// todo : cangenじゃない理由を保存する
+					analyzedStructs[i].Reasons = []string{"reason is todo..."}
+				}
+			}
+			return true
+		})
+
+	}
 }
 
 func (g *generator) createImportMap(parseFile *ast.File) (map[string]string, []string) {

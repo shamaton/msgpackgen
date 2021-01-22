@@ -72,12 +72,14 @@ type A struct {
 	// tag
 	Int2      int `msgpack:"my_name_is_int"`
 	Ignore    int `msgpack:"ignore"`
-	OmitEmpty int `msgpack:"omit_empty,omitempty"`
-	Omit      int `msgpack:"-"`
+	OmitEmpty int `msgpack:"omit_empty,omitempty"` // todo : omitempty
+	Omit      int `msgpack:"-"`                    // todo : -
 
 	// embedded
 	Embedded
 	Emb embedded
+	// todo : same file struct
+	// todo : other file struct
 
 	// package name
 	other.A

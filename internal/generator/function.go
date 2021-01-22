@@ -82,36 +82,36 @@ func (as *analyzedStruct) calcFunction(f *File) {
 		firstEncParam = Id(v).Id(as.Name)
 		firstDecParam = Id(v).Op("*").Id(as.Name)
 	} else {
-		firstEncParam = Id(v).Qual(as.PackageName, as.Name)
-		firstDecParam = Id(v).Op("*").Qual(as.PackageName, as.Name)
+		firstEncParam = Id(v).Qual(as.ImportPath, as.Name)
+		firstDecParam = Id(v).Op("*").Qual(as.ImportPath, as.Name)
 	}
 
-	f.Comment(fmt.Sprintf("// calculate size from %s.%s\n", as.PackageName, as.Name)).
+	f.Comment(fmt.Sprintf("// calculate size from %s.%s\n", as.ImportPath, as.Name)).
 		Func().Id(as.calcArraySizeFuncName()).Params(firstEncParam, Id(idEncoder).Op("*").Qual(pkEnc, "Encoder")).Params(Int(), Error()).Block(
 		append(calcArraySizeCodes, Return(Id("size"), Nil()))...,
 	)
 
-	f.Comment(fmt.Sprintf("// calculate size from %s.%s\n", as.PackageName, as.Name)).
+	f.Comment(fmt.Sprintf("// calculate size from %s.%s\n", as.ImportPath, as.Name)).
 		Func().Id(as.calcMapSizeFuncName()).Params(firstEncParam, Id(idEncoder).Op("*").Qual(pkEnc, "Encoder")).Params(Int(), Error()).Block(
 		append(calcMapSizeCodes, Return(Id("size"), Nil()))...,
 	)
 
-	f.Comment(fmt.Sprintf("// encode from %s.%s\n", as.PackageName, as.Name)).
+	f.Comment(fmt.Sprintf("// encode from %s.%s\n", as.ImportPath, as.Name)).
 		Func().Id(as.encodeArrayFuncName()).Params(firstEncParam, Id(idEncoder).Op("*").Qual(pkEnc, "Encoder"), Id("offset").Int()).Params(Index().Byte(), Int(), Error()).Block(
 		append(encArrayCodes, Return(Id(idEncoder).Dot("EncodedBytes").Call(), Id("offset"), Err()))...,
 	)
 
-	f.Comment(fmt.Sprintf("// encode from %s.%s\n", as.PackageName, as.Name)).
+	f.Comment(fmt.Sprintf("// encode from %s.%s\n", as.ImportPath, as.Name)).
 		Func().Id(as.encodeMapFuncName()).Params(firstEncParam, Id(idEncoder).Op("*").Qual(pkEnc, "Encoder"), Id("offset").Int()).Params(Index().Byte(), Int(), Error()).Block(
 		append(encMapCodes, Return(Id(idEncoder).Dot("EncodedBytes").Call(), Id("offset"), Err()))...,
 	)
 
-	f.Comment(fmt.Sprintf("// decode to %s.%s\n", as.PackageName, as.Name)).
+	f.Comment(fmt.Sprintf("// decode to %s.%s\n", as.ImportPath, as.Name)).
 		Func().Id(as.decodeArrayFuncName()).Params(firstDecParam, Id(idDecoder).Op("*").Qual(pkDec, "Decoder"), Id("offset").Int()).Params(Int(), Error()).Block(
 		append(decArrayCodes, Return(Id("offset"), Err()))...,
 	)
 
-	f.Comment(fmt.Sprintf("// decode to %s.%s\n", as.PackageName, as.Name)).
+	f.Comment(fmt.Sprintf("// decode to %s.%s\n", as.ImportPath, as.Name)).
 		Func().Id(as.decodeMapFuncName()).Params(firstDecParam, Id(idDecoder).Op("*").Qual(pkDec, "Decoder"), Id("offset").Int()).Params(Int(), Error()).Block(
 
 		append(decMapCodes, Return(Id("offset"), Err()))...,
