@@ -154,15 +154,9 @@ func (a analyzedASTFieldType) TypeJenChain(sts []analyzedStruct, s ...*Statement
 	return str
 }
 
-func (g *generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFieldType, importMap map[string]string, dotStructs map[string]analyzedStruct, sameHierarchyStructs map[string]bool) (*analyzedASTFieldType, bool) {
+func (g *generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFieldType, importMap map[string]string, dotStructs map[string]analyzedStruct, sameHierarchyStructs map[string]bool) (*analyzedASTFieldType, bool, []string) {
 
-	if i, ok := expr.(*ast.StructType); ok {
-		fmt.Println(">>>>>>>>>>>>>>>>>>>>>>", i.Fields)
-		for _, f := range i.Fields.List {
-			fmt.Println(*f)
-		}
-		// todo : nested struct not support comment
-	}
+	reasons := make([]string, 0)
 	if i, ok := expr.(*ast.Ident); ok {
 
 		// dot import
@@ -170,30 +164,30 @@ func (g *generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 			return &analyzedASTFieldType{
 				fieldType:   fieldTypeStruct,
 				PackageName: dot.Name,
-				StructName:  i.String(),
+				StructName:  i.Name,
 				ImportPath:  dot.ImportPath,
 				Parent:      parent,
-			}, true
+			}, true, reasons
 		}
 		// time
 		if i.Name == "Time" {
 			return &analyzedASTFieldType{
 				fieldType:   fieldTypeStruct,
 				PackageName: "time",
-				StructName:  i.String(),
+				StructName:  i.Name,
 				ImportPath:  "time",
 				Parent:      parent,
-			}, true
+			}, true, reasons
 		}
 		// same hierarchy struct in same file
 		if i.Obj != nil && i.Obj.Kind == ast.Typ {
 			return &analyzedASTFieldType{
 				fieldType:   fieldTypeStruct,
 				PackageName: g.outputPackageName,
-				StructName:  i.String(),
+				StructName:  i.Name,
 				ImportPath:  g.outputPackageFullName(),
 				Parent:      parent,
-			}, true
+			}, true, reasons
 		}
 
 		// same hierarchy struct in other file
@@ -201,37 +195,35 @@ func (g *generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 			return &analyzedASTFieldType{
 				fieldType:   fieldTypeStruct,
 				PackageName: g.outputPackageName,
-				StructName:  i.String(),
+				StructName:  i.Name,
 				ImportPath:  g.outputPackageFullName(),
 				Parent:      parent,
-			}, true
+			}, true, reasons
 		}
 
-		// todo : 型を念の為判定しておく必要がありそう
 		if isPrimitive(i.Name) {
 			return &analyzedASTFieldType{
 				fieldType:     fieldTypeIdent,
 				IdenticalName: i.Name,
 				Parent:        parent,
-			}, true
+			}, true, reasons
 		}
 
-		// can not generate
-		// todo : error skip??
-		// todo : 同じ階層で別ファイルのstructがここに来てしまう
-		fmt.Println("shamoto0000000000000000000000000000000000", i.Obj, i.Name)
-		return nil, false
+		return nil, false, []string{fmt.Sprintf("identifier %s is not suppoted or unknown struct ", i.Name)}
 	}
+
 	if selector, ok := expr.(*ast.SelectorExpr); ok {
-		pkgName := fmt.Sprint(selector.X) // todo : ok?
+		pkgName := fmt.Sprint(selector.X)
 		return &analyzedASTFieldType{
 			fieldType:   fieldTypeStruct,
 			PackageName: pkgName,
 			StructName:  selector.Sel.Name,
 			ImportPath:  importMap[pkgName],
 			Parent:      parent,
-		}, true
+		}, true, reasons
 	}
+
+	// slice or array
 	if array, ok := expr.(*ast.ArrayType); ok {
 		var node *analyzedASTFieldType
 		if array.Len == nil {
@@ -260,36 +252,55 @@ func (g *generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 				Parent:    parent,
 			}
 		}
-		key, check := g.checkFieldTypeRecursive(array.Elt, node, importMap, dotStructs, sameHierarchyStructs)
+		key, check, rs := g.checkFieldTypeRecursive(array.Elt, node, importMap, dotStructs, sameHierarchyStructs)
 		node.Key = key
-		return node, check
+		reasons = append(reasons, rs...)
+		return node, check, reasons
 	}
+
+	// map
 	if mp, ok := expr.(*ast.MapType); ok {
 		node := &analyzedASTFieldType{
 			fieldType: fieldTypeMap,
 			Parent:    parent,
 		}
-		key, c1 := g.checkFieldTypeRecursive(mp.Key, node, importMap, dotStructs, sameHierarchyStructs)
-		value, c2 := g.checkFieldTypeRecursive(mp.Value, node, importMap, dotStructs, sameHierarchyStructs)
+		key, c1, krs := g.checkFieldTypeRecursive(mp.Key, node, importMap, dotStructs, sameHierarchyStructs)
+		value, c2, vrs := g.checkFieldTypeRecursive(mp.Value, node, importMap, dotStructs, sameHierarchyStructs)
 		node.Key = key
 		node.Value = value
-		return node, c1 && c2
+		reasons = append(reasons, krs...)
+		reasons = append(reasons, vrs...)
+		return node, c1 && c2, reasons
 	}
+
+	// *
 	if star, ok := expr.(*ast.StarExpr); ok {
 		node := &analyzedASTFieldType{
 			fieldType: fieldTypePointer,
 			Parent:    parent,
 		}
-		key, check := g.checkFieldTypeRecursive(star.X, node, importMap, dotStructs, sameHierarchyStructs)
+		key, check, rs := g.checkFieldTypeRecursive(star.X, node, importMap, dotStructs, sameHierarchyStructs)
 		node.Key = key
-		return node, check
+		reasons = append(reasons, rs...)
+		return node, check, reasons
 	}
+
+	// not supported
 	if _, ok := expr.(*ast.InterfaceType); ok {
-		return nil, false
+		return nil, false, []string{fmt.Sprintf("interface type is not supported")}
+	}
+	if _, ok := expr.(*ast.StructType); ok {
+		return nil, false, []string{fmt.Sprintf("inner struct is not supported")}
+	}
+	if _, ok := expr.(*ast.ChanType); ok {
+		return nil, false, []string{fmt.Sprintf("chan type is not supported")}
+	}
+	if _, ok := expr.(*ast.FuncType); ok {
+		return nil, false, []string{fmt.Sprintf("func type is not supported")}
 	}
 
 	// unreachable
-	return nil, false
+	return nil, false, []string{fmt.Sprintf("this field is unknown field")}
 }
 
 func isPrimitive(name string) bool {

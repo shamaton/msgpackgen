@@ -183,15 +183,17 @@ func (g *generator) setFieldToStruct() {
 				}
 
 				canGen := true
+				reasons := make([]string, 0)
 				for i, field := range st.Fields.List {
 
 					key := fmt.Sprint(i)
 
-					value, ok := g.checkFieldTypeRecursive(field.Type, nil, importMap, dotStructs, sameHierarchyStructs)
+					value, ok, rs := g.checkFieldTypeRecursive(field.Type, nil, importMap, dotStructs, sameHierarchyStructs)
 					canGen = canGen && ok
 					if ok {
 						analyzedFieldMap[key+"@"+x.Name.String()] = value
 					}
+					reasons = append(reasons, rs...)
 				}
 
 				if canGen {
@@ -199,8 +201,7 @@ func (g *generator) setFieldToStruct() {
 					analyzedStructs[i].Fields = g.createAnalyzedFields(analyzedStruct.Package, analyzedStruct.Name, analyzedFieldMap, g.fileSet, analyzedStruct.file)
 				} else {
 					analyzedStructs[i].CanGen = false
-					// todo : cangenじゃない理由を保存する
-					analyzedStructs[i].Reasons = []string{"reason is todo..."}
+					analyzedStructs[i].Reasons = reasons
 				}
 			}
 			return true
