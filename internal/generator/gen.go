@@ -121,9 +121,9 @@ func (g *generator) run(input, out, fileName string) error {
 	}
 
 	g.outputDir = outAbs
-	paths := strings.SplitN(g.outputDir, "src/", 2)
+	paths := strings.SplitN(filepath.ToSlash(g.outputDir), "src/", 2)
 	if len(paths) != 2 {
-		return fmt.Errorf("%s get import path failed", out)
+		return fmt.Errorf("%s get import path failed", outAbs)
 	}
 	g.outputPackageName = paths[1]
 

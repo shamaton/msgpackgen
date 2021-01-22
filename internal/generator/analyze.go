@@ -18,7 +18,7 @@ func (g *generator) getPackages(files []string) error {
 	for _, file := range files {
 
 		dir := filepath.Dir(file)
-		paths := strings.SplitN(dir, "src/", 2)
+		paths := strings.SplitN(filepath.ToSlash(dir), "src/", 2)
 		if len(paths) != 2 {
 			return fmt.Errorf("%s get import path failed", file)
 		}
