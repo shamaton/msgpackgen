@@ -169,7 +169,7 @@ func (g *generator) setFieldToStruct() {
 			}
 		}
 
-		analyzedFieldMap := map[string]*analyzedASTFieldType{}
+		analyzedFieldMap := map[string]*Node{}
 		ast.Inspect(analyzedStruct.file, func(n ast.Node) bool {
 
 			x, ok := n.(*ast.TypeSpec)
@@ -188,7 +188,7 @@ func (g *generator) setFieldToStruct() {
 
 					key := fmt.Sprint(i)
 
-					value, ok, rs := g.checkFieldTypeRecursive(field.Type, nil, importMap, dotStructs, sameHierarchyStructs)
+					value, ok, rs := g.createNodeRecursive(field.Type, nil, importMap, dotStructs, sameHierarchyStructs)
 					canGen = canGen && ok
 					if ok {
 						analyzedFieldMap[key+"@"+x.Name.String()] = value
@@ -232,7 +232,7 @@ func (g *generator) createImportMap(parseFile *ast.File) (map[string]string, []s
 	return importMap, dotImports
 }
 
-func (g *generator) createAnalyzedFields(packageName, structName string, analyzedFieldMap map[string]*analyzedASTFieldType, fset *token.FileSet, file *ast.File) []analyzedField {
+func (g *generator) createAnalyzedFields(packageName, structName string, analyzedFieldMap map[string]*Node, fset *token.FileSet, file *ast.File) []Field {
 
 	// todo : ここなにか解決策あれば
 	imp := importer.Default()
@@ -257,7 +257,7 @@ func (g *generator) createAnalyzedFields(packageName, structName string, analyze
 	S := pkg.Scope().Lookup(structName)
 	internal := S.Type().Underlying().(*types.Struct)
 
-	analyzedFields := make([]analyzedField, 0)
+	analyzedFields := make([]Field, 0)
 	for i := 0; i < internal.NumFields(); i++ {
 		field := internal.Field(i)
 
@@ -279,11 +279,10 @@ func (g *generator) createAnalyzedFields(packageName, structName string, analyze
 			// todo : type.Namedの場合、解析対象に含まれてないものがあったら、スキップする？
 			// todo : タグが重複してたら、エラー
 
-			analyzedFields = append(analyzedFields, analyzedField{
+			analyzedFields = append(analyzedFields, Field{
 				Name: name,
 				Tag:  tag,
-				Type: field.Type(),
-				Ast:  analyzedFieldMap[fmt.Sprint(i)+"@"+structName],
+				Node: analyzedFieldMap[fmt.Sprint(i)+"@"+structName],
 			})
 		}
 	}

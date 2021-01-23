@@ -16,10 +16,9 @@ const (
 	fieldTypeStruct
 	fieldTypeMap
 	fieldTypePointer
-	//fieldTypeInterface
 )
 
-type analyzedASTFieldType struct {
+type Node struct {
 	fieldType int
 
 	// for identical
@@ -34,45 +33,43 @@ type analyzedASTFieldType struct {
 	StructName  string
 
 	// for array / map / pointer
-	Key   *analyzedASTFieldType
-	Value *analyzedASTFieldType
+	Key   *Node
+	Value *Node
 
-	Parent *analyzedASTFieldType
+	Parent *Node
 }
 
-func (a analyzedASTFieldType) HasParent() bool { return a.Parent != nil }
+func (a Node) HasParent() bool { return a.Parent != nil }
 
-func (a analyzedASTFieldType) IsIdentical() bool { return a.fieldType == fieldTypeIdent }
-func (a analyzedASTFieldType) IsSlice() bool     { return a.fieldType == fieldTypeSlice }
-func (a analyzedASTFieldType) IsArray() bool     { return a.fieldType == fieldTypeArray }
-func (a analyzedASTFieldType) IsStruct() bool    { return a.fieldType == fieldTypeStruct }
-func (a analyzedASTFieldType) IsMap() bool       { return a.fieldType == fieldTypeMap }
+func (a Node) IsIdentical() bool { return a.fieldType == fieldTypeIdent }
+func (a Node) IsSlice() bool     { return a.fieldType == fieldTypeSlice }
+func (a Node) IsArray() bool     { return a.fieldType == fieldTypeArray }
+func (a Node) IsStruct() bool    { return a.fieldType == fieldTypeStruct }
+func (a Node) IsMap() bool       { return a.fieldType == fieldTypeMap }
 
-//func (a analyzedASTFieldType) IsInterface() bool { return a.fieldType == fieldTypeInterface }
-func (a analyzedASTFieldType) IsPointer() bool { return a.fieldType == fieldTypePointer }
+func (a Node) IsPointer() bool { return a.fieldType == fieldTypePointer }
 
-func (a analyzedASTFieldType) Elm() *analyzedASTFieldType { return a.Key }
-func (a analyzedASTFieldType) KeyValue() (*analyzedASTFieldType, *analyzedASTFieldType) {
+func (a Node) Elm() *Node { return a.Key }
+func (a Node) KeyValue() (*Node, *Node) {
 	return a.Key, a.Value
 }
 
-func (a analyzedASTFieldType) CanGenerate(sts []analyzedStruct) (bool, []string) {
-	msgs := make([]string, 0)
+func (a Node) CanGenerate(sts []analyzedStruct) (bool, []string) {
+	messages := make([]string, 0)
 	switch {
 	case a.IsIdentical():
-		return true, msgs
+		return true, messages
 
 	case a.IsStruct():
 		if a.ImportPath == "time" && a.StructName == "Time" {
-			return true, msgs
+			return true, messages
 		}
-		// todo : performance
 		for _, v := range sts {
 			if v.ImportPath == a.ImportPath && v.Name == a.StructName {
-				return true, msgs
+				return true, messages
 			}
 		}
-		return false, append(msgs, fmt.Sprintf("struct %s.%s is not generated.", a.ImportPath, a.StructName))
+		return false, append(messages, fmt.Sprintf("struct %s.%s is not generated.", a.ImportPath, a.StructName))
 
 	case a.IsSlice():
 		return a.Elm().CanGenerate(sts)
@@ -82,19 +79,19 @@ func (a analyzedASTFieldType) CanGenerate(sts []analyzedStruct) (bool, []string)
 
 	case a.IsMap():
 		k, v := a.KeyValue()
-		kb, kMsgs := k.CanGenerate(sts)
-		vb, vMsgs := v.CanGenerate(sts)
-		msgs = append(msgs, kMsgs...)
-		msgs = append(msgs, vMsgs...)
-		return kb && vb, msgs
+		kb, kMessages := k.CanGenerate(sts)
+		vb, vMessages := v.CanGenerate(sts)
+		messages = append(messages, kMessages...)
+		messages = append(messages, vMessages...)
+		return kb && vb, messages
 
 	case a.IsPointer():
 		return a.Elm().CanGenerate(sts)
 	}
-	return false, append(msgs, "unreachable code")
+	return false, append(messages, "unreachable code")
 }
 
-func (a analyzedASTFieldType) TypeJenChain(sts []analyzedStruct, s ...*Statement) *Statement {
+func (a Node) TypeJenChain(sts []analyzedStruct, s ...*Statement) *Statement {
 	var str *Statement
 	if len(s) > 0 {
 		str = s[0]
@@ -154,14 +151,14 @@ func (a analyzedASTFieldType) TypeJenChain(sts []analyzedStruct, s ...*Statement
 	return str
 }
 
-func (g *generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFieldType, importMap map[string]string, dotStructs map[string]analyzedStruct, sameHierarchyStructs map[string]bool) (*analyzedASTFieldType, bool, []string) {
+func (g *generator) createNodeRecursive(expr ast.Expr, parent *Node, importMap map[string]string, dotStructs map[string]analyzedStruct, sameHierarchyStructs map[string]bool) (*Node, bool, []string) {
 
 	reasons := make([]string, 0)
 	if i, ok := expr.(*ast.Ident); ok {
 
 		// dot import
 		if dot, found := dotStructs[i.Name]; found {
-			return &analyzedASTFieldType{
+			return &Node{
 				fieldType:   fieldTypeStruct,
 				PackageName: dot.Name,
 				StructName:  i.Name,
@@ -171,7 +168,7 @@ func (g *generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 		}
 		// time
 		if i.Name == "Time" {
-			return &analyzedASTFieldType{
+			return &Node{
 				fieldType:   fieldTypeStruct,
 				PackageName: "time",
 				StructName:  i.Name,
@@ -181,7 +178,7 @@ func (g *generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 		}
 		// same hierarchy struct in same file
 		if i.Obj != nil && i.Obj.Kind == ast.Typ {
-			return &analyzedASTFieldType{
+			return &Node{
 				fieldType:   fieldTypeStruct,
 				PackageName: g.outputPackageName,
 				StructName:  i.Name,
@@ -192,7 +189,7 @@ func (g *generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 
 		// same hierarchy struct in other file
 		if _, found := sameHierarchyStructs[i.Name]; found {
-			return &analyzedASTFieldType{
+			return &Node{
 				fieldType:   fieldTypeStruct,
 				PackageName: g.outputPackageName,
 				StructName:  i.Name,
@@ -202,7 +199,7 @@ func (g *generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 		}
 
 		if isPrimitive(i.Name) {
-			return &analyzedASTFieldType{
+			return &Node{
 				fieldType:     fieldTypeIdent,
 				IdenticalName: i.Name,
 				Parent:        parent,
@@ -214,7 +211,7 @@ func (g *generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 
 	if selector, ok := expr.(*ast.SelectorExpr); ok {
 		pkgName := fmt.Sprint(selector.X)
-		return &analyzedASTFieldType{
+		return &Node{
 			fieldType:   fieldTypeStruct,
 			PackageName: pkgName,
 			StructName:  selector.Sel.Name,
@@ -225,9 +222,9 @@ func (g *generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 
 	// slice or array
 	if array, ok := expr.(*ast.ArrayType); ok {
-		var node *analyzedASTFieldType
+		var node *Node
 		if array.Len == nil {
-			node = &analyzedASTFieldType{
+			node = &Node{
 				fieldType: fieldTypeSlice,
 				Parent:    parent,
 			}
@@ -246,13 +243,13 @@ func (g *generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 			} else {
 				n.SetString(litValie, 10)
 			}
-			node = &analyzedASTFieldType{
+			node = &Node{
 				fieldType: fieldTypeArray,
 				ArrayLen:  n.Uint64(),
 				Parent:    parent,
 			}
 		}
-		key, check, rs := g.checkFieldTypeRecursive(array.Elt, node, importMap, dotStructs, sameHierarchyStructs)
+		key, check, rs := g.createNodeRecursive(array.Elt, node, importMap, dotStructs, sameHierarchyStructs)
 		node.Key = key
 		reasons = append(reasons, rs...)
 		return node, check, reasons
@@ -260,12 +257,12 @@ func (g *generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 
 	// map
 	if mp, ok := expr.(*ast.MapType); ok {
-		node := &analyzedASTFieldType{
+		node := &Node{
 			fieldType: fieldTypeMap,
 			Parent:    parent,
 		}
-		key, c1, krs := g.checkFieldTypeRecursive(mp.Key, node, importMap, dotStructs, sameHierarchyStructs)
-		value, c2, vrs := g.checkFieldTypeRecursive(mp.Value, node, importMap, dotStructs, sameHierarchyStructs)
+		key, c1, krs := g.createNodeRecursive(mp.Key, node, importMap, dotStructs, sameHierarchyStructs)
+		value, c2, vrs := g.createNodeRecursive(mp.Value, node, importMap, dotStructs, sameHierarchyStructs)
 		node.Key = key
 		node.Value = value
 		reasons = append(reasons, krs...)
@@ -275,11 +272,11 @@ func (g *generator) checkFieldTypeRecursive(expr ast.Expr, parent *analyzedASTFi
 
 	// *
 	if star, ok := expr.(*ast.StarExpr); ok {
-		node := &analyzedASTFieldType{
+		node := &Node{
 			fieldType: fieldTypePointer,
 			Parent:    parent,
 		}
-		key, check, rs := g.checkFieldTypeRecursive(star.X, node, importMap, dotStructs, sameHierarchyStructs)
+		key, check, rs := g.createNodeRecursive(star.X, node, importMap, dotStructs, sameHierarchyStructs)
 		node.Key = key
 		reasons = append(reasons, rs...)
 		return node, check, reasons

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
-	"go/types"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -64,7 +63,7 @@ type analyzedStruct struct {
 	ImportPath string
 	Package    string
 	Name       string
-	Fields     []analyzedField
+	Fields     []Field
 	NoUseQual  bool
 
 	others []analyzedStruct
@@ -74,11 +73,10 @@ type analyzedStruct struct {
 	Reasons []string
 }
 
-type analyzedField struct {
+type Field struct {
 	Name string
 	Tag  string
-	Type types.Type
-	Ast  *analyzedASTFieldType
+	Node *Node
 }
 
 func Run(input, out, fileName string, pointer int, strict, verbose bool) error {
@@ -216,7 +214,7 @@ func (g *generator) filter(sts []analyzedStruct) []analyzedStruct {
 
 		if v.CanGen {
 			for _, field := range v.Fields {
-				if canGen, msgs := field.Ast.CanGenerate(sts); !canGen {
+				if canGen, msgs := field.Node.CanGenerate(sts); !canGen {
 					ok = false
 					reasons = append(reasons, msgs...)
 				}
