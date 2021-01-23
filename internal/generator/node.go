@@ -54,7 +54,7 @@ func (a Node) KeyValue() (*Node, *Node) {
 	return a.Key, a.Value
 }
 
-func (a Node) CanGenerate(sts []analyzedStruct) (bool, []string) {
+func (a Node) CanGenerate(sts []*analyzedStruct) (bool, []string) {
 	messages := make([]string, 0)
 	switch {
 	case a.IsIdentical():
@@ -91,7 +91,7 @@ func (a Node) CanGenerate(sts []analyzedStruct) (bool, []string) {
 	return false, append(messages, "unreachable code")
 }
 
-func (a Node) TypeJenChain(sts []analyzedStruct, s ...*Statement) *Statement {
+func (a Node) TypeJenChain(sts []*analyzedStruct, s ...*Statement) *Statement {
 	var str *Statement
 	if len(s) > 0 {
 		str = s[0]
@@ -108,16 +108,14 @@ func (a Node) TypeJenChain(sts []analyzedStruct, s ...*Statement) *Statement {
 			str = str.Qual(a.ImportPath, a.StructName)
 		} else {
 			// todo : performance
-			found := false
-			asRef := analyzedStruct{}
+			var asRef *analyzedStruct
 			for _, v := range sts {
 				if v.ImportPath == a.ImportPath && v.Name == a.StructName {
-					found = true
 					asRef = v
 					break
 				}
 			}
-			if !found {
+			if asRef == nil {
 				// unreachable
 				panic(fmt.Sprintf("not found struct %s.%s", a.ImportPath, a.StructName))
 			}
@@ -151,7 +149,7 @@ func (a Node) TypeJenChain(sts []analyzedStruct, s ...*Statement) *Statement {
 	return str
 }
 
-func (g *generator) createNodeRecursive(expr ast.Expr, parent *Node, importMap map[string]string, dotStructs map[string]analyzedStruct, sameHierarchyStructs map[string]bool) (*Node, bool, []string) {
+func (g *generator) createNodeRecursive(expr ast.Expr, parent *Node, importMap map[string]string, dotStructs map[string]*analyzedStruct, sameHierarchyStructs map[string]bool) (*Node, bool, []string) {
 
 	reasons := make([]string, 0)
 	if i, ok := expr.(*ast.Ident); ok {

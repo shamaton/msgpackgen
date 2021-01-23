@@ -85,7 +85,7 @@ func (g *generator) analyze() error {
 			return err
 		}
 	}
-	g.setFieldToStruct()
+	g.setFieldToStructs()
 	return nil
 }
 
@@ -93,7 +93,7 @@ func (g *generator) createAnalyzedStructs(parseFile *ast.File, packageName, impo
 
 	importMap, dotImports := g.createImportMap(parseFile)
 	// dot imports
-	dotStructs := map[string]analyzedStruct{}
+	dotStructs := map[string]*analyzedStruct{}
 	for _, dotImport := range dotImports {
 		pfs, ok := g.fullPackage2ParseFiles[dotImport]
 		if !ok {
@@ -138,9 +138,9 @@ func (g *generator) createAnalyzedStructs(parseFile *ast.File, packageName, impo
 		return true
 	})
 
-	structs := make([]analyzedStruct, len(structNames))
+	structs := make([]*analyzedStruct, len(structNames))
 	for i, structName := range structNames {
-		structs[i] = analyzedStruct{
+		structs[i] = &analyzedStruct{
 			ImportPath: importPath,
 			Package:    packageName,
 			Name:       structName,
@@ -156,8 +156,8 @@ func (g *generator) createAnalyzedStructs(parseFile *ast.File, packageName, impo
 	return nil
 }
 
-func (g *generator) setFieldToStruct() {
-	for i, analyzedStruct := range analyzedStructs {
+func (g *generator) setFieldToStructs() {
+	for _, analyzedStruct := range analyzedStructs {
 
 		importMap := g.parseFile2ImportMap[analyzedStruct.File]
 		dotStructs := g.parseFile2DotImportMap[analyzedStruct.File]
@@ -169,45 +169,52 @@ func (g *generator) setFieldToStruct() {
 			}
 		}
 
-		analyzedFieldMap := map[string]*Node{}
-		ast.Inspect(analyzedStruct.File, func(n ast.Node) bool {
+		g.setFieldToStruct(analyzedStruct, importMap, dotStructs, sameHierarchyStructs)
+	}
+}
 
-			x, ok := n.(*ast.TypeSpec)
-			if !ok {
+func (g *generator) setFieldToStruct(target *analyzedStruct,
+	importMap map[string]string, dotStructs map[string]*analyzedStruct, sameHierarchyStructs map[string]bool,
+) {
+
+	analyzedFieldMap := map[string]*Node{}
+	ast.Inspect(target.File, func(n ast.Node) bool {
+
+		x, ok := n.(*ast.TypeSpec)
+		if !ok {
+			return true
+		}
+
+		if st, ok := x.Type.(*ast.StructType); ok {
+			if x.Name.String() != target.Name {
 				return true
 			}
 
-			if st, ok := x.Type.(*ast.StructType); ok {
-				if x.Name.String() != analyzedStruct.Name {
-					return true
+			canGen := true
+			reasons := make([]string, 0)
+			for i, field := range st.Fields.List {
+
+				key := fmt.Sprint(i)
+
+				value, ok, rs := g.createNodeRecursive(field.Type, nil, importMap, dotStructs, sameHierarchyStructs)
+				canGen = canGen && ok
+				if ok {
+					analyzedFieldMap[key+"@"+x.Name.String()] = value
 				}
-
-				canGen := true
-				reasons := make([]string, 0)
-				for i, field := range st.Fields.List {
-
-					key := fmt.Sprint(i)
-
-					value, ok, rs := g.createNodeRecursive(field.Type, nil, importMap, dotStructs, sameHierarchyStructs)
-					canGen = canGen && ok
-					if ok {
-						analyzedFieldMap[key+"@"+x.Name.String()] = value
-					}
-					reasons = append(reasons, rs...)
-				}
-
-				if canGen {
-					analyzedStructs[i].CanGen = true
-					analyzedStructs[i].Fields = g.createAnalyzedFields(analyzedStruct.Package, analyzedStruct.Name, analyzedFieldMap, g.fileSet, analyzedStruct.File)
-				} else {
-					analyzedStructs[i].CanGen = false
-					analyzedStructs[i].Reasons = reasons
-				}
+				reasons = append(reasons, rs...)
 			}
-			return true
-		})
 
-	}
+			if canGen {
+				target.CanGen = true
+				target.Fields = g.createAnalyzedFields(target.Package, target.Name, analyzedFieldMap, g.fileSet, target.File)
+			} else {
+				target.CanGen = false
+				target.Reasons = reasons
+			}
+		}
+		return true
+	})
+
 }
 
 func (g *generator) createImportMap(parseFile *ast.File) (map[string]string, []string) {

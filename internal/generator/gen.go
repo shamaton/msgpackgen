@@ -13,7 +13,7 @@ import (
 	. "github.com/dave/jennifer/jen"
 )
 
-var analyzedStructs []analyzedStruct
+var analyzedStructs []*analyzedStruct
 
 const (
 	pkTop = "github.com/shamaton/msgpackgen/msgpack"
@@ -44,7 +44,7 @@ type generator struct {
 	noUserQualMap          map[string]bool
 
 	parseFile2ImportMap    map[*ast.File]map[string]string
-	parseFile2DotImportMap map[*ast.File]map[string]analyzedStruct
+	parseFile2DotImportMap map[*ast.File]map[string]*analyzedStruct
 
 	outputDir           string
 	outputPackageName   string
@@ -66,7 +66,7 @@ type analyzedStruct struct {
 	Fields     []Field
 	NoUseQual  bool
 
-	Others []analyzedStruct
+	Others []*analyzedStruct
 	File   *ast.File
 
 	CanGen  bool
@@ -106,7 +106,7 @@ func Run(input, out, fileName string, pointer int, strict, verbose bool) error {
 		noUserQualMap:          map[string]bool{},
 
 		parseFile2ImportMap:    map[*ast.File]map[string]string{},
-		parseFile2DotImportMap: map[*ast.File]map[string]analyzedStruct{},
+		parseFile2DotImportMap: map[*ast.File]map[string]*analyzedStruct{},
 	}
 	return g.run(input, out, fileName)
 }
@@ -205,8 +205,8 @@ func privateFuncNamePattern(funcName string) string {
 	return fmt.Sprintf("___%s", funcName)
 }
 
-func (g *generator) filter(sts []analyzedStruct) []analyzedStruct {
-	newStructs := make([]analyzedStruct, 0)
+func (g *generator) filter(sts []*analyzedStruct) []*analyzedStruct {
+	newStructs := make([]*analyzedStruct, 0)
 	allOk := true
 	for _, v := range sts {
 		ok := true
@@ -243,7 +243,7 @@ func (g *generator) filter(sts []analyzedStruct) []analyzedStruct {
 
 func (g *generator) setOthers() error {
 	for i := range analyzedStructs {
-		others := make([]analyzedStruct, len(analyzedStructs)-1)
+		others := make([]*analyzedStruct, len(analyzedStructs)-1)
 		index := 0
 		for _, v := range analyzedStructs {
 			if v.ImportPath != analyzedStructs[i].ImportPath || v.Name != analyzedStructs[i].Name {
