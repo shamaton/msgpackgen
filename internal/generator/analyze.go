@@ -145,7 +145,7 @@ func (g *generator) createAnalyzedStructs(parseFile *ast.File, packageName, impo
 			Package:    packageName,
 			Name:       structName,
 			NoUseQual:  g.noUserQualMap[importPath],
-			file:       parseFile,
+			File:       parseFile,
 		}
 	}
 	analyzedStructs = append(analyzedStructs, structs...)
@@ -159,8 +159,8 @@ func (g *generator) createAnalyzedStructs(parseFile *ast.File, packageName, impo
 func (g *generator) setFieldToStruct() {
 	for i, analyzedStruct := range analyzedStructs {
 
-		importMap := g.parseFile2ImportMap[analyzedStruct.file]
-		dotStructs := g.parseFile2DotImportMap[analyzedStruct.file]
+		importMap := g.parseFile2ImportMap[analyzedStruct.File]
+		dotStructs := g.parseFile2DotImportMap[analyzedStruct.File]
 
 		sameHierarchyStructs := map[string]bool{}
 		for _, aast := range analyzedStructs {
@@ -170,7 +170,7 @@ func (g *generator) setFieldToStruct() {
 		}
 
 		analyzedFieldMap := map[string]*Node{}
-		ast.Inspect(analyzedStruct.file, func(n ast.Node) bool {
+		ast.Inspect(analyzedStruct.File, func(n ast.Node) bool {
 
 			x, ok := n.(*ast.TypeSpec)
 			if !ok {
@@ -198,7 +198,7 @@ func (g *generator) setFieldToStruct() {
 
 				if canGen {
 					analyzedStructs[i].CanGen = true
-					analyzedStructs[i].Fields = g.createAnalyzedFields(analyzedStruct.Package, analyzedStruct.Name, analyzedFieldMap, g.fileSet, analyzedStruct.file)
+					analyzedStructs[i].Fields = g.createAnalyzedFields(analyzedStruct.Package, analyzedStruct.Name, analyzedFieldMap, g.fileSet, analyzedStruct.File)
 				} else {
 					analyzedStructs[i].CanGen = false
 					analyzedStructs[i].Reasons = reasons

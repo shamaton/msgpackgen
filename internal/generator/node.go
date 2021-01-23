@@ -176,7 +176,7 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *Node, importMap m
 				Parent:      parent,
 			}, true, reasons
 		}
-		// same hierarchy struct in same file
+		// same hierarchy struct in same File
 		if i.Obj != nil && i.Obj.Kind == ast.Typ {
 			return &Node{
 				fieldType:   fieldTypeStruct,
@@ -187,7 +187,7 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *Node, importMap m
 			}, true, reasons
 		}
 
-		// same hierarchy struct in other file
+		// same hierarchy struct in other File
 		if _, found := sameHierarchyStructs[i.Name]; found {
 			return &Node{
 				fieldType:   fieldTypeStruct,

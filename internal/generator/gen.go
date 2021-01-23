@@ -66,8 +66,8 @@ type analyzedStruct struct {
 	Fields     []Field
 	NoUseQual  bool
 
-	others []analyzedStruct
-	file   *ast.File
+	Others []analyzedStruct
+	File   *ast.File
 
 	CanGen  bool
 	Reasons []string
@@ -132,7 +132,7 @@ func (g *generator) run(input, out, fileName string) error {
 		return err
 	}
 	if len(targets) < 1 {
-		return fmt.Errorf("not found go file")
+		return fmt.Errorf("not found go File")
 	}
 
 	err = g.getPackages(targets)
@@ -254,7 +254,7 @@ func (g *generator) setOthers() error {
 		if index != len(others) {
 			return fmt.Errorf("other package should be %d. but result is %d", len(others), index)
 		}
-		analyzedStructs[i].others = others
+		analyzedStructs[i].Others = others
 	}
 	return nil
 }
@@ -342,7 +342,7 @@ func (g *generator) generateCode() *File {
 
 	// todo : 名称修正
 	for _, st := range analyzedStructs {
-		st.calcFunction(f)
+		st.CreateCode(f)
 	}
 
 	return f
@@ -362,7 +362,7 @@ func (g *generator) output(f *File, genFileName string) error {
 	defer func() {
 		err := file.Close()
 		if err != nil {
-			fmt.Println("file close error", err)
+			fmt.Println("File close error", err)
 		}
 	}()
 
