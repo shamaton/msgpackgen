@@ -13,7 +13,7 @@ import (
 	. "github.com/dave/jennifer/jen"
 )
 
-var analyzedStructs []*analyzedStruct
+var analyzedStructs []*Structure
 
 const (
 	pkTop = "github.com/shamaton/msgpackgen/msgpack"
@@ -44,7 +44,7 @@ type generator struct {
 	noUserQualMap          map[string]bool
 
 	parseFile2ImportMap    map[*ast.File]map[string]string
-	parseFile2DotImportMap map[*ast.File]map[string]*analyzedStruct
+	parseFile2DotImportMap map[*ast.File]map[string]*Structure
 
 	outputDir           string
 	outputPackageName   string
@@ -86,7 +86,7 @@ func Run(input, out, fileName string, pointer int, strict, verbose bool) error {
 		noUserQualMap:          map[string]bool{},
 
 		parseFile2ImportMap:    map[*ast.File]map[string]string{},
-		parseFile2DotImportMap: map[*ast.File]map[string]*analyzedStruct{},
+		parseFile2DotImportMap: map[*ast.File]map[string]*Structure{},
 	}
 	return g.run(input, out, fileName)
 }
@@ -180,8 +180,8 @@ func (g *generator) getTargetFiles(dir string) ([]string, error) {
 	return absPaths, nil
 }
 
-func (g *generator) filter(sts []*analyzedStruct) []*analyzedStruct {
-	newStructs := make([]*analyzedStruct, 0)
+func (g *generator) filter(sts []*Structure) []*Structure {
+	newStructs := make([]*Structure, 0)
 	allOk := true
 	for _, v := range sts {
 		ok := true
@@ -218,7 +218,7 @@ func (g *generator) filter(sts []*analyzedStruct) []*analyzedStruct {
 
 func (g *generator) setOthers() error {
 	for i := range analyzedStructs {
-		others := make([]*analyzedStruct, len(analyzedStructs)-1)
+		others := make([]*Structure, len(analyzedStructs)-1)
 		index := 0
 		for _, v := range analyzedStructs {
 			if v.ImportPath != analyzedStructs[i].ImportPath || v.Name != analyzedStructs[i].Name {
@@ -524,27 +524,27 @@ func (g *generator) decodeAsMapCases() []Code {
 	return states
 }
 
-func (as *analyzedStruct) calcArraySizeFuncName() string {
+func (as *Structure) calcArraySizeFuncName() string {
 	return createFuncName("calcArraySize", as.Name, as.ImportPath)
 }
 
-func (as *analyzedStruct) calcMapSizeFuncName() string {
+func (as *Structure) calcMapSizeFuncName() string {
 	return createFuncName("calcMapSize", as.Name, as.ImportPath)
 }
 
-func (as *analyzedStruct) encodeArrayFuncName() string {
+func (as *Structure) encodeArrayFuncName() string {
 	return createFuncName("encodeArray", as.Name, as.ImportPath)
 }
 
-func (as *analyzedStruct) encodeMapFuncName() string {
+func (as *Structure) encodeMapFuncName() string {
 	return createFuncName("encodeMap", as.Name, as.ImportPath)
 }
 
-func (as *analyzedStruct) decodeArrayFuncName() string {
+func (as *Structure) decodeArrayFuncName() string {
 	return createFuncName("decodeArray", as.Name, as.ImportPath)
 }
 
-func (as *analyzedStruct) decodeMapFuncName() string {
+func (as *Structure) decodeMapFuncName() string {
 	return createFuncName("decodeMap", as.Name, as.ImportPath)
 }
 

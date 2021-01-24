@@ -94,7 +94,7 @@ func (g *generator) createAnalyzedStructs(parseFile *ast.File, packageName, impo
 
 	importMap, dotImports := g.createImportMap(parseFile)
 	// dot imports
-	dotStructs := map[string]*analyzedStruct{}
+	dotStructs := map[string]*Structure{}
 	for _, dotImport := range dotImports {
 		pfs, ok := g.fullPackage2ParseFiles[dotImport]
 		if !ok {
@@ -139,9 +139,9 @@ func (g *generator) createAnalyzedStructs(parseFile *ast.File, packageName, impo
 		return true
 	})
 
-	structs := make([]*analyzedStruct, len(structNames))
+	structs := make([]*Structure, len(structNames))
 	for i, structName := range structNames {
-		structs[i] = &analyzedStruct{
+		structs[i] = &Structure{
 			ImportPath: importPath,
 			Package:    packageName,
 			Name:       structName,
@@ -196,8 +196,8 @@ func (g *generator) setFieldToStructs() {
 	}
 }
 
-func (g *generator) setFieldToStruct(target *analyzedStruct,
-	importMap map[string]string, dotStructs map[string]*analyzedStruct, sameHierarchyStructs map[string]bool,
+func (g *generator) setFieldToStruct(target *Structure,
+	importMap map[string]string, dotStructs map[string]*Structure, sameHierarchyStructs map[string]bool,
 ) {
 
 	analyzedFieldMap := map[string]*Node{}
@@ -239,7 +239,7 @@ func (g *generator) setFieldToStruct(target *analyzedStruct,
 	})
 
 }
-func (g *generator) createNodeRecursive(expr ast.Expr, parent *Node, importMap map[string]string, dotStructs map[string]*analyzedStruct, sameHierarchyStructs map[string]bool) (*Node, bool, []string) {
+func (g *generator) createNodeRecursive(expr ast.Expr, parent *Node, importMap map[string]string, dotStructs map[string]*Structure, sameHierarchyStructs map[string]bool) (*Node, bool, []string) {
 
 	reasons := make([]string, 0)
 	if ident, ok := expr.(*ast.Ident); ok {

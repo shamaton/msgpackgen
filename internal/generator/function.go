@@ -9,14 +9,14 @@ import (
 	. "github.com/dave/jennifer/jen"
 )
 
-type analyzedStruct struct {
+type Structure struct {
 	ImportPath string
 	Package    string
 	Name       string
 	Fields     []Field
 	NoUseQual  bool
 
-	Others []*analyzedStruct
+	Others []*Structure
 	File   *ast.File
 
 	CanGen  bool
@@ -29,7 +29,7 @@ type Field struct {
 	Node *Node
 }
 
-func (as *analyzedStruct) CreateCode(f *File) {
+func (as *Structure) CreateCode(f *File) {
 	v := "v"
 
 	calcStruct, encStructArray, encStructMap := as.CreateStructCode(len(as.Fields))
@@ -139,7 +139,7 @@ func (as *analyzedStruct) CreateCode(f *File) {
 	)
 }
 
-func (as *analyzedStruct) CreateKeyStringCode(v string) (Code, Code) {
+func (as *Structure) CreateKeyStringCode(v string) (Code, Code) {
 	l := len(v)
 	suffix := ""
 	if l < 32 {
@@ -156,7 +156,7 @@ func (as *analyzedStruct) CreateKeyStringCode(v string) (Code, Code) {
 		Id("offset").Op("=").Id(idEncoder).Dot("WriteString"+suffix).Call(Lit(v), Lit(l), Id("offset"))
 }
 
-func (as *analyzedStruct) CreateStructCode(fieldNum int) (Code, Code, Code) {
+func (as *Structure) CreateStructCode(fieldNum int) (Code, Code, Code) {
 
 	suffix := ""
 	if fieldNum <= 0x0f {
@@ -172,7 +172,7 @@ func (as *analyzedStruct) CreateStructCode(fieldNum int) (Code, Code, Code) {
 		Id("offset").Op("=").Id(idEncoder).Dot(" WriteStructHeader"+suffix+"AsMap").Call(Lit(fieldNum), Id("offset"))
 }
 
-func (as *analyzedStruct) createFieldCode(ast *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
+func (as *Structure) createFieldCode(ast *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
 
 	switch {
 	case ast.IsIdentical():
@@ -228,7 +228,7 @@ func (as *analyzedStruct) createFieldCode(ast *Node, encodeFieldName, decodeFiel
 	return cArray, cMap, eArray, eMap, dArray, dMap, err
 }
 
-func (as *analyzedStruct) createPointerCode(ast *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
+func (as *Structure) createPointerCode(ast *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
 
 	encodeChildName := encodeFieldName + "p"
 	if isRootField(encodeFieldName) {
@@ -271,7 +271,7 @@ func (as *analyzedStruct) createPointerCode(ast *Node, encodeFieldName, decodeFi
 	return cArray, cArray, eArray, eArray, dArray, dArray, err
 }
 
-func (as *analyzedStruct) createMapCode(ast *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
+func (as *Structure) createMapCode(ast *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
 
 	key, value := ast.KeyValue()
 
@@ -375,7 +375,7 @@ func (as *analyzedStruct) createMapCode(ast *Node, encodeFieldName, decodeFieldN
 	return cArray, cArray, eArray, eArray, dArray, dArray, nil
 }
 
-func (as *analyzedStruct) createSliceCode(ast *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
+func (as *Structure) createSliceCode(ast *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
 
 	encodeChildName, decodeChildName := encodeFieldName+"v", decodeFieldName+""
 	if isRootField(encodeFieldName) {
@@ -474,7 +474,7 @@ func (as *analyzedStruct) createSliceCode(ast *Node, encodeFieldName, decodeFiel
 	return cArray, cArray, eArray, eArray, dArray, dArray, nil
 }
 
-func (as *analyzedStruct) createArrayCode(ast *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
+func (as *Structure) createArrayCode(ast *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
 
 	encodeChildName := encodeFieldName + "v"
 	if isRootField(encodeFieldName) {
@@ -573,7 +573,7 @@ func (as *analyzedStruct) createArrayCode(ast *Node, encodeFieldName, decodeFiel
 	return cArray, cArray, eArray, eArray, dArray, dArray, nil
 }
 
-func (as *analyzedStruct) createBasicCode(ast *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
+func (as *Structure) createBasicCode(ast *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
 
 	funcSuffix := strings.Title(ast.IdenticalName)
 
@@ -589,11 +589,11 @@ func (as *analyzedStruct) createBasicCode(ast *Node, encodeFieldName, decodeFiel
 	return cArray, cMap, eArray, eMap, dArray, dMap, err
 }
 
-func (as *analyzedStruct) addSizePattern1(funcName string, params ...Code) Code {
+func (as *Structure) addSizePattern1(funcName string, params ...Code) Code {
 	return Id("size").Op("+=").Id(idEncoder).Dot(funcName).Call(params...)
 }
 
-func (as *analyzedStruct) addSizePattern2(funcName string, params ...Code) []Code {
+func (as *Structure) addSizePattern2(funcName string, params ...Code) []Code {
 	return []Code{
 		List(Id("s"), Err()).Op(":=").Id(idEncoder).Dot(funcName).Call(params...),
 		If(Err().Op("!=").Nil()).Block(
@@ -604,7 +604,7 @@ func (as *analyzedStruct) addSizePattern2(funcName string, params ...Code) []Cod
 
 }
 
-func (as *analyzedStruct) encPattern1(funcName string, params ...Code) Code {
+func (as *Structure) encPattern1(funcName string, params ...Code) Code {
 	return Id("offset").Op("=").Id(idEncoder).Dot(funcName).Call(params...)
 }
 
@@ -612,7 +612,7 @@ func isRootField(name string) bool {
 	return strings.Contains(name, ".")
 }
 
-func (as *analyzedStruct) decodeBasicPattern(ast *Node, fieldName, offsetName, decoderFuncName string) []Code {
+func (as *Structure) decodeBasicPattern(ast *Node, fieldName, offsetName, decoderFuncName string) []Code {
 
 	varName := fieldName + "v"
 	if isRootField(fieldName) {
@@ -678,7 +678,7 @@ func (as *analyzedStruct) decodeBasicPattern(ast *Node, fieldName, offsetName, d
 	return []Code{Block(codes...)}
 }
 
-func (as *analyzedStruct) createDecodeSetVarPattern(ptrCount int, varName, setVarName string, isLastSkip bool, codes []Code) []Code {
+func (as *Structure) createDecodeSetVarPattern(ptrCount int, varName, setVarName string, isLastSkip bool, codes []Code) []Code {
 
 	if isLastSkip {
 		for i := 0; i < ptrCount; i++ {
@@ -707,7 +707,7 @@ func (as *analyzedStruct) createDecodeSetVarPattern(ptrCount int, varName, setVa
 	return codes
 }
 
-func (as *analyzedStruct) createNamedCode(encodeFieldName, decodeFieldName string, ast *Node) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code) {
+func (as *Structure) createNamedCode(encodeFieldName, decodeFieldName string, ast *Node) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code) {
 
 	sizeName := "size_" + encodeFieldName
 	if isRootField(encodeFieldName) {
@@ -758,7 +758,7 @@ func (as *analyzedStruct) createNamedCode(encodeFieldName, decodeFieldName strin
 	return
 }
 
-func (as *analyzedStruct) decodeNamedPattern(ast *Node, fieldName, decodeFuncName string) []Code {
+func (as *Structure) decodeNamedPattern(ast *Node, fieldName, decodeFuncName string) []Code {
 
 	varName := fieldName + "v"
 	if isRootField(fieldName) {

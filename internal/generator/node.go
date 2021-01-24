@@ -52,7 +52,7 @@ func (a Node) KeyValue() (*Node, *Node) {
 	return a.Key, a.Value
 }
 
-func (a Node) CanGenerate(sts []*analyzedStruct) (bool, []string) {
+func (a Node) CanGenerate(sts []*Structure) (bool, []string) {
 	messages := make([]string, 0)
 	switch {
 	case a.IsIdentical():
@@ -89,7 +89,7 @@ func (a Node) CanGenerate(sts []*analyzedStruct) (bool, []string) {
 	return false, append(messages, "unreachable code")
 }
 
-func (a Node) TypeJenChain(sts []*analyzedStruct, s ...*Statement) *Statement {
+func (a Node) TypeJenChain(sts []*Structure, s ...*Statement) *Statement {
 	var str *Statement
 	if len(s) > 0 {
 		str = s[0]
@@ -106,7 +106,7 @@ func (a Node) TypeJenChain(sts []*analyzedStruct, s ...*Statement) *Statement {
 			str = str.Qual(a.ImportPath, a.StructName)
 		} else {
 			// todo : performance
-			var asRef *analyzedStruct
+			var asRef *Structure
 			for _, v := range sts {
 				if v.ImportPath == a.ImportPath && v.Name == a.StructName {
 					asRef = v
