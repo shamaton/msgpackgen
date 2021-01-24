@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"go/ast"
 	"math"
@@ -31,31 +32,32 @@ type Field struct {
 }
 
 func (as *Structure) CalcArraySizeFuncName() string {
-	return createFuncName("calcArraySize", as.Name, as.ImportPath)
+	return as.createFuncName("calcArraySize")
 }
 
 func (as *Structure) CalcMapSizeFuncName() string {
-	return createFuncName("calcMapSize", as.Name, as.ImportPath)
+	return as.createFuncName("calcMapSize")
 }
 
 func (as *Structure) EncodeArrayFuncName() string {
-	return createFuncName("encodeArray", as.Name, as.ImportPath)
+	return as.createFuncName("encodeArray")
 }
 
 func (as *Structure) EncodeMapFuncName() string {
-	return createFuncName("encodeMap", as.Name, as.ImportPath)
+	return as.createFuncName("encodeMap")
 }
 
 func (as *Structure) DecodeArrayFuncName() string {
-	return createFuncName("decodeArray", as.Name, as.ImportPath)
+	return as.createFuncName("decodeArray")
 }
 
 func (as *Structure) DecodeMapFuncName() string {
-	return createFuncName("decodeMap", as.Name, as.ImportPath)
+	return as.createFuncName("decodeMap")
 }
 
-func createFuncName(prefix, name, packageName string) string {
-	return ptn.PrivateFuncName(fmt.Sprintf("%s%s_%s", prefix, name, funcIdMap[packageName]))
+func (as *Structure) createFuncName(prefix string) string {
+	suffix := fmt.Sprintf("%x", sha256.Sum256([]byte(as.ImportPath)))
+	return ptn.PrivateFuncName(fmt.Sprintf("%s%s_%s", prefix, as.Name, suffix))
 }
 
 func (as *Structure) CreateCode(f *File) {

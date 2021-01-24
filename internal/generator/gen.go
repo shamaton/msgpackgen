@@ -1,7 +1,6 @@
 package generator
 
 import (
-	"crypto/sha256"
 	"fmt"
 	"go/ast"
 	"go/token"
@@ -33,8 +32,6 @@ const (
 // todo : complexのext値を変更できるようにする
 
 // todo : full package name -> import path
-
-var funcIdMap = map[string]string{}
 
 type generator struct {
 	fileSet                *token.FileSet
@@ -237,10 +234,6 @@ func (g *generator) setOthers() error {
 }
 
 func (g *generator) generateCode() *File {
-
-	for _, st := range analyzedStructs {
-		funcIdMap[st.ImportPath] = fmt.Sprintf("%x", sha256.Sum256([]byte(st.ImportPath)))
-	}
 
 	// todo : ソースコードが存在している場所だったら、そちらにパッケージ名をあわせる
 	f := NewFilePath(g.outputPackageFullName())
