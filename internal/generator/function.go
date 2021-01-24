@@ -86,7 +86,7 @@ func (as *Structure) CreateCode(f *File) {
 	encMapCodes = append(encMapCodes, encStructMap)
 
 	decArrayCodes := make([]Code, 0)
-	decArrayCodes = append(decArrayCodes, List(Id("offset"), Err()).Op(":=").Id(idDecoder).Dot("CheckStructHeader").Call(Lit(len(as.Fields)), Id("offset")))
+	decArrayCodes = append(decArrayCodes, List(Id("offset"), Err()).Op(":=").Id(IdDecoder).Dot("CheckStructHeader").Call(Lit(len(as.Fields)), Id("offset")))
 	decArrayCodes = append(decArrayCodes, If(Err().Op("!=").Nil()).Block(
 		Return(Lit(0), Err()),
 	))
@@ -114,17 +114,17 @@ func (as *Structure) CreateCode(f *File) {
 
 	}
 
-	decMapCodeSwitchCases = append(decMapCodeSwitchCases, Default().Block(Id("offset").Op("=").Id(idDecoder).Dot("JumpOffset").Call(Id("offset"))))
+	decMapCodeSwitchCases = append(decMapCodeSwitchCases, Default().Block(Id("offset").Op("=").Id(IdDecoder).Dot("JumpOffset").Call(Id("offset"))))
 
 	decMapCodes := make([]Code, 0)
-	decMapCodes = append(decMapCodes, List(Id("offset"), Err()).Op(":=").Id(idDecoder).Dot("CheckStructHeader").Call(Lit(len(as.Fields)), Id("offset")))
+	decMapCodes = append(decMapCodes, List(Id("offset"), Err()).Op(":=").Id(IdDecoder).Dot("CheckStructHeader").Call(Lit(len(as.Fields)), Id("offset")))
 	decMapCodes = append(decMapCodes, If(Err().Op("!=").Nil()).Block(
 		Return(Lit(0), Err()),
 	))
-	decMapCodes = append(decMapCodes, Id("dataLen").Op(":=").Id(idDecoder).Dot("Len").Call())
+	decMapCodes = append(decMapCodes, Id("dataLen").Op(":=").Id(IdDecoder).Dot("Len").Call())
 	decMapCodes = append(decMapCodes, For(Id("offset").Op("<").Id("dataLen").Block(
 		Var().Id("s").String(),
-		List(Id("s"), Id("offset"), Err()).Op("=").Id(idDecoder).Dot("AsString").Call(Id("offset")),
+		List(Id("s"), Id("offset"), Err()).Op("=").Id(IdDecoder).Dot("AsString").Call(Id("offset")),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Lit(0), Err()),
 		),
@@ -143,32 +143,32 @@ func (as *Structure) CreateCode(f *File) {
 	}
 
 	f.Comment(fmt.Sprintf("// calculate size from %s.%s\n", as.ImportPath, as.Name)).
-		Func().Id(as.CalcArraySizeFuncName()).Params(firstEncParam, Id(idEncoder).Op("*").Qual(pkEnc, "Encoder")).Params(Int(), Error()).Block(
+		Func().Id(as.CalcArraySizeFuncName()).Params(firstEncParam, Id(IdEncoder).Op("*").Qual(PkEnc, "Encoder")).Params(Int(), Error()).Block(
 		append(calcArraySizeCodes, Return(Id("size"), Nil()))...,
 	)
 
 	f.Comment(fmt.Sprintf("// calculate size from %s.%s\n", as.ImportPath, as.Name)).
-		Func().Id(as.CalcMapSizeFuncName()).Params(firstEncParam, Id(idEncoder).Op("*").Qual(pkEnc, "Encoder")).Params(Int(), Error()).Block(
+		Func().Id(as.CalcMapSizeFuncName()).Params(firstEncParam, Id(IdEncoder).Op("*").Qual(PkEnc, "Encoder")).Params(Int(), Error()).Block(
 		append(calcMapSizeCodes, Return(Id("size"), Nil()))...,
 	)
 
 	f.Comment(fmt.Sprintf("// encode from %s.%s\n", as.ImportPath, as.Name)).
-		Func().Id(as.EncodeArrayFuncName()).Params(firstEncParam, Id(idEncoder).Op("*").Qual(pkEnc, "Encoder"), Id("offset").Int()).Params(Index().Byte(), Int(), Error()).Block(
-		append(encArrayCodes, Return(Id(idEncoder).Dot("EncodedBytes").Call(), Id("offset"), Err()))...,
+		Func().Id(as.EncodeArrayFuncName()).Params(firstEncParam, Id(IdEncoder).Op("*").Qual(PkEnc, "Encoder"), Id("offset").Int()).Params(Index().Byte(), Int(), Error()).Block(
+		append(encArrayCodes, Return(Id(IdEncoder).Dot("EncodedBytes").Call(), Id("offset"), Err()))...,
 	)
 
 	f.Comment(fmt.Sprintf("// encode from %s.%s\n", as.ImportPath, as.Name)).
-		Func().Id(as.EncodeMapFuncName()).Params(firstEncParam, Id(idEncoder).Op("*").Qual(pkEnc, "Encoder"), Id("offset").Int()).Params(Index().Byte(), Int(), Error()).Block(
-		append(encMapCodes, Return(Id(idEncoder).Dot("EncodedBytes").Call(), Id("offset"), Err()))...,
+		Func().Id(as.EncodeMapFuncName()).Params(firstEncParam, Id(IdEncoder).Op("*").Qual(PkEnc, "Encoder"), Id("offset").Int()).Params(Index().Byte(), Int(), Error()).Block(
+		append(encMapCodes, Return(Id(IdEncoder).Dot("EncodedBytes").Call(), Id("offset"), Err()))...,
 	)
 
 	f.Comment(fmt.Sprintf("// decode to %s.%s\n", as.ImportPath, as.Name)).
-		Func().Id(as.DecodeArrayFuncName()).Params(firstDecParam, Id(idDecoder).Op("*").Qual(pkDec, "Decoder"), Id("offset").Int()).Params(Int(), Error()).Block(
+		Func().Id(as.DecodeArrayFuncName()).Params(firstDecParam, Id(IdDecoder).Op("*").Qual(PkDec, "Decoder"), Id("offset").Int()).Params(Int(), Error()).Block(
 		append(decArrayCodes, Return(Id("offset"), Err()))...,
 	)
 
 	f.Comment(fmt.Sprintf("// decode to %s.%s\n", as.ImportPath, as.Name)).
-		Func().Id(as.DecodeMapFuncName()).Params(firstDecParam, Id(idDecoder).Op("*").Qual(pkDec, "Decoder"), Id("offset").Int()).Params(Int(), Error()).Block(
+		Func().Id(as.DecodeMapFuncName()).Params(firstDecParam, Id(IdDecoder).Op("*").Qual(PkDec, "Decoder"), Id("offset").Int()).Params(Int(), Error()).Block(
 
 		append(decMapCodes, Return(Id("offset"), Err()))...,
 	)
@@ -187,8 +187,8 @@ func (as *Structure) CreateKeyStringCode(v string) (Code, Code) {
 		suffix = "32"
 	}
 
-	return Id("size").Op("+=").Id(idEncoder).Dot("CalcString" + suffix).Call(Lit(l)),
-		Id("offset").Op("=").Id(idEncoder).Dot("WriteString"+suffix).Call(Lit(v), Lit(l), Id("offset"))
+	return Id("size").Op("+=").Id(IdEncoder).Dot("CalcString" + suffix).Call(Lit(l)),
+		Id("offset").Op("=").Id(IdEncoder).Dot("WriteString"+suffix).Call(Lit(v), Lit(l), Id("offset"))
 }
 
 func (as *Structure) CreateStructCode(fieldNum int) (Code, Code, Code) {
@@ -202,9 +202,9 @@ func (as *Structure) CreateStructCode(fieldNum int) (Code, Code, Code) {
 		suffix = "32"
 	}
 
-	return Id("size").Op("+=").Id(idEncoder).Dot("CalcStructHeader" + suffix).Call(Lit(fieldNum)),
-		Id("offset").Op("=").Id(idEncoder).Dot(" WriteStructHeader"+suffix+"AsArray").Call(Lit(fieldNum), Id("offset")),
-		Id("offset").Op("=").Id(idEncoder).Dot(" WriteStructHeader"+suffix+"AsMap").Call(Lit(fieldNum), Id("offset"))
+	return Id("size").Op("+=").Id(IdEncoder).Dot("CalcStructHeader" + suffix).Call(Lit(fieldNum)),
+		Id("offset").Op("=").Id(IdEncoder).Dot(" WriteStructHeader"+suffix+"AsArray").Call(Lit(fieldNum), Id("offset")),
+		Id("offset").Op("=").Id(IdEncoder).Dot(" WriteStructHeader"+suffix+"AsMap").Call(Lit(fieldNum), Id("offset"))
 }
 
 func (as *Structure) createFieldCode(ast *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
@@ -278,7 +278,7 @@ func (as *Structure) createPointerCode(ast *Node, encodeFieldName, decodeFieldNa
 			Id(encodeChildName).Op(":=").Op("*").Id(encodeFieldName),
 		}, ca...)...,
 	).Else().Block(
-		Id("size").Op("+=").Id(idEncoder).Dot("CalcNil").Call(),
+		Id("size").Op("+=").Id(IdEncoder).Dot("CalcNil").Call(),
 	))
 
 	eArray = make([]Code, 0)
@@ -287,7 +287,7 @@ func (as *Structure) createPointerCode(ast *Node, encodeFieldName, decodeFieldNa
 			Id(encodeChildName).Op(":=").Op("*").Id(encodeFieldName),
 		}, ea...)...,
 	).Else().Block(
-		Id("offset").Op("=").Id(idEncoder).Dot("WriteNil").Call(Id("offset")),
+		Id("offset").Op("=").Id(IdEncoder).Dot("WriteNil").Call(Id("offset")),
 	))
 
 	// todo : ようかくにん、重複コードをスキップ
@@ -296,7 +296,7 @@ func (as *Structure) createPointerCode(ast *Node, encodeFieldName, decodeFieldNa
 		dArray = da
 	} else {
 		dArray = make([]Code, 0)
-		dArray = append(dArray, If(Op("!").Id(idDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
+		dArray = append(dArray, If(Op("!").Id(IdDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
 			da...,
 		).Else().Block(
 			Id("offset").Op("++"),
@@ -337,7 +337,7 @@ func (as *Structure) createMapCode(ast *Node, encodeFieldName, decodeFieldName s
 	))
 
 	encCodes := make([]Code, 0)
-	encCodes = append(encCodes, Id("offset").Op("=").Id(idEncoder).Dot("WriteMapLength").Call(Len(Id(encodeFieldName)), Id("offset")))
+	encCodes = append(encCodes, Id("offset").Op("=").Id(IdEncoder).Dot("WriteMapLength").Call(Len(Id(encodeFieldName)), Id("offset")))
 	encCodes = append(encCodes, For(List(Id(encodeChildKey), Id(encodeChildValue)).Op(":=").Range().Id(encodeFieldName)).Block(
 		append(eaKey, eaValue...)...,
 	))
@@ -345,13 +345,13 @@ func (as *Structure) createMapCode(ast *Node, encodeFieldName, decodeFieldName s
 	eArray = append(eArray, If(Id(encodeFieldName).Op("!=").Nil()).Block(
 		encCodes...,
 	).Else().Block(
-		Id("offset").Op("=").Id(idEncoder).Dot("WriteNil").Call(Id("offset")),
+		Id("offset").Op("=").Id(IdEncoder).Dot("WriteNil").Call(Id("offset")),
 	))
 
 	decCodes := make([]Code, 0)
 	decCodes = append(decCodes, ast.TypeJenChain(as.Others, Var().Id(decodeChildValue)))
 	decCodes = append(decCodes, Var().Id(decodeChildValue+"l").Int())
-	decCodes = append(decCodes, List(Id(decodeChildValue+"l"), Id("offset"), Err()).Op("=").Id(idDecoder).Dot("MapLength").Call(Id("offset")))
+	decCodes = append(decCodes, List(Id(decodeChildValue+"l"), Id("offset"), Err()).Op("=").Id(IdDecoder).Dot("MapLength").Call(Id("offset")))
 	decCodes = append(decCodes, If(Err().Op("!=").Nil()).Block(
 		Return(Lit(0), Err()),
 	))
@@ -400,7 +400,7 @@ func (as *Structure) createMapCode(ast *Node, encodeFieldName, decodeFieldName s
 		dArray = decCodes
 	} else {
 
-		dArray = append(dArray, If(Op("!").Id(idDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
+		dArray = append(dArray, If(Op("!").Id(IdDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
 			decCodes...,
 		).Else().Block(
 			Id("offset").Op("++"),
@@ -439,7 +439,7 @@ func (as *Structure) createSliceCode(ast *Node, encodeFieldName, decodeFieldName
 	))
 
 	encCodes := make([]Code, 0)
-	encCodes = append(encCodes, Id("offset").Op("=").Id(idEncoder).Dot("WriteSliceLength").Call(Len( /*Op(ptrOp).*/ Id(encodeFieldName)), Id("offset"), Lit(isChildByte)))
+	encCodes = append(encCodes, Id("offset").Op("=").Id(IdEncoder).Dot("WriteSliceLength").Call(Len( /*Op(ptrOp).*/ Id(encodeFieldName)), Id("offset"), Lit(isChildByte)))
 	encCodes = append(encCodes, For(List(Id("_"), Id(encodeChildName)).Op(":=").Range(). /*Op(ptrOp).*/ Id(encodeFieldName)).Block(
 		ea...,
 	))
@@ -447,13 +447,13 @@ func (as *Structure) createSliceCode(ast *Node, encodeFieldName, decodeFieldName
 	eArray = append(eArray, If( /*Op(ptrOp).*/ Id(encodeFieldName).Op("!=").Nil()).Block(
 		encCodes...,
 	).Else().Block(
-		Id("offset").Op("=").Id(idEncoder).Dot("WriteNil").Call(Id("offset")),
+		Id("offset").Op("=").Id(IdEncoder).Dot("WriteNil").Call(Id("offset")),
 	))
 
 	decCodes := make([]Code, 0)
 	decCodes = append(decCodes, ast.TypeJenChain(as.Others, Var().Id(decodeChildName)))
 	decCodes = append(decCodes, Var().Id(decodeChildLengthName).Int())
-	decCodes = append(decCodes, List(Id(decodeChildLengthName), Id("offset"), Err()).Op("=").Id(idDecoder).Dot("SliceLength").Call(Id("offset")))
+	decCodes = append(decCodes, List(Id(decodeChildLengthName), Id("offset"), Err()).Op("=").Id(IdDecoder).Dot("SliceLength").Call(Id("offset")))
 	decCodes = append(decCodes, If(Err().Op("!=").Nil()).Block(
 		Return(Lit(0), Err()),
 	))
@@ -499,7 +499,7 @@ func (as *Structure) createSliceCode(ast *Node, encodeFieldName, decodeFieldName
 		dArray = decCodes
 	} else {
 
-		dArray = append(dArray, If(Op("!").Id(idDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
+		dArray = append(dArray, If(Op("!").Id(IdDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
 			decCodes...,
 		).Else().Block(
 			Id("offset").Op("++"),
@@ -536,7 +536,7 @@ func (as *Structure) createArrayCode(ast *Node, encodeFieldName, decodeFieldName
 	)*/)
 
 	encCodes := make([]Code, 0)
-	encCodes = append(encCodes, Id("offset").Op("=").Id(idEncoder).Dot("WriteSliceLength").Call(Len( /*Op(ptrOp).*/ Id(encodeFieldName)), Id("offset"), Lit(isChildByte)))
+	encCodes = append(encCodes, Id("offset").Op("=").Id(IdEncoder).Dot("WriteSliceLength").Call(Len( /*Op(ptrOp).*/ Id(encodeFieldName)), Id("offset"), Lit(isChildByte)))
 	encCodes = append(encCodes, For(List(Id("_"), Id(encodeChildName)).Op(":=").Range(). /*Op(ptrOp).*/ Id(encodeFieldName)).Block(
 		ea...,
 	))
@@ -544,13 +544,13 @@ func (as *Structure) createArrayCode(ast *Node, encodeFieldName, decodeFieldName
 	eArray = append(eArray /*If(Op(ptrOp).Id(name).Op("!=").Nil()).*/, Block(
 		encCodes...,
 	), /*.Else().Block(
-		Id("offset").Op("=").Id(idEncoder).Dot("WriteNil").Call(Id("offset")),
+		Id("offset").Op("=").Id(IdEncoder).Dot("WriteNil").Call(Id("offset")),
 	)*/)
 
 	decCodes := make([]Code, 0)
 	decCodes = append(decCodes, ast.TypeJenChain(as.Others, Var().Id(decodeChildName)))
 	decCodes = append(decCodes, Var().Id(decodeChildName+"l").Int())
-	decCodes = append(decCodes, List(Id(decodeChildName+"l"), Id("offset"), Err()).Op("=").Id(idDecoder).Dot("SliceLength").Call(Id("offset")))
+	decCodes = append(decCodes, List(Id(decodeChildName+"l"), Id("offset"), Err()).Op("=").Id(IdDecoder).Dot("SliceLength").Call(Id("offset")))
 	decCodes = append(decCodes, If(Err().Op("!=").Nil()).Block(
 		Return(Lit(0), Err()),
 	))
@@ -598,7 +598,7 @@ func (as *Structure) createArrayCode(ast *Node, encodeFieldName, decodeFieldName
 		dArray = decCodes
 	} else {
 
-		dArray = append(dArray, If(Op("!").Id(idDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
+		dArray = append(dArray, If(Op("!").Id(IdDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
 			decCodes...,
 		).Else().Block(
 			Id("offset").Op("++"),
@@ -625,12 +625,12 @@ func (as *Structure) createBasicCode(ast *Node, encodeFieldName, decodeFieldName
 }
 
 func (as *Structure) addSizePattern1(funcName string, params ...Code) Code {
-	return Id("size").Op("+=").Id(idEncoder).Dot(funcName).Call(params...)
+	return Id("size").Op("+=").Id(IdEncoder).Dot(funcName).Call(params...)
 }
 
 func (as *Structure) addSizePattern2(funcName string, params ...Code) []Code {
 	return []Code{
-		List(Id("s"), Err()).Op(":=").Id(idEncoder).Dot(funcName).Call(params...),
+		List(Id("s"), Err()).Op(":=").Id(IdEncoder).Dot(funcName).Call(params...),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Lit(0), Err()),
 		),
@@ -640,7 +640,7 @@ func (as *Structure) addSizePattern2(funcName string, params ...Code) []Code {
 }
 
 func (as *Structure) encPattern1(funcName string, params ...Code) Code {
-	return Id("offset").Op("=").Id(idEncoder).Dot(funcName).Call(params...)
+	return Id("offset").Op("=").Id(IdEncoder).Dot(funcName).Call(params...)
 }
 
 func isRootField(name string) bool {
@@ -697,7 +697,7 @@ func (as *Structure) decodeBasicPattern(ast *Node, fieldName, offsetName, decode
 	}
 
 	codes = append(codes,
-		List(Id(recieverName), Id(offsetName), Err()).Op("=").Id(idDecoder).Dot(decoderFuncName).Call(Id(offsetName)),
+		List(Id(recieverName), Id(offsetName), Err()).Op("=").Id(IdDecoder).Dot(decoderFuncName).Call(Id(offsetName)),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Lit(0), Err()),
 		),
@@ -752,7 +752,7 @@ func (as *Structure) createNamedCode(encodeFieldName, decodeFieldName string, as
 	cArray = []Code{
 		List(Id(sizeName), Err()).
 			Op(":=").
-			Id(createFuncName("calcArraySize", ast.StructName, ast.ImportPath)).Call(Id(encodeFieldName), Id(idEncoder)),
+			Id(createFuncName("calcArraySize", ast.StructName, ast.ImportPath)).Call(Id(encodeFieldName), Id(IdEncoder)),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Lit(0), Err()),
 		),
@@ -762,7 +762,7 @@ func (as *Structure) createNamedCode(encodeFieldName, decodeFieldName string, as
 	cMap = []Code{
 		List(Id(sizeName), Err()).
 			Op(":=").
-			Id(createFuncName("calcMapSize", ast.StructName, ast.ImportPath)).Call(Id(encodeFieldName), Id(idEncoder)),
+			Id(createFuncName("calcMapSize", ast.StructName, ast.ImportPath)).Call(Id(encodeFieldName), Id(IdEncoder)),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Lit(0), Err()),
 		),
@@ -772,7 +772,7 @@ func (as *Structure) createNamedCode(encodeFieldName, decodeFieldName string, as
 	eArray = []Code{
 		List(Id("_"), Id("offset"), Err()).
 			Op("=").
-			Id(createFuncName("encodeArray", ast.StructName, ast.ImportPath)).Call(Id(encodeFieldName), Id(idEncoder), Id("offset")),
+			Id(createFuncName("encodeArray", ast.StructName, ast.ImportPath)).Call(Id(encodeFieldName), Id(IdEncoder), Id("offset")),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Nil(), Lit(0), Err()),
 		),
@@ -781,7 +781,7 @@ func (as *Structure) createNamedCode(encodeFieldName, decodeFieldName string, as
 	eMap = []Code{
 		List(Id("_"), Id("offset"), Err()).
 			Op("=").
-			Id(createFuncName("encodeMap", ast.StructName, ast.ImportPath)).Call(Id(encodeFieldName), Id(idEncoder), Id("offset")),
+			Id(createFuncName("encodeMap", ast.StructName, ast.ImportPath)).Call(Id(encodeFieldName), Id(IdEncoder), Id("offset")),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Nil(), Lit(0), Err()),
 		),
@@ -845,7 +845,7 @@ func (as *Structure) decodeNamedPattern(ast *Node, fieldName, decodeFuncName str
 	}
 
 	codes = append(codes,
-		List(Id("offset"), Err()).Op("=").Id(createFuncName(decodeFuncName, ast.StructName, ast.ImportPath)).Call(Op("&").Id(receiverName), Id(idDecoder), Id("offset")),
+		List(Id("offset"), Err()).Op("=").Id(createFuncName(decodeFuncName, ast.StructName, ast.ImportPath)).Call(Op("&").Id(receiverName), Id(IdDecoder), Id("offset")),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Lit(0), Err()),
 		),
