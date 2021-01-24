@@ -745,33 +745,9 @@ func (as *analyzedStruct) createNamedCode(encodeFieldName, decodeFieldName strin
 		),
 	}
 
-	//varName, setVarName := as.decodeVarPattern(encodeFieldName, isRoot)
-
 	dArray = append(dArray, as.decodeNamedPattern(ast, decodeFieldName, "decodeArray")...)
 	dMap = append(dMap, as.decodeNamedPattern(ast, decodeFieldName, "decodeMap")...)
 
-	//dArray = []Code{
-	//	Block(
-	//		Var().Id(varName).Qual(ast.ImportPath, ast.StructName),
-	//		List(Id("offset"), Err()).Op("=").Id(createFuncName("decodeArray", ast.StructName, ast.ImportPath)).Call(Op("&").Id(varName), Id(idDecoder), Id("offset")),
-	//		If(Err().Op("!=").Nil()).Block(
-	//			Return(Lit(0), Err()),
-	//		),
-	//		Id(setVarName).Op("=").Id(varName),
-	//	),
-	//}
-	//
-	//// dArrayと一緒
-	//dMap = []Code{
-	//	Block(
-	//		Var().Id(varName).Qual(ast.ImportPath, ast.StructName),
-	//		List(Id("offset"), Err()).Op("=").Id(createFuncName("decodeMap", ast.StructName, ast.ImportPath)).Call(Op("&").Id(varName), Id(idDecoder), Id("offset")),
-	//		If(Err().Op("!=").Nil()).Block(
-	//			Return(Lit(0), Err()),
-	//		),
-	//		Id(setVarName).Op("=").Id(varName),
-	//	),
-	//}
 	return
 }
 
@@ -803,10 +779,10 @@ func (as *analyzedStruct) decodeNamedPattern(ast *Node, fieldName, decodeFuncNam
 	}
 
 	codes := make([]Code, 0)
-	recieverName := varName
+	receiverName := varName
 
 	if ptrCount < 1 && !isParentTypeArrayOrMap {
-		codes = append(codes, ast.TypeJenChain(as.Others, Var().Id(recieverName)))
+		codes = append(codes, ast.TypeJenChain(as.Others, Var().Id(receiverName)))
 	} else if isParentTypeArrayOrMap {
 
 		for i := 0; i < ptrCount; i++ {
@@ -815,7 +791,7 @@ func (as *analyzedStruct) decodeNamedPattern(ast *Node, fieldName, decodeFuncNam
 
 			codes = append(codes, ast.TypeJenChain(as.Others, Var().Id(varName+p).Op(kome)))
 		}
-		recieverName = varName + strings.Repeat("p", ptrCount)
+		receiverName = varName + strings.Repeat("p", ptrCount)
 	} else {
 		for i := 0; i < ptrCount; i++ {
 			p := strings.Repeat("p", i)
@@ -823,11 +799,11 @@ func (as *analyzedStruct) decodeNamedPattern(ast *Node, fieldName, decodeFuncNam
 
 			codes = append(codes, ast.TypeJenChain(as.Others, Var().Id(varName+p).Op(kome)))
 		}
-		recieverName = varName + strings.Repeat("p", ptrCount-1)
+		receiverName = varName + strings.Repeat("p", ptrCount-1)
 	}
 
 	codes = append(codes,
-		List(Id("offset"), Err()).Op("=").Id(createFuncName(decodeFuncName, ast.StructName, ast.ImportPath)).Call(Op("&").Id(recieverName), Id(idDecoder), Id("offset")),
+		List(Id("offset"), Err()).Op("=").Id(createFuncName(decodeFuncName, ast.StructName, ast.ImportPath)).Call(Op("&").Id(receiverName), Id(idDecoder), Id("offset")),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Lit(0), Err()),
 		),
@@ -840,30 +816,5 @@ func (as *analyzedStruct) decodeNamedPattern(ast *Node, fieldName, decodeFuncNam
 		return codes
 	}
 
-	//for i := 0; i < ptrCount; i++ {
-	//	if i != ptrCount-1 {
-	//		tmp1 := varName + strings.Repeat("p", i)
-	//		tmp2 := varName + strings.Repeat("p", i+1)
-	//		commons = append(commons, Id(tmp2).Op("=").Op("&").Id(tmp1))
-	//	} else {
-	//		// last
-	//		tmp := varName + strings.Repeat("p", i)
-	//		commons = append(commons, Id(setVarName).Op("=").Op("&").Id(tmp))
-	//	}
-	//}
-	//if ptrCount < 1 {
-	//	commons = append(commons, Id(setVarName).Op("=").Op("").Id(varName))
-	//}
 	return []Code{Block(codes...)}
-}
-
-func (as *analyzedStruct) decodeVarPattern(fieldName string, isRoot bool) (varName string, setVarName string) {
-
-	varName = "vv"
-	setVarName = "v." + fieldName
-	if !isRoot {
-		varName = fieldName + "v"
-		setVarName = fieldName
-	}
-	return
 }
