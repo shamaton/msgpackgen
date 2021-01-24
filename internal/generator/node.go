@@ -167,6 +167,35 @@ func CreateStructNode(importPath, packageName, structName string, parent *Node) 
 	}
 }
 
+func CreateSliceNode(parent *Node) *Node {
+	return &Node{
+		fieldType: fieldTypeSlice,
+		Parent:    parent,
+	}
+}
+
+func CreateArrayNode(len uint64, parent *Node) *Node {
+	return &Node{
+		fieldType: fieldTypeArray,
+		ArrayLen:  len,
+		Parent:    parent,
+	}
+}
+
+func CreateMapNode(parent *Node) *Node {
+	return &Node{
+		fieldType: fieldTypeMap,
+		Parent:    parent,
+	}
+}
+
+func CreatePointerNode(parent *Node) *Node {
+	return &Node{
+		fieldType: fieldTypePointer,
+		Parent:    parent,
+	}
+}
+
 func (g *generator) createNodeRecursive(expr ast.Expr, parent *Node, importMap map[string]string, dotStructs map[string]*analyzedStruct, sameHierarchyStructs map[string]bool) (*Node, bool, []string) {
 
 	reasons := make([]string, 0)
@@ -204,30 +233,23 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *Node, importMap m
 	if array, ok := expr.(*ast.ArrayType); ok {
 		var node *Node
 		if array.Len == nil {
-			node = &Node{
-				fieldType: fieldTypeSlice,
-				Parent:    parent,
-			}
+			node = CreateSliceNode(parent)
 		} else {
 			lit := array.Len.(*ast.BasicLit)
 			// todo : 処理されなかった場合はエラー
 			// todo : box数値以外あればエラーでもいい
 			// parse num
 			n := new(big.Int)
-			if litValie := strings.ToLower(lit.Value); strings.HasPrefix(litValie, "0b") {
-				n.SetString(strings.ReplaceAll(litValie, "0b", ""), 2)
-			} else if strings.HasPrefix(litValie, "0o") {
-				n.SetString(strings.ReplaceAll(litValie, "0o", ""), 8)
-			} else if strings.HasPrefix(litValie, "0x") {
-				n.SetString(strings.ReplaceAll(litValie, "0x", ""), 16)
+			if litValue := strings.ToLower(lit.Value); strings.HasPrefix(litValue, "0b") {
+				n.SetString(strings.ReplaceAll(litValue, "0b", ""), 2)
+			} else if strings.HasPrefix(litValue, "0o") {
+				n.SetString(strings.ReplaceAll(litValue, "0o", ""), 8)
+			} else if strings.HasPrefix(litValue, "0x") {
+				n.SetString(strings.ReplaceAll(litValue, "0x", ""), 16)
 			} else {
-				n.SetString(litValie, 10)
+				n.SetString(litValue, 10)
 			}
-			node = &Node{
-				fieldType: fieldTypeArray,
-				ArrayLen:  n.Uint64(),
-				Parent:    parent,
-			}
+			node = CreateArrayNode(n.Uint64(), parent)
 		}
 		key, check, rs := g.createNodeRecursive(array.Elt, node, importMap, dotStructs, sameHierarchyStructs)
 		node.Key = key
@@ -237,10 +259,7 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *Node, importMap m
 
 	// map
 	if mp, ok := expr.(*ast.MapType); ok {
-		node := &Node{
-			fieldType: fieldTypeMap,
-			Parent:    parent,
-		}
+		node := CreateMapNode(parent)
 		key, c1, krs := g.createNodeRecursive(mp.Key, node, importMap, dotStructs, sameHierarchyStructs)
 		value, c2, vrs := g.createNodeRecursive(mp.Value, node, importMap, dotStructs, sameHierarchyStructs)
 		node.Key = key
@@ -252,10 +271,7 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *Node, importMap m
 
 	// *
 	if star, ok := expr.(*ast.StarExpr); ok {
-		node := &Node{
-			fieldType: fieldTypePointer,
-			Parent:    parent,
-		}
+		node := CreatePointerNode(parent)
 		key, check, rs := g.createNodeRecursive(star.X, node, importMap, dotStructs, sameHierarchyStructs)
 		node.Key = key
 		reasons = append(reasons, rs...)
