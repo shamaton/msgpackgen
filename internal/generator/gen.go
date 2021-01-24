@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/shamaton/msgpackgen/internal/generator/ptn"
+
 	. "github.com/dave/jennifer/jen"
 )
 
@@ -248,10 +250,10 @@ func (g *generator) generateCode() *File {
 	f.Comment(fmt.Sprintf("// %s registers generated resolver.\n", registerName)).
 		Func().Id(registerName).Params().Block(
 		Qual(pkTop, "SetResolver").Call(
-			Id(privateFuncNamePattern("encodeAsMap")),
-			Id(privateFuncNamePattern("encodeAsArray")),
-			Id(privateFuncNamePattern("decodeAsMap")),
-			Id(privateFuncNamePattern("decodeAsArray")),
+			Id(ptn.PrivateFuncName("encodeAsMap")),
+			Id(ptn.PrivateFuncName("encodeAsArray")),
+			Id(ptn.PrivateFuncName("decodeAsMap")),
+			Id(ptn.PrivateFuncName("decodeAsArray")),
 		),
 	)
 
@@ -295,9 +297,9 @@ func (g *generator) generateCode() *File {
 
 	g.decodeTopTemplate("decode", f).Block(
 		If(Qual(pkTop, "StructAsArray").Call()).Block(
-			Return(Id(privateFuncNamePattern("decodeAsArray")).Call(Id("data"), Id("i"))),
+			Return(Id(ptn.PrivateFuncName("decodeAsArray")).Call(Id("data"), Id("i"))),
 		).Else().Block(
-			Return(Id(privateFuncNamePattern("decodeAsMap")).Call(Id("data"), Id("i"))),
+			Return(Id(ptn.PrivateFuncName("decodeAsMap")).Call(Id("data"), Id("i"))),
 		),
 	)
 
@@ -306,9 +308,9 @@ func (g *generator) generateCode() *File {
 
 	g.encodeTopTemplate("encode", f).Block(
 		If(Qual(pkTop, "StructAsArray").Call()).Block(
-			Return(Id(privateFuncNamePattern("encodeAsArray")).Call(Id("i"))),
+			Return(Id(ptn.PrivateFuncName("encodeAsArray")).Call(Id("i"))),
 		).Else().Block(
-			Return(Id(privateFuncNamePattern("encodeAsMap")).Call(Id("i"))),
+			Return(Id(ptn.PrivateFuncName("encodeAsMap")).Call(Id("i"))),
 		),
 	)
 
@@ -356,12 +358,12 @@ func (g *generator) output(f *File, genFileName string) error {
 
 func (g *generator) decodeTopTemplate(name string, f *File) *Statement {
 	return f.Comment(fmt.Sprintf("// %s\n", name)).
-		Func().Id(privateFuncNamePattern(name)).Params(Id("data").Index().Byte(), Id("i").Interface()).Params(Bool(), Error())
+		Func().Id(ptn.PrivateFuncName(name)).Params(Id("data").Index().Byte(), Id("i").Interface()).Params(Bool(), Error())
 }
 
 func (g *generator) encodeTopTemplate(name string, f *File) *Statement {
 	return f.Comment(fmt.Sprintf("// %s\n", name)).
-		Func().Id(privateFuncNamePattern(name)).Params(Id("i").Interface()).Params(Index().Byte(), Error())
+		Func().Id(ptn.PrivateFuncName(name)).Params(Id("i").Interface()).Params(Index().Byte(), Error())
 }
 
 func (g *generator) encodeAsArrayCases() []Code {
@@ -406,7 +408,7 @@ func (g *generator) encodeAsArrayCases() []Code {
 		for i := 0; i < g.pointer-1; i++ {
 			ptr := strings.Repeat("*", i+2)
 			states = append(states, Case(caseStatement(ptr)).Block(
-				Return(Id(privateFuncNamePattern("encodeAsArray")).Call(Id("*v"))),
+				Return(Id(ptn.PrivateFuncName("encodeAsArray")).Call(Id("*v"))),
 			))
 		}
 	}
@@ -455,7 +457,7 @@ func (g *generator) encodeAsMapCases() []Code {
 		for i := 0; i < g.pointer-1; i++ {
 			ptr := strings.Repeat("*", i+2)
 			states = append(states, Case(caseStatement(ptr)).Block(
-				Return(Id(privateFuncNamePattern("encodeAsMap")).Call(Id("*v"))),
+				Return(Id(ptn.PrivateFuncName("encodeAsMap")).Call(Id("*v"))),
 			))
 		}
 	}
@@ -486,7 +488,7 @@ func (g *generator) decodeAsArrayCases() []Code {
 		for i := 0; i < g.pointer-1; i++ {
 			ptr := strings.Repeat("*", i+3)
 			states = append(states, Case(caseStatement(ptr)).Block(
-				Return(Id(privateFuncNamePattern("decodeAsArray")).Call(Id("data"), Id("*v"))),
+				Return(Id(ptn.PrivateFuncName("decodeAsArray")).Call(Id("data"), Id("*v"))),
 			))
 		}
 	}
@@ -517,7 +519,7 @@ func (g *generator) decodeAsMapCases() []Code {
 		for i := 0; i < g.pointer-1; i++ {
 			ptr := strings.Repeat("*", i+3)
 			states = append(states, Case(caseStatement(ptr)).Block(
-				Return(Id(privateFuncNamePattern("decodeAsMap")).Call(Id("data"), Id("*v"))),
+				Return(Id(ptn.PrivateFuncName("decodeAsMap")).Call(Id("data"), Id("*v"))),
 			))
 		}
 	}
@@ -549,5 +551,5 @@ func (as *Structure) decodeMapFuncName() string {
 }
 
 func createFuncName(prefix, name, packageName string) string {
-	return privateFuncNamePattern(fmt.Sprintf("%s%s_%s", prefix, name, funcIdMap[packageName]))
+	return ptn.PrivateFuncName(fmt.Sprintf("%s%s_%s", prefix, name, funcIdMap[packageName]))
 }
