@@ -149,6 +149,14 @@ func (a Node) TypeJenChain(sts []*analyzedStruct, s ...*Statement) *Statement {
 	return str
 }
 
+func (n *Node) SetKeyNode(key *Node) {
+	n.Key = key
+}
+
+func (n *Node) SetValueNode(value *Node) {
+	n.Value = value
+}
+
 func CreateIdentNode(ident *ast.Ident, parent *Node) *Node {
 	return &Node{
 		fieldType:     fieldTypeIdent,
@@ -236,8 +244,6 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *Node, importMap m
 			node = CreateSliceNode(parent)
 		} else {
 			lit := array.Len.(*ast.BasicLit)
-			// todo : 処理されなかった場合はエラー
-			// todo : box数値以外あればエラーでもいい
 			// parse num
 			n := new(big.Int)
 			if litValue := strings.ToLower(lit.Value); strings.HasPrefix(litValue, "0b") {
@@ -252,7 +258,7 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *Node, importMap m
 			node = CreateArrayNode(n.Uint64(), parent)
 		}
 		key, check, rs := g.createNodeRecursive(array.Elt, node, importMap, dotStructs, sameHierarchyStructs)
-		node.Key = key
+		node.SetKeyNode(key)
 		reasons = append(reasons, rs...)
 		return node, check, reasons
 	}
@@ -262,8 +268,8 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *Node, importMap m
 		node := CreateMapNode(parent)
 		key, c1, krs := g.createNodeRecursive(mp.Key, node, importMap, dotStructs, sameHierarchyStructs)
 		value, c2, vrs := g.createNodeRecursive(mp.Value, node, importMap, dotStructs, sameHierarchyStructs)
-		node.Key = key
-		node.Value = value
+		node.SetKeyNode(key)
+		node.SetValueNode(value)
 		reasons = append(reasons, krs...)
 		reasons = append(reasons, vrs...)
 		return node, c1 && c2, reasons
@@ -273,7 +279,7 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *Node, importMap m
 	if star, ok := expr.(*ast.StarExpr); ok {
 		node := CreatePointerNode(parent)
 		key, check, rs := g.createNodeRecursive(star.X, node, importMap, dotStructs, sameHierarchyStructs)
-		node.Key = key
+		node.SetKeyNode(key)
 		reasons = append(reasons, rs...)
 		return node, check, reasons
 	}
