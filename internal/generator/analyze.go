@@ -261,7 +261,7 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *Node, importMap m
 			return CreateStructNode(g.outputPackageFullName(), g.outputPackageName, ident.Name, parent), true, reasons
 		}
 
-		if isPrimitive(ident.Name) {
+		if IsPrimitive(ident.Name) {
 			return CreateIdentNode(ident, parent), true, reasons
 		}
 		return nil, false, []string{fmt.Sprintf("identifier %s is not suppoted or unknown struct ", ident.Name)}

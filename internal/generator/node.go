@@ -202,7 +202,7 @@ func CreatePointerNode(parent *Node) *Node {
 	}
 }
 
-func isPrimitive(name string) bool {
+func IsPrimitive(name string) bool {
 	switch name {
 	case "int", "int8", "int16", "int32", "int64":
 		return true
