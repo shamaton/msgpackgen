@@ -3,8 +3,6 @@ package generator
 import (
 	"fmt"
 	"go/ast"
-	"math/big"
-	"strings"
 
 	. "github.com/dave/jennifer/jen"
 )
@@ -202,104 +200,6 @@ func CreatePointerNode(parent *Node) *Node {
 		fieldType: fieldTypePointer,
 		Parent:    parent,
 	}
-}
-
-func (g *generator) createNodeRecursive(expr ast.Expr, parent *Node, importMap map[string]string, dotStructs map[string]*analyzedStruct, sameHierarchyStructs map[string]bool) (*Node, bool, []string) {
-
-	reasons := make([]string, 0)
-	if ident, ok := expr.(*ast.Ident); ok {
-		// dot import
-		if dot, found := dotStructs[ident.Name]; found {
-			return CreateStructNode(dot.ImportPath, dot.Name, ident.Name, parent), true, reasons
-		}
-		// time
-		if ident.Name == "Time" {
-			return CreateStructNode("time", "time", ident.Name, parent), true, reasons
-		}
-		// same hierarchy struct in same File
-		if ident.Obj != nil && ident.Obj.Kind == ast.Typ {
-			return CreateStructNode(g.outputPackageFullName(), g.outputPackageName, ident.Name, parent), true, reasons
-		}
-
-		// same hierarchy struct in other File
-		if _, found := sameHierarchyStructs[ident.Name]; found {
-			return CreateStructNode(g.outputPackageFullName(), g.outputPackageName, ident.Name, parent), true, reasons
-		}
-
-		if isPrimitive(ident.Name) {
-			return CreateIdentNode(ident, parent), true, reasons
-		}
-		return nil, false, []string{fmt.Sprintf("identifier %s is not suppoted or unknown struct ", ident.Name)}
-	}
-
-	if selector, ok := expr.(*ast.SelectorExpr); ok {
-		pkgName := fmt.Sprint(selector.X)
-		return CreateStructNode(importMap[pkgName], pkgName, selector.Sel.Name, parent), true, reasons
-	}
-
-	// slice or array
-	if array, ok := expr.(*ast.ArrayType); ok {
-		var node *Node
-		if array.Len == nil {
-			node = CreateSliceNode(parent)
-		} else {
-			lit := array.Len.(*ast.BasicLit)
-			// parse num
-			n := new(big.Int)
-			if litValue := strings.ToLower(lit.Value); strings.HasPrefix(litValue, "0b") {
-				n.SetString(strings.ReplaceAll(litValue, "0b", ""), 2)
-			} else if strings.HasPrefix(litValue, "0o") {
-				n.SetString(strings.ReplaceAll(litValue, "0o", ""), 8)
-			} else if strings.HasPrefix(litValue, "0x") {
-				n.SetString(strings.ReplaceAll(litValue, "0x", ""), 16)
-			} else {
-				n.SetString(litValue, 10)
-			}
-			node = CreateArrayNode(n.Uint64(), parent)
-		}
-		key, check, rs := g.createNodeRecursive(array.Elt, node, importMap, dotStructs, sameHierarchyStructs)
-		node.SetKeyNode(key)
-		reasons = append(reasons, rs...)
-		return node, check, reasons
-	}
-
-	// map
-	if mp, ok := expr.(*ast.MapType); ok {
-		node := CreateMapNode(parent)
-		key, c1, krs := g.createNodeRecursive(mp.Key, node, importMap, dotStructs, sameHierarchyStructs)
-		value, c2, vrs := g.createNodeRecursive(mp.Value, node, importMap, dotStructs, sameHierarchyStructs)
-		node.SetKeyNode(key)
-		node.SetValueNode(value)
-		reasons = append(reasons, krs...)
-		reasons = append(reasons, vrs...)
-		return node, c1 && c2, reasons
-	}
-
-	// *
-	if star, ok := expr.(*ast.StarExpr); ok {
-		node := CreatePointerNode(parent)
-		key, check, rs := g.createNodeRecursive(star.X, node, importMap, dotStructs, sameHierarchyStructs)
-		node.SetKeyNode(key)
-		reasons = append(reasons, rs...)
-		return node, check, reasons
-	}
-
-	// not supported
-	if _, ok := expr.(*ast.InterfaceType); ok {
-		return nil, false, []string{fmt.Sprintf("interface type is not supported")}
-	}
-	if _, ok := expr.(*ast.StructType); ok {
-		return nil, false, []string{fmt.Sprintf("inner struct is not supported")}
-	}
-	if _, ok := expr.(*ast.ChanType); ok {
-		return nil, false, []string{fmt.Sprintf("chan type is not supported")}
-	}
-	if _, ok := expr.(*ast.FuncType); ok {
-		return nil, false, []string{fmt.Sprintf("func type is not supported")}
-	}
-
-	// unreachable
-	return nil, false, []string{fmt.Sprintf("this field is unknown field")}
 }
 
 func isPrimitive(name string) bool {
