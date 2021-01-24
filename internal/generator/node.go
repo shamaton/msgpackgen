@@ -149,6 +149,16 @@ func (a Node) TypeJenChain(sts []*analyzedStruct, s ...*Statement) *Statement {
 	return str
 }
 
+func CreateStructNode(importPath, packageName, structName string, parent *Node) *Node {
+	return &Node{
+		fieldType:   fieldTypeStruct,
+		ImportPath:  importPath,
+		PackageName: packageName,
+		StructName:  structName,
+		Parent:      parent,
+	}
+}
+
 func (g *generator) createNodeRecursive(expr ast.Expr, parent *Node, importMap map[string]string, dotStructs map[string]*analyzedStruct, sameHierarchyStructs map[string]bool) (*Node, bool, []string) {
 
 	reasons := make([]string, 0)
@@ -156,44 +166,20 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *Node, importMap m
 
 		// dot import
 		if dot, found := dotStructs[i.Name]; found {
-			return &Node{
-				fieldType:   fieldTypeStruct,
-				PackageName: dot.Name,
-				StructName:  i.Name,
-				ImportPath:  dot.ImportPath,
-				Parent:      parent,
-			}, true, reasons
+			return CreateStructNode(dot.ImportPath, dot.Name, i.Name, parent), true, reasons
 		}
 		// time
 		if i.Name == "Time" {
-			return &Node{
-				fieldType:   fieldTypeStruct,
-				PackageName: "time",
-				StructName:  i.Name,
-				ImportPath:  "time",
-				Parent:      parent,
-			}, true, reasons
+			return CreateStructNode("time", "time", i.Name, parent), true, reasons
 		}
 		// same hierarchy struct in same File
 		if i.Obj != nil && i.Obj.Kind == ast.Typ {
-			return &Node{
-				fieldType:   fieldTypeStruct,
-				PackageName: g.outputPackageName,
-				StructName:  i.Name,
-				ImportPath:  g.outputPackageFullName(),
-				Parent:      parent,
-			}, true, reasons
+			return CreateStructNode(g.outputPackageFullName(), g.outputPackageName, i.Name, parent), true, reasons
 		}
 
 		// same hierarchy struct in other File
 		if _, found := sameHierarchyStructs[i.Name]; found {
-			return &Node{
-				fieldType:   fieldTypeStruct,
-				PackageName: g.outputPackageName,
-				StructName:  i.Name,
-				ImportPath:  g.outputPackageFullName(),
-				Parent:      parent,
-			}, true, reasons
+			return CreateStructNode(g.outputPackageFullName(), g.outputPackageName, i.Name, parent), true, reasons
 		}
 
 		if isPrimitive(i.Name) {
@@ -209,13 +195,7 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *Node, importMap m
 
 	if selector, ok := expr.(*ast.SelectorExpr); ok {
 		pkgName := fmt.Sprint(selector.X)
-		return &Node{
-			fieldType:   fieldTypeStruct,
-			PackageName: pkgName,
-			StructName:  selector.Sel.Name,
-			ImportPath:  importMap[pkgName],
-			Parent:      parent,
-		}, true, reasons
+		return CreateStructNode(importMap[pkgName], pkgName, selector.Sel.Name, parent), true, reasons
 	}
 
 	// slice or array
