@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	. "github.com/dave/jennifer/jen"
+	"github.com/shamaton/msgpackgen/internal/generator/ptn"
 )
 
 type Structure struct {
@@ -27,6 +28,34 @@ type Field struct {
 	Name string
 	Tag  string
 	Node *Node
+}
+
+func (as *Structure) CalcArraySizeFuncName() string {
+	return createFuncName("calcArraySize", as.Name, as.ImportPath)
+}
+
+func (as *Structure) CalcMapSizeFuncName() string {
+	return createFuncName("calcMapSize", as.Name, as.ImportPath)
+}
+
+func (as *Structure) EncodeArrayFuncName() string {
+	return createFuncName("encodeArray", as.Name, as.ImportPath)
+}
+
+func (as *Structure) EncodeMapFuncName() string {
+	return createFuncName("encodeMap", as.Name, as.ImportPath)
+}
+
+func (as *Structure) DecodeArrayFuncName() string {
+	return createFuncName("decodeArray", as.Name, as.ImportPath)
+}
+
+func (as *Structure) DecodeMapFuncName() string {
+	return createFuncName("decodeMap", as.Name, as.ImportPath)
+}
+
+func createFuncName(prefix, name, packageName string) string {
+	return ptn.PrivateFuncName(fmt.Sprintf("%s%s_%s", prefix, name, funcIdMap[packageName]))
 }
 
 func (as *Structure) CreateCode(f *File) {
@@ -108,32 +137,32 @@ func (as *Structure) CreateCode(f *File) {
 	}
 
 	f.Comment(fmt.Sprintf("// calculate size from %s.%s\n", as.ImportPath, as.Name)).
-		Func().Id(as.calcArraySizeFuncName()).Params(firstEncParam, Id(idEncoder).Op("*").Qual(pkEnc, "Encoder")).Params(Int(), Error()).Block(
+		Func().Id(as.CalcArraySizeFuncName()).Params(firstEncParam, Id(idEncoder).Op("*").Qual(pkEnc, "Encoder")).Params(Int(), Error()).Block(
 		append(calcArraySizeCodes, Return(Id("size"), Nil()))...,
 	)
 
 	f.Comment(fmt.Sprintf("// calculate size from %s.%s\n", as.ImportPath, as.Name)).
-		Func().Id(as.calcMapSizeFuncName()).Params(firstEncParam, Id(idEncoder).Op("*").Qual(pkEnc, "Encoder")).Params(Int(), Error()).Block(
+		Func().Id(as.CalcMapSizeFuncName()).Params(firstEncParam, Id(idEncoder).Op("*").Qual(pkEnc, "Encoder")).Params(Int(), Error()).Block(
 		append(calcMapSizeCodes, Return(Id("size"), Nil()))...,
 	)
 
 	f.Comment(fmt.Sprintf("// encode from %s.%s\n", as.ImportPath, as.Name)).
-		Func().Id(as.encodeArrayFuncName()).Params(firstEncParam, Id(idEncoder).Op("*").Qual(pkEnc, "Encoder"), Id("offset").Int()).Params(Index().Byte(), Int(), Error()).Block(
+		Func().Id(as.EncodeArrayFuncName()).Params(firstEncParam, Id(idEncoder).Op("*").Qual(pkEnc, "Encoder"), Id("offset").Int()).Params(Index().Byte(), Int(), Error()).Block(
 		append(encArrayCodes, Return(Id(idEncoder).Dot("EncodedBytes").Call(), Id("offset"), Err()))...,
 	)
 
 	f.Comment(fmt.Sprintf("// encode from %s.%s\n", as.ImportPath, as.Name)).
-		Func().Id(as.encodeMapFuncName()).Params(firstEncParam, Id(idEncoder).Op("*").Qual(pkEnc, "Encoder"), Id("offset").Int()).Params(Index().Byte(), Int(), Error()).Block(
+		Func().Id(as.EncodeMapFuncName()).Params(firstEncParam, Id(idEncoder).Op("*").Qual(pkEnc, "Encoder"), Id("offset").Int()).Params(Index().Byte(), Int(), Error()).Block(
 		append(encMapCodes, Return(Id(idEncoder).Dot("EncodedBytes").Call(), Id("offset"), Err()))...,
 	)
 
 	f.Comment(fmt.Sprintf("// decode to %s.%s\n", as.ImportPath, as.Name)).
-		Func().Id(as.decodeArrayFuncName()).Params(firstDecParam, Id(idDecoder).Op("*").Qual(pkDec, "Decoder"), Id("offset").Int()).Params(Int(), Error()).Block(
+		Func().Id(as.DecodeArrayFuncName()).Params(firstDecParam, Id(idDecoder).Op("*").Qual(pkDec, "Decoder"), Id("offset").Int()).Params(Int(), Error()).Block(
 		append(decArrayCodes, Return(Id("offset"), Err()))...,
 	)
 
 	f.Comment(fmt.Sprintf("// decode to %s.%s\n", as.ImportPath, as.Name)).
-		Func().Id(as.decodeMapFuncName()).Params(firstDecParam, Id(idDecoder).Op("*").Qual(pkDec, "Decoder"), Id("offset").Int()).Params(Int(), Error()).Block(
+		Func().Id(as.DecodeMapFuncName()).Params(firstDecParam, Id(idDecoder).Op("*").Qual(pkDec, "Decoder"), Id("offset").Int()).Params(Int(), Error()).Block(
 
 		append(decMapCodes, Return(Id("offset"), Err()))...,
 	)

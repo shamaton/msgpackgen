@@ -383,12 +383,12 @@ func (g *generator) encodeAsArrayCases() []Code {
 		f := func(ptr string) *Statement {
 			return Case(caseStatement(ptr)).Block(
 				Id(idEncoder).Op(":=").Qual(pkEnc, "NewEncoder").Call(),
-				List(Id("size"), Err()).Op(":=").Id(v.calcArraySizeFuncName()).Call(Id(ptr+"v"), Id(idEncoder)),
+				List(Id("size"), Err()).Op(":=").Id(v.CalcArraySizeFuncName()).Call(Id(ptr+"v"), Id(idEncoder)),
 				If(Err().Op("!=").Nil()).Block(
 					Return(Nil(), Err()),
 				),
 				Id(idEncoder).Dot("MakeBytes").Call(Id("size")),
-				List(Id("b"), Id("offset"), Err()).Op(":=").Id(v.encodeArrayFuncName()).Call(Id(ptr+"v"), Id(idEncoder), Lit(0)),
+				List(Id("b"), Id("offset"), Err()).Op(":=").Id(v.EncodeArrayFuncName()).Call(Id(ptr+"v"), Id(idEncoder), Lit(0)),
 				If(Err().Op("!=").Nil()).Block(
 					Return(Nil(), Err()),
 				),
@@ -432,12 +432,12 @@ func (g *generator) encodeAsMapCases() []Code {
 		f := func(ptr string) *Statement {
 			return Case(caseStatement(ptr)).Block(
 				Id(idEncoder).Op(":=").Qual(pkEnc, "NewEncoder").Call(),
-				List(Id("size"), Err()).Op(":=").Id(v.calcMapSizeFuncName()).Call(Id(ptr+"v"), Id(idEncoder)),
+				List(Id("size"), Err()).Op(":=").Id(v.CalcMapSizeFuncName()).Call(Id(ptr+"v"), Id(idEncoder)),
 				If(Err().Op("!=").Nil()).Block(
 					Return(Nil(), Err()),
 				),
 				Id(idEncoder).Dot("MakeBytes").Call(Id("size")),
-				List(Id("b"), Id("offset"), Err()).Op(":=").Id(v.encodeMapFuncName()).Call(Id(ptr+"v"), Id(idEncoder), Lit(0)),
+				List(Id("b"), Id("offset"), Err()).Op(":=").Id(v.EncodeMapFuncName()).Call(Id(ptr+"v"), Id(idEncoder), Lit(0)),
 				If(Err().Op("!=").Nil()).Block(
 					Return(Nil(), Err()),
 				),
@@ -476,12 +476,12 @@ func (g *generator) decodeAsArrayCases() []Code {
 		}
 
 		states = append(states, Case(caseStatement("*")).Block(
-			List(Id("_"), Err()).Op(":=").Id(v.decodeArrayFuncName()).Call(Id("v"), Qual(pkDec, "NewDecoder").Call(Id("data")), Id("0")),
+			List(Id("_"), Err()).Op(":=").Id(v.DecodeArrayFuncName()).Call(Id("v"), Qual(pkDec, "NewDecoder").Call(Id("data")), Id("0")),
 			Return(True(), Err())))
 
 		if g.pointer > 0 {
 			states = append(states, Case(caseStatement("**")).Block(
-				List(Id("_"), Err()).Op(":=").Id(v.decodeArrayFuncName()).Call(Id("*v"), Qual(pkDec, "NewDecoder").Call(Id("data")), Id("0")),
+				List(Id("_"), Err()).Op(":=").Id(v.DecodeArrayFuncName()).Call(Id("*v"), Qual(pkDec, "NewDecoder").Call(Id("data")), Id("0")),
 				Return(True(), Err())))
 		}
 
@@ -507,12 +507,12 @@ func (g *generator) decodeAsMapCases() []Code {
 		}
 
 		states = append(states, Case(caseStatement("*")).Block(
-			List(Id("_"), Err()).Op(":=").Id(v.decodeMapFuncName()).Call(Id("v"), Qual(pkDec, "NewDecoder").Call(Id("data")), Id("0")),
+			List(Id("_"), Err()).Op(":=").Id(v.DecodeMapFuncName()).Call(Id("v"), Qual(pkDec, "NewDecoder").Call(Id("data")), Id("0")),
 			Return(True(), Err())))
 
 		if g.pointer > 0 {
 			states = append(states, Case(caseStatement("**")).Block(
-				List(Id("_"), Err()).Op(":=").Id(v.decodeMapFuncName()).Call(Id("*v"), Qual(pkDec, "NewDecoder").Call(Id("data")), Id("0")),
+				List(Id("_"), Err()).Op(":=").Id(v.DecodeMapFuncName()).Call(Id("*v"), Qual(pkDec, "NewDecoder").Call(Id("data")), Id("0")),
 				Return(True(), Err())))
 		}
 
@@ -524,32 +524,4 @@ func (g *generator) decodeAsMapCases() []Code {
 		}
 	}
 	return states
-}
-
-func (as *Structure) calcArraySizeFuncName() string {
-	return createFuncName("calcArraySize", as.Name, as.ImportPath)
-}
-
-func (as *Structure) calcMapSizeFuncName() string {
-	return createFuncName("calcMapSize", as.Name, as.ImportPath)
-}
-
-func (as *Structure) encodeArrayFuncName() string {
-	return createFuncName("encodeArray", as.Name, as.ImportPath)
-}
-
-func (as *Structure) encodeMapFuncName() string {
-	return createFuncName("encodeMap", as.Name, as.ImportPath)
-}
-
-func (as *Structure) decodeArrayFuncName() string {
-	return createFuncName("decodeArray", as.Name, as.ImportPath)
-}
-
-func (as *Structure) decodeMapFuncName() string {
-	return createFuncName("decodeMap", as.Name, as.ImportPath)
-}
-
-func createFuncName(prefix, name, packageName string) string {
-	return ptn.PrivateFuncName(fmt.Sprintf("%s%s_%s", prefix, name, funcIdMap[packageName]))
 }
