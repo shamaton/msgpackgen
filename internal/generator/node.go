@@ -149,6 +149,14 @@ func (a Node) TypeJenChain(sts []*analyzedStruct, s ...*Statement) *Statement {
 	return str
 }
 
+func CreateIdentNode(ident *ast.Ident, parent *Node) *Node {
+	return &Node{
+		fieldType:     fieldTypeIdent,
+		IdenticalName: ident.Name,
+		Parent:        parent,
+	}
+}
+
 func CreateStructNode(importPath, packageName, structName string, parent *Node) *Node {
 	return &Node{
 		fieldType:   fieldTypeStruct,
@@ -162,35 +170,29 @@ func CreateStructNode(importPath, packageName, structName string, parent *Node) 
 func (g *generator) createNodeRecursive(expr ast.Expr, parent *Node, importMap map[string]string, dotStructs map[string]*analyzedStruct, sameHierarchyStructs map[string]bool) (*Node, bool, []string) {
 
 	reasons := make([]string, 0)
-	if i, ok := expr.(*ast.Ident); ok {
-
+	if ident, ok := expr.(*ast.Ident); ok {
 		// dot import
-		if dot, found := dotStructs[i.Name]; found {
-			return CreateStructNode(dot.ImportPath, dot.Name, i.Name, parent), true, reasons
+		if dot, found := dotStructs[ident.Name]; found {
+			return CreateStructNode(dot.ImportPath, dot.Name, ident.Name, parent), true, reasons
 		}
 		// time
-		if i.Name == "Time" {
-			return CreateStructNode("time", "time", i.Name, parent), true, reasons
+		if ident.Name == "Time" {
+			return CreateStructNode("time", "time", ident.Name, parent), true, reasons
 		}
 		// same hierarchy struct in same File
-		if i.Obj != nil && i.Obj.Kind == ast.Typ {
-			return CreateStructNode(g.outputPackageFullName(), g.outputPackageName, i.Name, parent), true, reasons
+		if ident.Obj != nil && ident.Obj.Kind == ast.Typ {
+			return CreateStructNode(g.outputPackageFullName(), g.outputPackageName, ident.Name, parent), true, reasons
 		}
 
 		// same hierarchy struct in other File
-		if _, found := sameHierarchyStructs[i.Name]; found {
-			return CreateStructNode(g.outputPackageFullName(), g.outputPackageName, i.Name, parent), true, reasons
+		if _, found := sameHierarchyStructs[ident.Name]; found {
+			return CreateStructNode(g.outputPackageFullName(), g.outputPackageName, ident.Name, parent), true, reasons
 		}
 
-		if isPrimitive(i.Name) {
-			return &Node{
-				fieldType:     fieldTypeIdent,
-				IdenticalName: i.Name,
-				Parent:        parent,
-			}, true, reasons
+		if isPrimitive(ident.Name) {
+			return CreateIdentNode(ident, parent), true, reasons
 		}
-
-		return nil, false, []string{fmt.Sprintf("identifier %s is not suppoted or unknown struct ", i.Name)}
+		return nil, false, []string{fmt.Sprintf("identifier %s is not suppoted or unknown struct ", ident.Name)}
 	}
 
 	if selector, ok := expr.(*ast.SelectorExpr); ok {
