@@ -2,11 +2,32 @@ package generator
 
 import (
 	"fmt"
+	"go/ast"
 	"math"
 	"strings"
 
 	. "github.com/dave/jennifer/jen"
 )
+
+type analyzedStruct struct {
+	ImportPath string
+	Package    string
+	Name       string
+	Fields     []Field
+	NoUseQual  bool
+
+	Others []*analyzedStruct
+	File   *ast.File
+
+	CanGen  bool
+	Reasons []string
+}
+
+type Field struct {
+	Name string
+	Tag  string
+	Node *Node
+}
 
 func (as *analyzedStruct) CreateCode(f *File) {
 	v := "v"
@@ -654,20 +675,6 @@ func (as *analyzedStruct) decodeBasicPattern(ast *Node, fieldName, offsetName, d
 		return codes
 	}
 
-	//for i := 0; i < ptrCount; i++ {
-	//	if i != ptrCount-1 {
-	//		tmp1 := varName + strings.Repeat("p", i)
-	//		tmp2 := varName + strings.Repeat("p", i+1)
-	//		commons = append(commons, Id(tmp2).Op("=").Op("&").Id(tmp1))
-	//	} else {
-	//		// last
-	//		tmp := varName + strings.Repeat("p", i)
-	//		commons = append(commons, Id(setVarName).Op("=").Op("&").Id(tmp))
-	//	}
-	//}
-	//if ptrCount < 1 {
-	//	commons = append(commons, Id(setVarName).Op("=").Op("").Id(varName))
-	//}
 	return []Code{Block(codes...)}
 }
 

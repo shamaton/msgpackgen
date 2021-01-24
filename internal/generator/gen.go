@@ -59,26 +59,6 @@ func (g *generator) outputPackageFullName() string {
 	return fmt.Sprintf("%s/%s", g.outputPackagePrefix, g.outputPackageName)
 }
 
-type analyzedStruct struct {
-	ImportPath string
-	Package    string
-	Name       string
-	Fields     []Field
-	NoUseQual  bool
-
-	Others []*analyzedStruct
-	File   *ast.File
-
-	CanGen  bool
-	Reasons []string
-}
-
-type Field struct {
-	Name string
-	Tag  string
-	Node *Node
-}
-
 func Run(input, out, fileName string, pointer int, strict, verbose bool) error {
 
 	_, err := os.Stat(input)
@@ -198,11 +178,6 @@ func (g *generator) getTargetFiles(dir string) ([]string, error) {
 		absPaths = append(absPaths, abs)
 	}
 	return absPaths, nil
-}
-
-// todo : 整理
-func privateFuncNamePattern(funcName string) string {
-	return fmt.Sprintf("___%s", funcName)
 }
 
 func (g *generator) filter(sts []*analyzedStruct) []*analyzedStruct {
