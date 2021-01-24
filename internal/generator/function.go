@@ -56,8 +56,12 @@ func (as *Structure) DecodeMapFuncName() string {
 }
 
 func (as *Structure) createFuncName(prefix string) string {
-	suffix := fmt.Sprintf("%x", sha256.Sum256([]byte(as.ImportPath)))
-	return ptn.PrivateFuncName(fmt.Sprintf("%s%s_%s", prefix, as.Name, suffix))
+	return createFuncName(prefix, as.Name, as.ImportPath)
+}
+
+func createFuncName(prefix, name, importPath string) string {
+	suffix := fmt.Sprintf("%x", sha256.Sum256([]byte(importPath)))
+	return ptn.PrivateFuncName(fmt.Sprintf("%s%s_%s", prefix, name, suffix))
 }
 
 func (as *Structure) CreateCode(f *File) {
