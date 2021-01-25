@@ -3,10 +3,10 @@ package generator
 import (
 	"fmt"
 	"go/ast"
-	"go/importer"
 	"go/parser"
 	"go/token"
 	"go/types"
+	"io/ioutil"
 	"math/big"
 	"path/filepath"
 	"reflect"
@@ -14,10 +14,12 @@ import (
 	"unicode"
 
 	"github.com/shamaton/msgpackgen/internal/generator/structure"
+	"golang.org/x/tools/go/gcexportdata"
 )
 
 func (g *generator) getPackages(files []string) error {
 	g.fileSet = token.NewFileSet()
+
 	for _, file := range files {
 
 		dir := filepath.Dir(file)
@@ -27,7 +29,12 @@ func (g *generator) getPackages(files []string) error {
 		}
 		prefix := paths[1]
 
-		parseFile, err := parser.ParseFile(g.fileSet, file, nil, parser.AllErrors)
+		source, err := ioutil.ReadFile(file)
+		if err != nil {
+			return err
+		}
+
+		parseFile, err := parser.ParseFile(g.fileSet, file, source, parser.AllErrors)
 		if err != nil {
 			return err
 		}
@@ -341,28 +348,29 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *structure.Node, i
 
 func (g *generator) createAnalyzedFields(packageName, structName string, analyzedFieldMap map[string]*structure.Node, fset *token.FileSet, file *ast.File) []structure.Field {
 
-	// todo : ここなにか解決策あれば
-	imp := importer.Default()
-	//_, err := imp.Import("github.com/shamaton/msgpackgen/internal/tst/tst")
-	//if err != nil {
-	//	fmt.Println("import error", err)
-	//}
+	// todo : should solve import check, but can not solve now
+	//   can not use importer.Default(). see below https://github.com/golang/go/issues/13847
 	conf := types.Config{
-		Importer: imp,
-		Error: func(err error) {
-			// fmt.Printf("!!! %#v\n", err)
-		},
+		Importer: gcexportdata.NewImporter(fset, make(map[string]*types.Package)),
+		// see : https://github.com/golang/lint/blob/master/lint.go#L267
+		Error: func(err error) {},
 	}
 
-	pkg, err := conf.Check(packageName, fset, []*ast.File{file}, nil)
+	info := &types.Info{
+		Types:  make(map[ast.Expr]types.TypeAndValue),
+		Defs:   make(map[*ast.Ident]types.Object),
+		Uses:   make(map[*ast.Ident]types.Object),
+		Scopes: make(map[ast.Node]*types.Scope),
+	}
+
+	pkg, err := conf.Check(packageName, fset, g.parseFiles, info)
 	if err != nil {
-		fmt.Println(err)
+		// Consider reporting these errors when golint operates on entire packages
+		// https://github.com/golang/lint/blob/master/lint.go#L153
 	}
 
-	// todo : FullNameとかQual使って重複を回避する必要がある
-
-	S := pkg.Scope().Lookup(structName)
-	internal := S.Type().Underlying().(*types.Struct)
+	obj := pkg.Scope().Lookup(structName)
+	internal := obj.Type().Underlying().(*types.Struct)
 
 	analyzedFields := make([]structure.Field, 0)
 	for i := 0; i < internal.NumFields(); i++ {
