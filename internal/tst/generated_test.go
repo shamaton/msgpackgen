@@ -465,8 +465,6 @@ func _checkValue(v interface{}, u1, u2 interface{}, eqs ...func() (bool, interfa
 	if err2 != nil {
 		return fmt.Errorf("marshal to b2 failed %v", err2)
 	}
-	fmt.Printf("% x\n", b1)
-	fmt.Printf("% x\n", b2)
 
 	err1, err2 = unmarshal(b1, b2, u1, u2)
 	if err1 != nil {
@@ -518,12 +516,11 @@ func TestStruct(t *testing.T) {
 	}
 
 	v = TestingStruct{}
-	v.Embedded = Embedded{Int: 1} // rand.Int()}
+	v.Embedded = Embedded{Int: rand.Int()}
 	v1, v2, err = check(v)
 	if err != nil {
 		t.Error(err)
 	}
-	t.Log(v, v1, v2)
 	if !reflect.DeepEqual(v.Embedded, v1.Embedded) || !reflect.DeepEqual(v.Embedded, v2.Embedded) {
 		t.Error("value different", v.Embedded, v1.Embedded, v2.Embedded)
 	}
@@ -532,12 +529,11 @@ func TestStruct(t *testing.T) {
 	}
 
 	v = TestingStruct{}
-	v.Emb = embedded{Int: 1} // rand.Int()}
+	v.Emb = embedded{Int: rand.Int()}
 	v1, v2, err = check(v)
 	if err != nil {
 		t.Error(err)
 	}
-	t.Log(v, v1, v2)
 	if !reflect.DeepEqual(v.Emb, v1.Emb) || !reflect.DeepEqual(v.Emb, v2.Emb) {
 		t.Error("value different", v.Emb, v1.Emb, v2.Emb)
 	}
@@ -546,12 +542,11 @@ func TestStruct(t *testing.T) {
 	}
 
 	v = TestingStruct{}
-	v.A = tst.A{Int: 1} // rand.Int()}
+	v.A = tst.A{Int: rand.Int()}
 	v1, v2, err = check(v)
 	if err != nil {
 		t.Error(err)
 	}
-	t.Log(v, v1, v2)
 	if !reflect.DeepEqual(v.A, v1.A) || !reflect.DeepEqual(v.A, v2.A) {
 		t.Error("value different", v.A, v1.A, v2.A)
 	}
@@ -560,12 +555,11 @@ func TestStruct(t *testing.T) {
 	}
 
 	v = TestingStruct{}
-	v.BB = tst2.DotImport{Int: 1} // rand.Int()}
+	v.BB = tst2.DotImport{Int: rand.Int()}
 	v1, v2, err = check(v)
 	if err != nil {
 		t.Error(err)
 	}
-	t.Log(v, v1, v2)
 	if !reflect.DeepEqual(v.BB, v1.BB) || !reflect.DeepEqual(v.BB, v2.BB) {
 		t.Error("value different", v.BB, v1.BB, v2.BB)
 	}
@@ -574,12 +568,11 @@ func TestStruct(t *testing.T) {
 	}
 
 	v = TestingStruct{}
-	v.Time = tst2.Time{Int: 1} // rand.Int()}
+	v.Time = tst2.Time{Int: rand.Int()}
 	v1, v2, err = check(v)
 	if err != nil {
 		t.Error(err)
 	}
-	t.Log(v, v1, v2)
 	if !reflect.DeepEqual(v.Time, v1.Time) || !reflect.DeepEqual(v.Time, v2.Time) {
 		t.Error("value different", v.Time, v1.Time, v2.Time)
 	}

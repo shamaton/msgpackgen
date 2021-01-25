@@ -86,6 +86,8 @@ type TestingStruct struct {
 	// dot import
 	BB DotImport
 	Time
+
+	// todo : more nest
 }
 
 type Private struct {

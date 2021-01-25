@@ -110,19 +110,34 @@ func (as *Structure) CreateCode(f *File) {
 
 		decArrayCodes = append(decArrayCodes, dArray...)
 
-		decMapCodeSwitchCases = append(decMapCodeSwitchCases, Case(Lit(field.Tag)).Block(dMap...))
-
+		decMapCodeSwitchCases = append(decMapCodeSwitchCases, Case(Lit(field.Tag)).Block(
+			append(dMap, Id("count").Op("++"))...,
+		// dMap...,
+		),
+		)
 	}
 
-	decMapCodeSwitchCases = append(decMapCodeSwitchCases, Default().Block(Id("offset").Op("=").Id(ptn.IdDecoder).Dot("JumpOffset").Call(Id("offset"))))
+	// not use jump offset
+	//decMapCodeSwitchCases = append(decMapCodeSwitchCases, Default().Block(
+	//	Id("offset").Op("=").Id(ptn.IdDecoder).Dot("JumpOffset").Call(Id("offset")),
+	//	),
+	//)
+	decMapCodeSwitchCases = append(decMapCodeSwitchCases, Default().Block(
+		Return(Lit(0), Qual("fmt", "Errorf").Call(Lit("unknown key[%s] found"), Id("s"))),
+	),
+	)
+
+	// todo : decode最終結果の読み出し長のチェックが必要
 
 	decMapCodes := make([]Code, 0)
 	decMapCodes = append(decMapCodes, List(Id("offset"), Err()).Op(":=").Id(ptn.IdDecoder).Dot("CheckStructHeader").Call(Lit(len(as.Fields)), Id("offset")))
 	decMapCodes = append(decMapCodes, If(Err().Op("!=").Nil()).Block(
 		Return(Lit(0), Err()),
 	))
-	decMapCodes = append(decMapCodes, Id("dataLen").Op(":=").Id(ptn.IdDecoder).Dot("Len").Call())
-	decMapCodes = append(decMapCodes, For(Id("offset").Op("<").Id("dataLen").Block(
+	//decMapCodes = append(decMapCodes, Id("dataLen").Op(":=").Id(ptn.IdDecoder).Dot("Len").Call())
+	//decMapCodes = append(decMapCodes, For(Id("count").Op("<").Id("dataLen").Block(
+	decMapCodes = append(decMapCodes, Id("count").Op(":=").Lit(0))
+	decMapCodes = append(decMapCodes, For(Id("count").Op("<").Lit(len(as.Fields)).Block(
 		Var().Id("s").String(),
 		List(Id("s"), Id("offset"), Err()).Op("=").Id(ptn.IdDecoder).Dot("AsString").Call(Id("offset")),
 		If(Err().Op("!=").Nil()).Block(
