@@ -64,10 +64,9 @@ type TestingTime struct {
 }
 
 type TestingTag struct {
-	Tag       int `msgpack:"my_name_is_int"`
-	Ignore    int `msgpack:"ignore"`
-	OmitEmpty int `msgpack:"omit_empty,omitempty"` // todo : omitempty
-	Omit      int `msgpack:"-"`                    // todo : -
+	Tag    int `msgpack:"tag_tag_tag_tag_tag"`
+	Ignore int `msgpack:"ignore"`
+	Omit   int `msgpack:"-"`
 }
 
 type TestingStruct struct {

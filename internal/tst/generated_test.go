@@ -585,6 +585,35 @@ func TestStruct(t *testing.T) {
 	}
 }
 
+func TestTag(t *testing.T) {
+	v := TestingTag{Tag: 1, Ignore: rand.Int(), Omit: rand.Int()}
+	b1, b2, e1, e2 := marshal(v, v)
+	if e1 != nil || e2 != nil {
+		t.Error(e1, e2)
+	}
+	if len(b1) <= 6 {
+		t.Errorf("tag does not recognize %v % x", v, b1)
+	}
+	if len(b2) != 2 {
+		t.Errorf("something wrong %v % x", v, b2)
+	}
+
+	var v1, v2 TestingTag
+	e1, e2 = unmarshal(b1, b2, &v1, &v2)
+	if e1 != nil || e2 != nil {
+		t.Error(e1, e2)
+	}
+	if v.Tag != v1.Tag || v.Tag != v2.Tag {
+		t.Errorf("not equal value %d, %d, %d", v.Tag, v1.Tag, v2.Tag)
+	}
+	if v.Ignore == v1.Ignore || v.Ignore == v2.Ignore {
+		t.Errorf("equal value %d, %d, %d", v.Ignore, v1.Ignore, v2.Ignore)
+	}
+	if v.Omit == v1.Omit || v.Omit == v2.Omit {
+		t.Errorf("equal value %d, %d, %d", v.Omit, v1.Omit, v2.Omit)
+	}
+}
+
 func TestPointer(t *testing.T) {
 
 	v := TestingValue{Int: -1, Uint: 1}

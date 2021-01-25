@@ -379,24 +379,30 @@ func (g *generator) createAnalyzedFields(packageName, structName string, analyze
 		// fmt.Println(field.Id(), field.Type(), field.IsField())
 
 		if field.IsField() && field.Exported() {
-			tagName, _ := reflect.StructTag(internal.Tag(i)).Lookup("msgpack")
-			if tagName == "ignore" {
-				continue
-			}
+			origin, _ := reflect.StructTag(internal.Tag(i)).Lookup("msgpack")
+			tags := strings.Split(origin, ",")
+
 			name := field.Id()
-			tag := name
-			if len(tagName) > 0 {
-				tag = tagName
+			tagName := name
+			ignore := false
+			for _, tag := range tags {
+				if tag == "ignore" || tag == "-" {
+					ignore = true
+				} else if len(tag) > 0 {
+					tagName = tag
+				}
 			}
 
-			//fmt.Println("hogehoge", reflect.TypeOf(field.Type()))
+			if ignore {
+				continue
+			}
 
 			// todo : type.Namedの場合、解析対象に含まれてないものがあったら、スキップする？
 			// todo : タグが重複してたら、エラー
 
 			analyzedFields = append(analyzedFields, structure.Field{
 				Name: name,
-				Tag:  tag,
+				Tag:  tagName,
 				Node: analyzedFieldMap[fmt.Sprint(i)+"@"+structName],
 			})
 		}
