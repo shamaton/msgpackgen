@@ -115,15 +115,18 @@ func (g *generator) run(input, out, fileName string) error {
 		return err
 	}
 
-	fmt.Println("=========== before ==========")
-	for _, v := range analyzedStructs {
-		fmt.Println(v.ImportPath, v.Name)
-	}
+	var reasons []string
+	analyzedStructs, reasons = g.filter(analyzedStructs, reasons)
 
-	analyzedStructs = g.filter(analyzedStructs)
-	fmt.Println("=========== after ==========")
-	for _, v := range analyzedStructs {
-		fmt.Println(v.ImportPath, v.Name)
+	if g.verbose {
+		fmt.Println("=========== generated ==========")
+		for _, v := range analyzedStructs {
+			fmt.Println(v.ImportPath, v.Name)
+		}
+		fmt.Println("=========== not generated ==========")
+		for _, s := range reasons {
+			fmt.Println(s)
+		}
 	}
 	err = g.setOthers()
 	if err != nil {
@@ -170,18 +173,18 @@ func (g *generator) getTargetFiles(dir string) ([]string, error) {
 	return absPaths, nil
 }
 
-func (g *generator) filter(sts []*structure.Structure) []*structure.Structure {
+func (g *generator) filter(sts []*structure.Structure, reasons []string) ([]*structure.Structure, []string) {
 	newStructs := make([]*structure.Structure, 0)
 	allOk := true
 	for _, v := range sts {
 		ok := true
-		var reasons []string
 
+		var rs []string
 		if v.CanGen {
 			for _, field := range v.Fields {
 				if canGen, msgs := field.Node.CanGenerate(sts); !canGen {
 					ok = false
-					reasons = append(reasons, msgs...)
+					rs = msgs
 				}
 			}
 			if ok {
@@ -189,20 +192,23 @@ func (g *generator) filter(sts []*structure.Structure) []*structure.Structure {
 			}
 		} else {
 			ok = false
-			reasons = append(reasons, v.Reasons...)
+			rs = v.Reasons
 		}
 
 		if !ok {
-			fmt.Printf("can not generate %s.%s\n", v.ImportPath, v.Name)
-			fmt.Println("reason :", strings.Join(reasons, "\n"))
+			reasons = append(reasons, fmt.Sprintf("can not generate %s.%s", v.ImportPath, v.Name))
+			reasons = append(reasons, "reason:")
+			for _, s := range rs {
+				reasons = append(reasons, "\t"+s)
+			}
 		}
 
 		allOk = allOk && ok
 	}
 	if !allOk {
-		return g.filter(newStructs)
+		return g.filter(newStructs, reasons)
 	} else {
-		return newStructs
+		return newStructs, reasons
 	}
 }
 
