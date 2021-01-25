@@ -12,10 +12,8 @@ import (
 	"testing"
 	"time"
 
-	tst2 "github.com/shamaton/msgpackgen/internal/tst/tst/tst"
-
 	"github.com/shamaton/msgpackgen/internal/tst/tst"
-
+	tst2 "github.com/shamaton/msgpackgen/internal/tst/tst/tst"
 	"github.com/shamaton/msgpackgen/msgpack"
 )
 

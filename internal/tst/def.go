@@ -7,7 +7,7 @@ import (
 	. "github.com/shamaton/msgpackgen/internal/tst/tst/tst"
 )
 
-//go:generate go run github.com/shamaton/msgpackgen -s -p 2 -v
+//go:generate go run github.com/shamaton/msgpackgen -s -p 2 -v -g resolver.msgpackgen_test.go
 
 // point
 // ドットインポートできる
