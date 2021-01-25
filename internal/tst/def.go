@@ -16,8 +16,7 @@ import (
 // ワンファイル
 // msgp以上にこうそく
 
-// todo : rename
-type ValueChecking struct {
+type TestingValue struct {
 	Int        int
 	Int8       int8
 	Int16      int16
@@ -55,12 +54,11 @@ type ValueChecking struct {
 	MapPointers map[*uint]**string
 }
 
-func (v ValueChecking) Function() int {
+func (v TestingValue) Function() int {
 	return v.Int + v.Int
 }
 
-// todo : rename
-type TimeChecking struct {
+type TestingTime struct {
 	Time        time.Time
 	TimePointer *time.Time
 }
@@ -86,8 +84,6 @@ type TestingStruct struct {
 	// dot import
 	BB DotImport
 	Time
-
-	// todo : more nest
 }
 
 type Private struct {
