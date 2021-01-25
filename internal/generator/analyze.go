@@ -207,8 +207,9 @@ func (g *generator) setFieldToStructs() {
 
 func (g *generator) setFieldToStruct(target *structure.Structure,
 	importMap map[string]string, dotStructs map[string]*structure.Structure, sameHierarchyStructs map[string]bool,
-) {
+) error {
 
+	var err error
 	analyzedFieldMap := map[string]*structure.Node{}
 	ast.Inspect(target.File, func(n ast.Node) bool {
 
@@ -238,7 +239,10 @@ func (g *generator) setFieldToStruct(target *structure.Structure,
 
 			if canGen {
 				target.CanGen = true
-				target.Fields = g.createAnalyzedFields(target.Package, target.Name, analyzedFieldMap, g.fileSet, target.File)
+				target.Fields, err = g.createAnalyzedFields(target.Package, target.Name, analyzedFieldMap, g.fileSet, target.File)
+				if err != nil {
+					return false
+				}
 			} else {
 				target.CanGen = false
 				target.Reasons = reasons
@@ -346,7 +350,7 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *structure.Node, i
 	return nil, false, []string{fmt.Sprintf("this field is unknown field")}
 }
 
-func (g *generator) createAnalyzedFields(packageName, structName string, analyzedFieldMap map[string]*structure.Node, fset *token.FileSet, file *ast.File) []structure.Field {
+func (g *generator) createAnalyzedFields(packageName, structName string, analyzedFieldMap map[string]*structure.Node, fset *token.FileSet, file *ast.File) ([]structure.Field, error) {
 
 	// todo : should solve import check, but can not solve now
 	//   can not use importer.Default(). see below https://github.com/golang/go/issues/13847
@@ -373,6 +377,7 @@ func (g *generator) createAnalyzedFields(packageName, structName string, analyze
 	internal := obj.Type().Underlying().(*types.Struct)
 
 	analyzedFields := make([]structure.Field, 0)
+	tagNameCheck := map[string]bool{}
 	for i := 0; i < internal.NumFields(); i++ {
 		field := internal.Field(i)
 
@@ -397,8 +402,10 @@ func (g *generator) createAnalyzedFields(packageName, structName string, analyze
 				continue
 			}
 
+			if _, found := tagNameCheck[tagName]; found {
+				return nil, fmt.Errorf("duplicate tags %s", tagName)
+			}
 			// todo : type.Namedの場合、解析対象に含まれてないものがあったら、スキップする？
-			// todo : タグが重複してたら、エラー
 
 			analyzedFields = append(analyzedFields, structure.Field{
 				Name: name,
@@ -409,5 +416,5 @@ func (g *generator) createAnalyzedFields(packageName, structName string, analyze
 	}
 
 	// todo : msgpackresolverとして出力
-	return analyzedFields
+	return analyzedFields, nil
 }
