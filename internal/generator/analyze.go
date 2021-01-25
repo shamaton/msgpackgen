@@ -27,7 +27,7 @@ func (g *generator) getPackages(files []string) error {
 		}
 		prefix := paths[1]
 
-		parseFile, err := parser.ParseFile(g.fileSet, file, nil, 0)
+		parseFile, err := parser.ParseFile(g.fileSet, file, nil, parser.AllErrors)
 		if err != nil {
 			return err
 		}

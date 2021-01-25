@@ -542,7 +542,7 @@ func TestStruct(t *testing.T) {
 	}
 
 	v = TestingStruct{}
-	v.A = tst.A{Int: rand.Int()}
+	v.A = tst.A{Int: rand.Int(), B: tst2.B{Int: rand.Int()}}
 	v1, v2, err = check(v)
 	if err != nil {
 		t.Error(err)
@@ -550,7 +550,13 @@ func TestStruct(t *testing.T) {
 	if !reflect.DeepEqual(v.A, v1.A) || !reflect.DeepEqual(v.A, v2.A) {
 		t.Error("value different", v.A, v1.A, v2.A)
 	}
+	if v.A.B.Int != v1.B.Int || v.B.Int != v2.A.B.Int {
+		t.Error("value something wrong", v.A.Int, v1.Int, v2.Int)
+	}
 	if v.A.Int == v1.Int || v.A.Int == v2.Int {
+		t.Error("value something wrong", v.A.Int, v1.Int, v2.Int)
+	}
+	if v.B.Int == v1.Int || v.B.Int == v2.Int {
 		t.Error("value something wrong", v.A.Int, v1.Int, v2.Int)
 	}
 

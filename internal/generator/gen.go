@@ -60,7 +60,7 @@ func Run(input, out, fileName string, pointer int, strict, verbose bool) error {
 		out = input
 	}
 
-	if pointer < 1 {
+	if pointer < 0 {
 		pointer = 1
 	}
 
@@ -351,161 +351,144 @@ func (g *generator) encodeTopTemplate(name string, f *File) *Statement {
 }
 
 func (g *generator) encodeAsArrayCases() []Code {
-	var states []Code
+	var states, pointers []Code
 	for _, v := range analyzedStructs {
-
-		var caseStatement func(string) *Statement
-		var errID *Statement
-		if v.NoUseQual {
-			caseStatement = func(op string) *Statement { return Op(op).Id(v.Name) }
-			errID = Lit(v.Name)
-		} else {
-			caseStatement = func(op string) *Statement { return Op(op).Qual(v.ImportPath, v.Name) }
-			errID = Lit(v.ImportPath + "." + v.Name)
-		}
-
-		f := func(ptr string) *Statement {
-			return Case(caseStatement(ptr)).Block(
-				Id(ptn.IdEncoder).Op(":=").Qual(ptn.PkEnc, "NewEncoder").Call(),
-				List(Id("size"), Err()).Op(":=").Id(v.CalcArraySizeFuncName()).Call(Id(ptr+"v"), Id(ptn.IdEncoder)),
-				If(Err().Op("!=").Nil()).Block(
-					Return(Nil(), Err()),
-				),
-				Id(ptn.IdEncoder).Dot("MakeBytes").Call(Id("size")),
-				List(Id("b"), Id("offset"), Err()).Op(":=").Id(v.EncodeArrayFuncName()).Call(Id(ptr+"v"), Id(ptn.IdEncoder), Lit(0)),
-				If(Err().Op("!=").Nil()).Block(
-					Return(Nil(), Err()),
-				),
-				If(Id("size").Op("!=").Id("offset")).Block(
-					Return(Nil(), Qual("fmt", "Errorf").Call(Lit("%s size / offset different %d : %d"), errID, Id("size"), Id("offset"))),
-				),
-				Return(Id("b"), Err()),
-			)
-		}
-
-		states = append(states, f(""))
-
-		if g.pointer > 0 {
-			states = append(states, f("*"))
-		}
-
-		for i := 0; i < g.pointer-1; i++ {
-			ptr := strings.Repeat("*", i+2)
-			states = append(states, Case(caseStatement(ptr)).Block(
-				Return(Id(ptn.PrivateFuncName("encodeAsArray")).Call(Id("*v"))),
-			))
-		}
+		s, p := g.encodeCaseCode(v, true)
+		states = append(states, s...)
+		pointers = append(pointers, p...)
 	}
-	return states
+	return append(states, pointers...)
 }
 
 func (g *generator) encodeAsMapCases() []Code {
-	var states []Code
+	var states, pointers []Code
 	for _, v := range analyzedStructs {
-
-		var caseStatement func(string) *Statement
-		var errID *Statement
-		if v.NoUseQual {
-			caseStatement = func(op string) *Statement { return Op(op).Id(v.Name) }
-			errID = Lit(v.Name)
-		} else {
-			caseStatement = func(op string) *Statement { return Op(op).Qual(v.ImportPath, v.Name) }
-			errID = Lit(v.ImportPath + "." + v.Name)
-		}
-
-		f := func(ptr string) *Statement {
-			return Case(caseStatement(ptr)).Block(
-				Id(ptn.IdEncoder).Op(":=").Qual(ptn.PkEnc, "NewEncoder").Call(),
-				List(Id("size"), Err()).Op(":=").Id(v.CalcMapSizeFuncName()).Call(Id(ptr+"v"), Id(ptn.IdEncoder)),
-				If(Err().Op("!=").Nil()).Block(
-					Return(Nil(), Err()),
-				),
-				Id(ptn.IdEncoder).Dot("MakeBytes").Call(Id("size")),
-				List(Id("b"), Id("offset"), Err()).Op(":=").Id(v.EncodeMapFuncName()).Call(Id(ptr+"v"), Id(ptn.IdEncoder), Lit(0)),
-				If(Err().Op("!=").Nil()).Block(
-					Return(Nil(), Err()),
-				),
-				If(Id("size").Op("!=").Id("offset")).Block(
-					Return(Nil(), Qual("fmt", "Errorf").Call(Lit("%s size / offset different %d : %d"), errID, Id("size"), Id("offset"))),
-				),
-				Return(Id("b"), Err()),
-			)
-		}
-
-		states = append(states, f(""))
-
-		if g.pointer > 0 {
-			states = append(states, f("*"))
-		}
-
-		for i := 0; i < g.pointer-1; i++ {
-			ptr := strings.Repeat("*", i+2)
-			states = append(states, Case(caseStatement(ptr)).Block(
-				Return(Id(ptn.PrivateFuncName("encodeAsMap")).Call(Id("*v"))),
-			))
-		}
+		s, p := g.encodeCaseCode(v, false)
+		states = append(states, s...)
+		pointers = append(pointers, p...)
 	}
-	return states
+	return append(states, pointers...)
+}
+
+func (g *generator) encodeCaseCode(v *structure.Structure, asArray bool) (states []Code, pointers []Code) {
+
+	var caseStatement func(string) *Statement
+	var errID *Statement
+	if v.NoUseQual {
+		caseStatement = func(op string) *Statement { return Op(op).Id(v.Name) }
+		errID = Lit(v.Name)
+	} else {
+		caseStatement = func(op string) *Statement { return Op(op).Qual(v.ImportPath, v.Name) }
+		errID = Lit(v.ImportPath + "." + v.Name)
+	}
+
+	var calcFuncName, encodeFuncName, pointerFuncName string
+	if asArray {
+		calcFuncName = v.CalcArraySizeFuncName()
+		encodeFuncName = v.EncodeArrayFuncName()
+		pointerFuncName = "encodeAsArray"
+	} else {
+		calcFuncName = v.CalcMapSizeFuncName()
+		encodeFuncName = v.EncodeMapFuncName()
+		pointerFuncName = "encodeAsMap"
+	}
+
+	f := func(ptr string) *Statement {
+		return Case(caseStatement(ptr)).Block(
+			Id(ptn.IdEncoder).Op(":=").Qual(ptn.PkEnc, "NewEncoder").Call(),
+			List(Id("size"), Err()).Op(":=").Id(calcFuncName).Call(Id(ptr+"v"), Id(ptn.IdEncoder)),
+			If(Err().Op("!=").Nil()).Block(
+				Return(Nil(), Err()),
+			),
+			Id(ptn.IdEncoder).Dot("MakeBytes").Call(Id("size")),
+			List(Id("b"), Id("offset"), Err()).Op(":=").Id(encodeFuncName).Call(Id(ptr+"v"), Id(ptn.IdEncoder), Lit(0)),
+			If(Err().Op("!=").Nil()).Block(
+				Return(Nil(), Err()),
+			),
+			If(Id("size").Op("!=").Id("offset")).Block(
+				Return(Nil(), Qual("fmt", "Errorf").Call(Lit("%s size / offset different %d : %d"), errID, Id("size"), Id("offset"))),
+			),
+			Return(Id("b"), Err()),
+		)
+	}
+
+	states = append(states, f(""))
+
+	if g.pointer > 0 {
+		states = append(states, f("*"))
+	}
+
+	for i := 0; i < g.pointer-1; i++ {
+		ptr := strings.Repeat("*", i+2)
+		pointers = append(pointers, Case(caseStatement(ptr)).Block(
+			Return(Id(ptn.PrivateFuncName(pointerFuncName)).Call(Id("*v"))),
+		))
+	}
+	return
 }
 
 func (g *generator) decodeAsArrayCases() []Code {
-	var states []Code
+	var states, pointers []Code
 	for _, v := range analyzedStructs {
-
-		var caseStatement func(string) *Statement
-		if v.NoUseQual {
-			caseStatement = func(op string) *Statement { return Op(op).Id(v.Name) }
-		} else {
-			caseStatement = func(op string) *Statement { return Op(op).Qual(v.ImportPath, v.Name) }
-		}
-
-		states = append(states, Case(caseStatement("*")).Block(
-			List(Id("_"), Err()).Op(":=").Id(v.DecodeArrayFuncName()).Call(Id("v"), Qual(ptn.PkDec, "NewDecoder").Call(Id("data")), Id("0")),
-			Return(True(), Err())))
-
-		if g.pointer > 0 {
-			states = append(states, Case(caseStatement("**")).Block(
-				List(Id("_"), Err()).Op(":=").Id(v.DecodeArrayFuncName()).Call(Id("*v"), Qual(ptn.PkDec, "NewDecoder").Call(Id("data")), Id("0")),
-				Return(True(), Err())))
-		}
-
-		for i := 0; i < g.pointer-1; i++ {
-			ptr := strings.Repeat("*", i+3)
-			states = append(states, Case(caseStatement(ptr)).Block(
-				Return(Id(ptn.PrivateFuncName("decodeAsArray")).Call(Id("data"), Id("*v"))),
-			))
-		}
+		s, p := g.decodeCaseCode(v, true)
+		states = append(states, s...)
+		pointers = append(pointers, p...)
 	}
-	return states
+	return append(states, pointers...)
 }
 
 func (g *generator) decodeAsMapCases() []Code {
-	var states []Code
+	var states, pointers []Code
 	for _, v := range analyzedStructs {
-
-		var caseStatement func(string) *Statement
-		if v.NoUseQual {
-			caseStatement = func(op string) *Statement { return Op(op).Id(v.Name) }
-		} else {
-			caseStatement = func(op string) *Statement { return Op(op).Qual(v.ImportPath, v.Name) }
-		}
-
-		states = append(states, Case(caseStatement("*")).Block(
-			List(Id("_"), Err()).Op(":=").Id(v.DecodeMapFuncName()).Call(Id("v"), Qual(ptn.PkDec, "NewDecoder").Call(Id("data")), Id("0")),
-			Return(True(), Err())))
-
-		if g.pointer > 0 {
-			states = append(states, Case(caseStatement("**")).Block(
-				List(Id("_"), Err()).Op(":=").Id(v.DecodeMapFuncName()).Call(Id("*v"), Qual(ptn.PkDec, "NewDecoder").Call(Id("data")), Id("0")),
-				Return(True(), Err())))
-		}
-
-		for i := 0; i < g.pointer-1; i++ {
-			ptr := strings.Repeat("*", i+3)
-			states = append(states, Case(caseStatement(ptr)).Block(
-				Return(Id(ptn.PrivateFuncName("decodeAsMap")).Call(Id("data"), Id("*v"))),
-			))
-		}
+		s, p := g.decodeCaseCode(v, false)
+		states = append(states, s...)
+		pointers = append(pointers, p...)
 	}
-	return states
+	return append(states, pointers...)
+}
+
+func (g *generator) decodeCaseCode(v *structure.Structure, asArray bool) (states []Code, pointers []Code) {
+
+	var caseStatement func(string) *Statement
+	if v.NoUseQual {
+		caseStatement = func(op string) *Statement { return Op(op).Id(v.Name) }
+	} else {
+		caseStatement = func(op string) *Statement { return Op(op).Qual(v.ImportPath, v.Name) }
+	}
+
+	var decodeFuncName, pointerFuncName string
+	if asArray {
+		decodeFuncName = v.DecodeArrayFuncName()
+		pointerFuncName = "decodeAsArray"
+	} else {
+
+		decodeFuncName = v.DecodeMapFuncName()
+		pointerFuncName = "decodeAsMap"
+	}
+
+	states = append(states, Case(caseStatement("*")).Block(
+		Id(ptn.IdDecoder).Op(":=").Qual(ptn.PkDec, "NewDecoder").Call(Id("data")),
+		List(Id("offset"), Err()).Op(":=").Id(decodeFuncName).Call(Id("v"), Id(ptn.IdDecoder), Id("0")),
+		If(Err().Op("==").Nil().Op("&&").Id("offset").Op("!=").Id(ptn.IdDecoder).Dot("Len").Call()).Block(
+			Return(True(), Qual("fmt", "Errorf").Call(Lit("read length is different [%d] [%d] "), Id("offset"), Id(ptn.IdDecoder).Dot("Len").Call())),
+		),
+		Return(True(), Err())))
+
+	if g.pointer > 0 {
+		states = append(states, Case(caseStatement("**")).Block(
+			Id(ptn.IdDecoder).Op(":=").Qual(ptn.PkDec, "NewDecoder").Call(Id("data")),
+			List(Id("offset"), Err()).Op(":=").Id(decodeFuncName).Call(Id("*v"), Id(ptn.IdDecoder), Id("0")),
+			If(Err().Op("==").Nil().Op("&&").Id("offset").Op("!=").Id(ptn.IdDecoder).Dot("Len").Call()).Block(
+				Return(True(), Qual("fmt", "Errorf").Call(Lit("read length is different [%d] [%d] "), Id("offset"), Id(ptn.IdDecoder).Dot("Len").Call())),
+			),
+			Return(True(), Err())))
+	}
+
+	for i := 0; i < g.pointer-1; i++ {
+		ptr := strings.Repeat("*", i+3)
+		pointers = append(pointers, Case(caseStatement(ptr)).Block(
+			Return(Id(ptn.PrivateFuncName(pointerFuncName)).Call(Id("data"), Id("*v"))),
+		))
+	}
+	return
 }

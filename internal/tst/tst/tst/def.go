@@ -1,5 +1,9 @@
 package tst
 
+type B struct {
+	Int int
+}
+
 type DotImport struct {
 	Int int
 }
