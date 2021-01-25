@@ -12,6 +12,10 @@ import (
 	"testing"
 	"time"
 
+	tst2 "github.com/shamaton/msgpackgen/internal/tst/tst/tst"
+
+	"github.com/shamaton/msgpackgen/internal/tst/tst"
+
 	"github.com/shamaton/msgpackgen/msgpack"
 )
 
@@ -336,7 +340,9 @@ func TestPointerValue(t *testing.T) {
 }
 
 func TestTime(t *testing.T) {
-	v := TimeChecking{Time: time.Now()}
+	now := time.Now()
+	add := now.Add(1 * time.Minute)
+	v := TimeChecking{Time: time.Now(), TimePointer: &add}
 	b, err := msgpack.Encode(v)
 	if err != nil {
 		t.Error(err)
@@ -347,6 +353,9 @@ func TestTime(t *testing.T) {
 		t.Error(err)
 	}
 	if v.Time.UnixNano() != _v.Time.UnixNano() {
+		t.Errorf("time different %v, %v", v.Time, _v.Time)
+	}
+	if v.TimePointer.UnixNano() != _v.TimePointer.UnixNano() {
 		t.Errorf("time different %v, %v", v.Time, _v.Time)
 	}
 
@@ -361,6 +370,9 @@ func TestTime(t *testing.T) {
 		t.Error(err)
 	}
 	if vv.Time.UnixNano() != _vv.Time.UnixNano() {
+		t.Errorf("time different %v, %v", vv.Time, _vv.Time)
+	}
+	if vv.TimePointer != nil || _vv.TimePointer != nil {
 		t.Errorf("time different %v, %v", vv.Time, _vv.Time)
 	}
 }
@@ -453,6 +465,8 @@ func _checkValue(v interface{}, u1, u2 interface{}, eqs ...func() (bool, interfa
 	if err2 != nil {
 		return fmt.Errorf("marshal to b2 failed %v", err2)
 	}
+	fmt.Printf("% x\n", b1)
+	fmt.Printf("% x\n", b2)
 
 	err1, err2 = unmarshal(b1, b2, u1, u2)
 	if err1 != nil {
@@ -478,6 +492,100 @@ func _checkValue(v interface{}, u1, u2 interface{}, eqs ...func() (bool, interfa
 		}
 	}
 	return nil
+}
+
+func TestStruct(t *testing.T) {
+	check := func(v TestingStruct) (TestingStruct, TestingStruct, error) {
+		f := func() (bool, interface{}, interface{}) {
+			return true, nil, nil
+		}
+		var r1, r2 TestingStruct
+		err := _checkValue(v, &r1, &r2, f, f)
+		return r1, r2, err
+	}
+
+	v := TestingStruct{}
+	v.Int = rand.Int()
+	v1, v2, err := check(v)
+	if err != nil {
+		t.Error(err)
+	}
+	if v.Int != v1.Int || v.Int != v2.Int {
+		t.Error("value different", v.Int, v1.Int, v2.Int)
+	}
+	if v.Int == v1.Emb.Int || v.Int == v2.Embedded.Int {
+		t.Error("value something wrong", v.Int, v1.Emb.Int, v2.Embedded.Int)
+	}
+
+	v = TestingStruct{}
+	v.Embedded = Embedded{Int: 1} // rand.Int()}
+	v1, v2, err = check(v)
+	if err != nil {
+		t.Error(err)
+	}
+	t.Log(v, v1, v2)
+	if !reflect.DeepEqual(v.Embedded, v1.Embedded) || !reflect.DeepEqual(v.Embedded, v2.Embedded) {
+		t.Error("value different", v.Embedded, v1.Embedded, v2.Embedded)
+	}
+	if v.Embedded.Int == v1.Int || v.Embedded.Int == v2.Emb.Int {
+		t.Error("value something wrong", v.Embedded.Int, v1.Int, v2.Emb.Int)
+	}
+
+	v = TestingStruct{}
+	v.Emb = embedded{Int: 1} // rand.Int()}
+	v1, v2, err = check(v)
+	if err != nil {
+		t.Error(err)
+	}
+	t.Log(v, v1, v2)
+	if !reflect.DeepEqual(v.Emb, v1.Emb) || !reflect.DeepEqual(v.Emb, v2.Emb) {
+		t.Error("value different", v.Emb, v1.Emb, v2.Emb)
+	}
+	if v.Emb.Int == v1.Int || v.Emb.Int == v2.Embedded.Int {
+		t.Error("value something wrong", v.Emb.Int, v1.Int, v2.Embedded.Int)
+	}
+
+	v = TestingStruct{}
+	v.A = tst.A{Int: 1} // rand.Int()}
+	v1, v2, err = check(v)
+	if err != nil {
+		t.Error(err)
+	}
+	t.Log(v, v1, v2)
+	if !reflect.DeepEqual(v.A, v1.A) || !reflect.DeepEqual(v.A, v2.A) {
+		t.Error("value different", v.A, v1.A, v2.A)
+	}
+	if v.A.Int == v1.Int || v.A.Int == v2.Int {
+		t.Error("value something wrong", v.A.Int, v1.Int, v2.Int)
+	}
+
+	v = TestingStruct{}
+	v.BB = tst2.DotImport{Int: 1} // rand.Int()}
+	v1, v2, err = check(v)
+	if err != nil {
+		t.Error(err)
+	}
+	t.Log(v, v1, v2)
+	if !reflect.DeepEqual(v.BB, v1.BB) || !reflect.DeepEqual(v.BB, v2.BB) {
+		t.Error("value different", v.BB, v1.BB, v2.BB)
+	}
+	if v.BB.Int == v1.Int || v.BB.Int == v2.Int {
+		t.Error("value something wrong", v.BB.Int, v1.Int, v2.Int)
+	}
+
+	v = TestingStruct{}
+	v.Time = tst2.Time{Int: 1} // rand.Int()}
+	v1, v2, err = check(v)
+	if err != nil {
+		t.Error(err)
+	}
+	t.Log(v, v1, v2)
+	if !reflect.DeepEqual(v.Time, v1.Time) || !reflect.DeepEqual(v.Time, v2.Time) {
+		t.Error("value different", v.Time, v1.Time, v2.Time)
+	}
+	if v.Time.Int == v1.Int || v.Time.Int == v2.Int {
+		t.Error("value something wrong", v.Time.Int, v1.Int, v2.Int)
+	}
 }
 
 func TestPointer(t *testing.T) {

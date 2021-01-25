@@ -12,6 +12,8 @@ import (
 	"reflect"
 	"strings"
 	"unicode"
+
+	"github.com/shamaton/msgpackgen/internal/generator/structure"
 )
 
 func (g *generator) getPackages(files []string) error {
@@ -94,7 +96,7 @@ func (g *generator) createAnalyzedStructs(parseFile *ast.File, packageName, impo
 
 	importMap, dotImports := g.createImportMap(parseFile)
 	// dot imports
-	dotStructs := map[string]*Structure{}
+	dotStructs := map[string]*structure.Structure{}
 	for _, dotImport := range dotImports {
 		pfs, ok := g.fullPackage2ParseFiles[dotImport]
 		if !ok {
@@ -139,9 +141,9 @@ func (g *generator) createAnalyzedStructs(parseFile *ast.File, packageName, impo
 		return true
 	})
 
-	structs := make([]*Structure, len(structNames))
+	structs := make([]*structure.Structure, len(structNames))
 	for i, structName := range structNames {
-		structs[i] = &Structure{
+		structs[i] = &structure.Structure{
 			ImportPath: importPath,
 			Package:    packageName,
 			Name:       structName,
@@ -196,11 +198,11 @@ func (g *generator) setFieldToStructs() {
 	}
 }
 
-func (g *generator) setFieldToStruct(target *Structure,
-	importMap map[string]string, dotStructs map[string]*Structure, sameHierarchyStructs map[string]bool,
+func (g *generator) setFieldToStruct(target *structure.Structure,
+	importMap map[string]string, dotStructs map[string]*structure.Structure, sameHierarchyStructs map[string]bool,
 ) {
 
-	analyzedFieldMap := map[string]*Node{}
+	analyzedFieldMap := map[string]*structure.Node{}
 	ast.Inspect(target.File, func(n ast.Node) bool {
 
 		x, ok := n.(*ast.TypeSpec)
@@ -239,44 +241,44 @@ func (g *generator) setFieldToStruct(target *Structure,
 	})
 
 }
-func (g *generator) createNodeRecursive(expr ast.Expr, parent *Node, importMap map[string]string, dotStructs map[string]*Structure, sameHierarchyStructs map[string]bool) (*Node, bool, []string) {
+func (g *generator) createNodeRecursive(expr ast.Expr, parent *structure.Node, importMap map[string]string, dotStructs map[string]*structure.Structure, sameHierarchyStructs map[string]bool) (*structure.Node, bool, []string) {
 
 	reasons := make([]string, 0)
 	if ident, ok := expr.(*ast.Ident); ok {
 		// dot import
 		if dot, found := dotStructs[ident.Name]; found {
-			return CreateStructNode(dot.ImportPath, dot.Name, ident.Name, parent), true, reasons
+			return structure.CreateStructNode(dot.ImportPath, dot.Name, ident.Name, parent), true, reasons
 		}
 		// time
 		if ident.Name == "Time" {
-			return CreateStructNode("time", "time", ident.Name, parent), true, reasons
+			return structure.CreateStructNode("time", "time", ident.Name, parent), true, reasons
 		}
 		// same hierarchy struct in same File
 		if ident.Obj != nil && ident.Obj.Kind == ast.Typ {
-			return CreateStructNode(g.outputPackageFullName(), g.outputPackageName, ident.Name, parent), true, reasons
+			return structure.CreateStructNode(g.outputPackageFullName(), g.outputPackageName, ident.Name, parent), true, reasons
 		}
 
 		// same hierarchy struct in other File
 		if _, found := sameHierarchyStructs[ident.Name]; found {
-			return CreateStructNode(g.outputPackageFullName(), g.outputPackageName, ident.Name, parent), true, reasons
+			return structure.CreateStructNode(g.outputPackageFullName(), g.outputPackageName, ident.Name, parent), true, reasons
 		}
 
-		if IsPrimitive(ident.Name) {
-			return CreateIdentNode(ident, parent), true, reasons
+		if structure.IsPrimitive(ident.Name) {
+			return structure.CreateIdentNode(ident, parent), true, reasons
 		}
 		return nil, false, []string{fmt.Sprintf("identifier %s is not suppoted or unknown struct ", ident.Name)}
 	}
 
 	if selector, ok := expr.(*ast.SelectorExpr); ok {
 		pkgName := fmt.Sprint(selector.X)
-		return CreateStructNode(importMap[pkgName], pkgName, selector.Sel.Name, parent), true, reasons
+		return structure.CreateStructNode(importMap[pkgName], pkgName, selector.Sel.Name, parent), true, reasons
 	}
 
 	// slice or array
 	if array, ok := expr.(*ast.ArrayType); ok {
-		var node *Node
+		var node *structure.Node
 		if array.Len == nil {
-			node = CreateSliceNode(parent)
+			node = structure.CreateSliceNode(parent)
 		} else {
 			lit := array.Len.(*ast.BasicLit)
 			// parse num
@@ -290,7 +292,7 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *Node, importMap m
 			} else {
 				n.SetString(litValue, 10)
 			}
-			node = CreateArrayNode(n.Uint64(), parent)
+			node = structure.CreateArrayNode(n.Uint64(), parent)
 		}
 		key, check, rs := g.createNodeRecursive(array.Elt, node, importMap, dotStructs, sameHierarchyStructs)
 		node.SetKeyNode(key)
@@ -300,7 +302,7 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *Node, importMap m
 
 	// map
 	if mp, ok := expr.(*ast.MapType); ok {
-		node := CreateMapNode(parent)
+		node := structure.CreateMapNode(parent)
 		key, c1, krs := g.createNodeRecursive(mp.Key, node, importMap, dotStructs, sameHierarchyStructs)
 		value, c2, vrs := g.createNodeRecursive(mp.Value, node, importMap, dotStructs, sameHierarchyStructs)
 		node.SetKeyNode(key)
@@ -312,7 +314,7 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *Node, importMap m
 
 	// *
 	if star, ok := expr.(*ast.StarExpr); ok {
-		node := CreatePointerNode(parent)
+		node := structure.CreatePointerNode(parent)
 		key, check, rs := g.createNodeRecursive(star.X, node, importMap, dotStructs, sameHierarchyStructs)
 		node.SetKeyNode(key)
 		reasons = append(reasons, rs...)
@@ -337,7 +339,7 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *Node, importMap m
 	return nil, false, []string{fmt.Sprintf("this field is unknown field")}
 }
 
-func (g *generator) createAnalyzedFields(packageName, structName string, analyzedFieldMap map[string]*Node, fset *token.FileSet, file *ast.File) []Field {
+func (g *generator) createAnalyzedFields(packageName, structName string, analyzedFieldMap map[string]*structure.Node, fset *token.FileSet, file *ast.File) []structure.Field {
 
 	// todo : ここなにか解決策あれば
 	imp := importer.Default()
@@ -362,7 +364,7 @@ func (g *generator) createAnalyzedFields(packageName, structName string, analyze
 	S := pkg.Scope().Lookup(structName)
 	internal := S.Type().Underlying().(*types.Struct)
 
-	analyzedFields := make([]Field, 0)
+	analyzedFields := make([]structure.Field, 0)
 	for i := 0; i < internal.NumFields(); i++ {
 		field := internal.Field(i)
 
@@ -384,7 +386,7 @@ func (g *generator) createAnalyzedFields(packageName, structName string, analyze
 			// todo : type.Namedの場合、解析対象に含まれてないものがあったら、スキップする？
 			// todo : タグが重複してたら、エラー
 
-			analyzedFields = append(analyzedFields, Field{
+			analyzedFields = append(analyzedFields, structure.Field{
 				Name: name,
 				Tag:  tag,
 				Node: analyzedFieldMap[fmt.Sprint(i)+"@"+structName],

@@ -16,10 +16,7 @@ import (
 // ワンファイル
 // msgp以上にこうそく
 
-type S struct {
-	Time **time.Time
-}
-
+// todo : rename
 type ValueChecking struct {
 	Int        int
 	Int8       int8
@@ -62,19 +59,21 @@ func (v ValueChecking) Function() int {
 	return v.Int + v.Int
 }
 
+// todo : rename
 type TimeChecking struct {
-	Time time.Time
+	Time        time.Time
+	TimePointer *time.Time
 }
 
-type A struct {
-	Int int
-
-	// tag
-	Int2      int `msgpack:"my_name_is_int"`
+type TestingTag struct {
+	Tag       int `msgpack:"my_name_is_int"`
 	Ignore    int `msgpack:"ignore"`
 	OmitEmpty int `msgpack:"omit_empty,omitempty"` // todo : omitempty
 	Omit      int `msgpack:"-"`                    // todo : -
+}
 
+type TestingStruct struct {
+	Int int
 	// embedded
 	Embedded
 	Emb embedded
@@ -86,13 +85,7 @@ type A struct {
 
 	// dot import
 	BB DotImport
-	*Time
-}
-
-type B struct {
-	C struct {
-		Int int
-	}
+	Time
 }
 
 type Private struct {
@@ -120,16 +113,23 @@ type NotGenerated4 struct {
 }
 
 type NotGenerated5 struct {
+	InnerStruct struct {
+		Int int
+	}
+	Int int
+}
+
+type NotGenerated6 struct {
 	Func func() int
 	Int  int
 }
 
-type NotGenerated6 struct {
+type NotGenerated7 struct {
 	Child other.NotGeneratedChild
 	Int   int
 }
 
-type NotGenerated7 struct {
+type NotGenerated8 struct {
 	Child other.NotGeneratedChild // todo : outside struct
 	Int   int
 }

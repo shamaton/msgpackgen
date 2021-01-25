@@ -1,4 +1,4 @@
-package generator
+package ptn
 
 const (
 	PkTop = "github.com/shamaton/msgpackgen/msgpack"
