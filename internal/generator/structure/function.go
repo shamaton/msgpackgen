@@ -362,26 +362,14 @@ func (as *Structure) createMapCode(ast *Node, encodeFieldName, decodeFieldName s
 		da...,
 	))
 
-	// todo : 不要なコードがあるはず
-	ptrOp := ""
-	andOp := ""
-	prtCount := 0
-	node := ast
-	for {
-		if node.HasParent() && node.Parent.IsPointer() {
-			ptrOp += "*"
-			andOp += "&"
-			prtCount++
-			node = node.Parent
-		} else {
-			break
-		}
-	}
-
 	name := decodeChildValue
+	andOp := ""
+	prtCount, _ := ast.GetPointerInfo()
+
 	if prtCount > 0 {
 		andOp = "&"
 	}
+
 	for i := 0; i < prtCount-1; i++ {
 		n := "_" + name
 		decCodes = append(decCodes, Id(n).Op(":=").Op("&").Id(name))
@@ -560,23 +548,9 @@ func (as *Structure) createArrayCode(ast *Node, encodeFieldName, decodeFieldName
 		da...,
 	))
 
-	// todo : 不要なコードがあるはず
-	ptrOp := ""
-	andOp := ""
-	prtCount := 0
-	node := ast
-	for {
-		if node.HasParent() && node.Parent.IsPointer() {
-			ptrOp += "*"
-			andOp += "&"
-			prtCount++
-			node = node.Parent
-		} else {
-			break
-		}
-	}
-
 	name := decodeChildName
+	andOp := ""
+	prtCount, _ := ast.GetPointerInfo()
 	if prtCount > 0 {
 		andOp = "&"
 	}
@@ -638,10 +612,6 @@ func (as *Structure) encPattern1(funcName string, params ...Code) Code {
 	return Id("offset").Op("=").Id(ptn.IdEncoder).Dot(funcName).Call(params...)
 }
 
-func isRootField(name string) bool {
-	return strings.Contains(name, ".")
-}
-
 func (as *Structure) decodeBasicPattern(ast *Node, fieldName, offsetName, decoderFuncName string) []Code {
 
 	varName := fieldName + "v"
@@ -649,25 +619,7 @@ func (as *Structure) decodeBasicPattern(ast *Node, fieldName, offsetName, decode
 		varName = "vv"
 	}
 
-	node := ast
-	ptrCount := 0
-	isParentTypeArrayOrMap := false
-
-	for {
-		if node.HasParent() {
-			node = node.Parent
-			if node.IsPointer() {
-				ptrCount++
-			} else if node.IsSlice() || node.IsArray() || node.IsMap() {
-				isParentTypeArrayOrMap = true
-				break
-			} else {
-				// todo : error or empty
-			}
-		} else {
-			break
-		}
-	}
+	ptrCount, isParentTypeArrayOrMap := ast.GetPointerInfo()
 
 	codes := make([]Code, 0)
 	receiverName := varName
@@ -678,15 +630,15 @@ func (as *Structure) decodeBasicPattern(ast *Node, fieldName, offsetName, decode
 
 		for i := 0; i < ptrCount; i++ {
 			p := strings.Repeat("p", i+1)
-			kome := strings.Repeat("*", ptrCount-1-i)
-			codes = append(codes, ast.TypeJenChain(as.Others, Var().Id(varName+p).Op(kome)))
+			ptr := strings.Repeat("*", ptrCount-1-i)
+			codes = append(codes, ast.TypeJenChain(as.Others, Var().Id(varName+p).Op(ptr)))
 		}
 		receiverName = varName + strings.Repeat("p", ptrCount)
 	} else {
 		for i := 0; i < ptrCount; i++ {
 			p := strings.Repeat("p", i)
-			kome := strings.Repeat("*", ptrCount-1-i)
-			codes = append(codes, ast.TypeJenChain(as.Others, Var().Id(varName+p).Op(kome)))
+			ptr := strings.Repeat("*", ptrCount-1-i)
+			codes = append(codes, ast.TypeJenChain(as.Others, Var().Id(varName+p).Op(ptr)))
 		}
 		receiverName = varName + strings.Repeat("p", ptrCount-1)
 	}
@@ -795,25 +747,7 @@ func (as *Structure) decodeNamedPattern(ast *Node, fieldName, decodeFuncName str
 		varName = "vv"
 	}
 
-	node := ast
-	ptrCount := 0
-	isParentTypeArrayOrMap := false
-
-	for {
-		if node.HasParent() {
-			node = node.Parent
-			if node.IsPointer() {
-				ptrCount++
-			} else if node.IsSlice() || node.IsArray() || node.IsMap() {
-				isParentTypeArrayOrMap = true
-				break
-			} else {
-				// todo : error or empty
-			}
-		} else {
-			break
-		}
-	}
+	ptrCount, isParentTypeArrayOrMap := ast.GetPointerInfo()
 
 	codes := make([]Code, 0)
 	receiverName := varName
@@ -824,17 +758,17 @@ func (as *Structure) decodeNamedPattern(ast *Node, fieldName, decodeFuncName str
 
 		for i := 0; i < ptrCount; i++ {
 			p := strings.Repeat("p", i+1)
-			kome := strings.Repeat("*", ptrCount-1-i)
+			ptr := strings.Repeat("*", ptrCount-1-i)
 
-			codes = append(codes, ast.TypeJenChain(as.Others, Var().Id(varName+p).Op(kome)))
+			codes = append(codes, ast.TypeJenChain(as.Others, Var().Id(varName+p).Op(ptr)))
 		}
 		receiverName = varName + strings.Repeat("p", ptrCount)
 	} else {
 		for i := 0; i < ptrCount; i++ {
 			p := strings.Repeat("p", i)
-			kome := strings.Repeat("*", ptrCount-1-i)
+			ptr := strings.Repeat("*", ptrCount-1-i)
 
-			codes = append(codes, ast.TypeJenChain(as.Others, Var().Id(varName+p).Op(kome)))
+			codes = append(codes, ast.TypeJenChain(as.Others, Var().Id(varName+p).Op(ptr)))
 		}
 		receiverName = varName + strings.Repeat("p", ptrCount-1)
 	}
@@ -854,4 +788,8 @@ func (as *Structure) decodeNamedPattern(ast *Node, fieldName, decodeFuncName str
 	}
 
 	return []Code{Block(codes...)}
+}
+
+func isRootField(name string) bool {
+	return strings.Contains(name, ".")
 }

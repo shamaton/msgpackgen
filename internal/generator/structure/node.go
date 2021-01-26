@@ -53,6 +53,22 @@ func (n Node) IsParentPointer() bool { return n.HasParent() && n.Parent.IsPointe
 func (n *Node) SetKeyNode(key *Node)     { n.Key = key }
 func (n *Node) SetValueNode(value *Node) { n.Value = value }
 
+func (n *Node) GetPointerInfo() (ptrCount int, isParentTypeArrayOrMap bool) {
+	node := n
+	for node.HasParent() {
+		node = node.Parent
+		if node.IsPointer() {
+			// pointer
+			ptrCount++
+		} else {
+			// slice / array / map
+			isParentTypeArrayOrMap = true
+			break
+		}
+	}
+	return
+}
+
 func (n Node) CanGenerate(sts []*Structure) (bool, []string) {
 	messages := make([]string, 0)
 	switch {
