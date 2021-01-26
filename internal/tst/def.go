@@ -76,6 +76,7 @@ type TestingStruct struct {
 	Emb embedded
 	// todo : same file struct
 	// todo : other file struct
+	// todo : recursive struct
 
 	// package name
 	other.A

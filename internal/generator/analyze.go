@@ -56,8 +56,10 @@ func (g *generator) getPackages(files []string) error {
 			g.outputPackageName = packageName
 			g.noUserQualMap[prefix] = true
 		} else if packageName == "main" {
-			// todo : verbose
-			// todo : 下の処理なくてもいいか
+			if g.verbose {
+				// todo : 動作確認
+				fmt.Println("skipping other main package ", file)
+			}
 			continue
 		}
 
@@ -232,7 +234,7 @@ func (g *generator) setFieldToStruct(target *structure.Structure,
 
 				key := fmt.Sprint(i)
 
-				value, ok, rs := g.createNodeRecursive(field.Type, nil, importMap, dotStructs, sameHierarchyStructs)
+				value, ok, rs := g.createNodeRecursive(field.Type, nil, importMap, dotStructs, sameHierarchyStructs, target.ImportPath, target.Package)
 				canGen = canGen && ok
 				if ok {
 					analyzedFieldMap[key+"@"+x.Name.String()] = value
@@ -255,7 +257,9 @@ func (g *generator) setFieldToStruct(target *structure.Structure,
 	})
 	return
 }
-func (g *generator) createNodeRecursive(expr ast.Expr, parent *structure.Node, importMap map[string]string, dotStructs map[string]*structure.Structure, sameHierarchyStructs map[string]bool) (*structure.Node, bool, []string) {
+func (g *generator) createNodeRecursive(expr ast.Expr, parent *structure.Node,
+	importMap map[string]string, dotStructs map[string]*structure.Structure, sameHierarchyStructs map[string]bool,
+	importPath, packageName string) (*structure.Node, bool, []string) {
 
 	reasons := make([]string, 0)
 	if ident, ok := expr.(*ast.Ident); ok {
@@ -267,14 +271,15 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *structure.Node, i
 		if ident.Name == "Time" {
 			return structure.CreateStructNode("time", "time", ident.Name, parent), true, reasons
 		}
-		// same hierarchy struct in same File
+		// same hierarchy struct
+		// todo : いらないかもしれない
 		if ident.Obj != nil && ident.Obj.Kind == ast.Typ {
-			return structure.CreateStructNode(g.outputPackageFullName(), g.outputPackageName, ident.Name, parent), true, reasons
+			return structure.CreateStructNode(importPath, packageName, ident.Name, parent), true, reasons
 		}
 
-		// same hierarchy struct in other File
+		// same hierarchy struct
 		if _, found := sameHierarchyStructs[ident.Name]; found {
-			return structure.CreateStructNode(g.outputPackageFullName(), g.outputPackageName, ident.Name, parent), true, reasons
+			return structure.CreateStructNode(importPath, packageName, ident.Name, parent), true, reasons
 		}
 
 		if structure.IsPrimitive(ident.Name) {
@@ -309,7 +314,7 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *structure.Node, i
 			}
 			node = structure.CreateArrayNode(n.Uint64(), parent)
 		}
-		key, check, rs := g.createNodeRecursive(array.Elt, node, importMap, dotStructs, sameHierarchyStructs)
+		key, check, rs := g.createNodeRecursive(array.Elt, node, importMap, dotStructs, sameHierarchyStructs, importPath, packageName)
 		node.SetKeyNode(key)
 		reasons = append(reasons, rs...)
 		return node, check, reasons
@@ -318,8 +323,8 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *structure.Node, i
 	// map
 	if mp, ok := expr.(*ast.MapType); ok {
 		node := structure.CreateMapNode(parent)
-		key, c1, krs := g.createNodeRecursive(mp.Key, node, importMap, dotStructs, sameHierarchyStructs)
-		value, c2, vrs := g.createNodeRecursive(mp.Value, node, importMap, dotStructs, sameHierarchyStructs)
+		key, c1, krs := g.createNodeRecursive(mp.Key, node, importMap, dotStructs, sameHierarchyStructs, importPath, packageName)
+		value, c2, vrs := g.createNodeRecursive(mp.Value, node, importMap, dotStructs, sameHierarchyStructs, importPath, packageName)
 		node.SetKeyNode(key)
 		node.SetValueNode(value)
 		reasons = append(reasons, krs...)
@@ -330,7 +335,7 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *structure.Node, i
 	// *
 	if star, ok := expr.(*ast.StarExpr); ok {
 		node := structure.CreatePointerNode(parent)
-		key, check, rs := g.createNodeRecursive(star.X, node, importMap, dotStructs, sameHierarchyStructs)
+		key, check, rs := g.createNodeRecursive(star.X, node, importMap, dotStructs, sameHierarchyStructs, importPath, packageName)
 		node.SetKeyNode(key)
 		reasons = append(reasons, rs...)
 		return node, check, reasons
@@ -371,7 +376,7 @@ func (g *generator) createAnalyzedFields(packageName, structName string, analyze
 		Scopes: make(map[ast.Node]*types.Scope),
 	}
 
-	pkg, err := conf.Check(packageName, fset, g.parseFiles, info)
+	pkg, err := conf.Check(packageName, fset, []*ast.File{file}, info)
 	if err != nil {
 		// Consider reporting these errors when golint operates on entire packages
 		// https://github.com/golang/lint/blob/master/lint.go#L153

@@ -93,8 +93,6 @@ func (g *generator) run(input, out, fileName string) error {
 	}
 	g.outputPackageName = paths[1]
 
-	// todo : ファイル指定オプション
-
 	targets, err := g.getTargetFiles(input)
 	if err != nil {
 		return err
@@ -211,7 +209,12 @@ func (g *generator) filter(sts []*structure.Structure, reasons []string) ([]*str
 }
 
 func (g *generator) setOthers() error {
+
 	for i := range analyzedStructs {
+		// todo : 整理
+		analyzedStructs[i].Others = analyzedStructs
+		continue
+
 		others := make([]*structure.Structure, len(analyzedStructs)-1)
 		index := 0
 		for _, v := range analyzedStructs {

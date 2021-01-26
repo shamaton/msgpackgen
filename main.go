@@ -21,6 +21,8 @@ const (
 	defaultPointerLevel = 1
 )
 
+//go:generate go run github.com/shamaton/msgpackgen -v
+
 func main() {
 
 	flag.StringVar(&input, "i", ".", "input directory")
