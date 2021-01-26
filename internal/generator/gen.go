@@ -323,7 +323,7 @@ func (g *generator) output(f *File, genFileName string) error {
 	}
 
 	path := g.outputDir + "/" + genFileName
-	file, err := os.Create(filepath.Clean(path))
+	file, err := os.Create(filepath.FromSlash(path))
 	if err != nil {
 		return err
 	}

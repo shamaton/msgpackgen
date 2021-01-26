@@ -449,23 +449,9 @@ func (as *Structure) createSliceCode(ast *Node, encodeFieldName, decodeFieldName
 		da...,
 	))
 
-	// todo : 不要なコードがあるはず
-	ptrOp := ""
-	andOp := ""
-	prtCount := 0
-	node := ast
-	for {
-		if node.HasParent() && node.Parent.IsPointer() {
-			ptrOp += "*"
-			andOp += "&"
-			prtCount++
-			node = node.Parent
-		} else {
-			break
-		}
-	}
-
 	name := decodeChildName
+	andOp := ""
+	prtCount, _ := ast.GetPointerInfo()
 	if prtCount > 0 {
 		andOp = "&"
 	}
