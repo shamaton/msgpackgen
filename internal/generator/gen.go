@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	. "github.com/dave/jennifer/jen"
@@ -323,12 +322,7 @@ func (g *generator) output(f *File, genFileName string) error {
 		return err
 	}
 
-	slash := "/"
-	if runtime.GOOS == "windows" {
-		slash = "\\"
-	}
-
-	path := g.outputDir + slash + genFileName
+	path := g.outputDir + string(filepath.Separator) + genFileName
 	file, err := os.Create(filepath.FromSlash(path))
 	if err != nil {
 		return err
