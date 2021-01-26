@@ -127,8 +127,6 @@ func (as *Structure) CreateCode(f *File) {
 	),
 	)
 
-	// todo : decode最終結果の読み出し長のチェックが必要
-
 	decMapCodes := make([]Code, 0)
 	decMapCodes = append(decMapCodes, List(Id("offset"), Err()).Op(":=").Id(ptn.IdDecoder).Dot("CheckStructHeader").Call(Lit(len(as.Fields)), Id("offset")))
 	decMapCodes = append(decMapCodes, If(Err().Op("!=").Nil()).Block(
@@ -242,21 +240,8 @@ func (as *Structure) createFieldCode(ast *Node, encodeFieldName, decodeFieldName
 
 	case ast.IsStruct():
 
-		ptrOp := ""
-		node := ast
-		for {
-			if node.HasParent() && node.Parent.IsPointer() {
-				ptrOp += "*"
-				node = node.Parent
-			} else {
-				break
-			}
-		}
-
-		fieldValue := Id(encodeFieldName)
-
-		// todo : ポインタでの動作検証
 		if ast.ImportPath == "time" {
+			fieldValue := Id(encodeFieldName)
 			cArray = append(cArray, as.addSizePattern1("CalcTime", fieldValue))
 			eArray = append(eArray, as.encPattern1("WriteTime", fieldValue, Id("offset")))
 
@@ -266,13 +251,8 @@ func (as *Structure) createFieldCode(ast *Node, encodeFieldName, decodeFieldName
 			dArray = append(dArray, as.decodeBasicPattern(ast, decodeFieldName, "offset", "AsDateTime")...)
 			dMap = append(dMap, as.decodeBasicPattern(ast, decodeFieldName, "offset", "AsDateTime")...)
 		} else {
-			// todo : 対象のパッケージかどうかをちゃんと判断する
 			cArray, cMap, eArray, eMap, dArray, dMap = as.createNamedCode(encodeFieldName, decodeFieldName, ast)
 		}
-
-	default:
-		// todo : error
-
 	}
 
 	return cArray, cMap, eArray, eMap, dArray, dMap, err
@@ -306,8 +286,8 @@ func (as *Structure) createPointerCode(ast *Node, encodeFieldName, decodeFieldNa
 	))
 
 	// todo : ようかくにん、重複コードをスキップ
-	isParentPointer := ast.HasParent() && ast.Parent.IsPointer()
-	if isParentPointer {
+	// todo : 関数として切り出し
+	if ast.IsParentPointer() {
 		dArray = da
 	} else {
 		dArray = make([]Code, 0)
@@ -690,10 +670,10 @@ func (as *Structure) decodeBasicPattern(ast *Node, fieldName, offsetName, decode
 	}
 
 	codes := make([]Code, 0)
-	recieverName := varName
+	receiverName := varName
 
 	if ptrCount < 1 && !isParentTypeArrayOrMap {
-		codes = append(codes, ast.TypeJenChain(as.Others, Var().Id(recieverName)))
+		codes = append(codes, ast.TypeJenChain(as.Others, Var().Id(receiverName)))
 	} else if isParentTypeArrayOrMap {
 
 		for i := 0; i < ptrCount; i++ {
@@ -701,18 +681,18 @@ func (as *Structure) decodeBasicPattern(ast *Node, fieldName, offsetName, decode
 			kome := strings.Repeat("*", ptrCount-1-i)
 			codes = append(codes, ast.TypeJenChain(as.Others, Var().Id(varName+p).Op(kome)))
 		}
-		recieverName = varName + strings.Repeat("p", ptrCount)
+		receiverName = varName + strings.Repeat("p", ptrCount)
 	} else {
 		for i := 0; i < ptrCount; i++ {
 			p := strings.Repeat("p", i)
 			kome := strings.Repeat("*", ptrCount-1-i)
 			codes = append(codes, ast.TypeJenChain(as.Others, Var().Id(varName+p).Op(kome)))
 		}
-		recieverName = varName + strings.Repeat("p", ptrCount-1)
+		receiverName = varName + strings.Repeat("p", ptrCount-1)
 	}
 
 	codes = append(codes,
-		List(Id(recieverName), Id(offsetName), Err()).Op("=").Id(ptn.IdDecoder).Dot(decoderFuncName).Call(Id(offsetName)),
+		List(Id(receiverName), Id(offsetName), Err()).Op("=").Id(ptn.IdDecoder).Dot(decoderFuncName).Call(Id(offsetName)),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Lit(0), Err()),
 		),

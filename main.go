@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"log"
 
 	"github.com/shamaton/msgpackgen/internal/generator"
 )
@@ -32,7 +33,7 @@ func main() {
 
 	err := generator.Run(input, output, filename, pointer, strict, verbose)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 }

@@ -16,8 +16,6 @@ import (
 
 var analyzedStructs []*structure.Structure
 
-// todo : tagをmapのcaseに使いつつ、変数に代入するようにしないといけない
-
 // todo : ドットインポートのコンフリクトチェック
 
 // todo : complexのext値を変更できるようにする

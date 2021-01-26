@@ -95,8 +95,8 @@ func (g *generator) analyze() error {
 			return err
 		}
 	}
-	g.setFieldToStructs()
-	return nil
+
+	return g.setFieldToStructs()
 }
 
 func (g *generator) createAnalyzedStructs(parseFile *ast.File, packageName, importPath string, analyzedMap map[*ast.File]bool) error {
@@ -188,7 +188,7 @@ func (g *generator) createImportMap(parseFile *ast.File) (map[string]string, []s
 	return importMap, dotImports
 }
 
-func (g *generator) setFieldToStructs() {
+func (g *generator) setFieldToStructs() error {
 	for _, analyzedStruct := range analyzedStructs {
 
 		importMap := g.parseFile2ImportMap[analyzedStruct.File]
@@ -201,15 +201,18 @@ func (g *generator) setFieldToStructs() {
 			}
 		}
 
-		g.setFieldToStruct(analyzedStruct, importMap, dotStructs, sameHierarchyStructs)
+		err := g.setFieldToStruct(analyzedStruct, importMap, dotStructs, sameHierarchyStructs)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func (g *generator) setFieldToStruct(target *structure.Structure,
 	importMap map[string]string, dotStructs map[string]*structure.Structure, sameHierarchyStructs map[string]bool,
-) error {
+) (err error) {
 
-	var err error
 	analyzedFieldMap := map[string]*structure.Node{}
 	ast.Inspect(target.File, func(n ast.Node) bool {
 
@@ -250,7 +253,7 @@ func (g *generator) setFieldToStruct(target *structure.Structure,
 		}
 		return true
 	})
-
+	return
 }
 func (g *generator) createNodeRecursive(expr ast.Expr, parent *structure.Node, importMap map[string]string, dotStructs map[string]*structure.Structure, sameHierarchyStructs map[string]bool) (*structure.Node, bool, []string) {
 
@@ -280,6 +283,7 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *structure.Node, i
 		return nil, false, []string{fmt.Sprintf("identifier %s is not suppoted or unknown struct ", ident.Name)}
 	}
 
+	// struct
 	if selector, ok := expr.(*ast.SelectorExpr); ok {
 		pkgName := fmt.Sprint(selector.X)
 		return structure.CreateStructNode(importMap[pkgName], pkgName, selector.Sel.Name, parent), true, reasons
@@ -403,9 +407,9 @@ func (g *generator) createAnalyzedFields(packageName, structName string, analyze
 			}
 
 			if _, found := tagNameCheck[tagName]; found {
-				return nil, fmt.Errorf("duplicate tags %s", tagName)
+				return nil, fmt.Errorf("duplicate tags %s.%s %s", packageName, structName, tagName)
 			}
-			// todo : type.Namedの場合、解析対象に含まれてないものがあったら、スキップする？
+			tagNameCheck[tagName] = true
 
 			analyzedFields = append(analyzedFields, structure.Field{
 				Name: name,
@@ -415,6 +419,5 @@ func (g *generator) createAnalyzedFields(packageName, structName string, analyze
 		}
 	}
 
-	// todo : msgpackresolverとして出力
 	return analyzedFields, nil
 }

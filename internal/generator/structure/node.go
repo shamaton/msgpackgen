@@ -37,59 +37,60 @@ type Node struct {
 	Parent *Node
 }
 
-func (a Node) HasParent() bool { return a.Parent != nil }
+func (n Node) Elm() *Node               { return n.Key }
+func (n Node) KeyValue() (*Node, *Node) { return n.Key, n.Value }
 
-func (a Node) IsIdentical() bool { return a.fieldType == fieldTypeIdent }
-func (a Node) IsSlice() bool     { return a.fieldType == fieldTypeSlice }
-func (a Node) IsArray() bool     { return a.fieldType == fieldTypeArray }
-func (a Node) IsStruct() bool    { return a.fieldType == fieldTypeStruct }
-func (a Node) IsMap() bool       { return a.fieldType == fieldTypeMap }
+func (n Node) IsIdentical() bool { return n.fieldType == fieldTypeIdent }
+func (n Node) IsSlice() bool     { return n.fieldType == fieldTypeSlice }
+func (n Node) IsArray() bool     { return n.fieldType == fieldTypeArray }
+func (n Node) IsStruct() bool    { return n.fieldType == fieldTypeStruct }
+func (n Node) IsMap() bool       { return n.fieldType == fieldTypeMap }
+func (n Node) IsPointer() bool   { return n.fieldType == fieldTypePointer }
 
-func (a Node) IsPointer() bool { return a.fieldType == fieldTypePointer }
+func (n Node) HasParent() bool       { return n.Parent != nil }
+func (n Node) IsParentPointer() bool { return n.HasParent() && n.Parent.IsPointer() }
 
-func (a Node) Elm() *Node { return a.Key }
-func (a Node) KeyValue() (*Node, *Node) {
-	return a.Key, a.Value
-}
+func (n *Node) SetKeyNode(key *Node)     { n.Key = key }
+func (n *Node) SetValueNode(value *Node) { n.Value = value }
 
-func (a Node) CanGenerate(sts []*Structure) (bool, []string) {
+func (n Node) CanGenerate(sts []*Structure) (bool, []string) {
 	messages := make([]string, 0)
 	switch {
-	case a.IsIdentical():
+	case n.IsIdentical():
 		return true, messages
 
-	case a.IsStruct():
-		if a.ImportPath == "time" && a.StructName == "Time" {
+	case n.IsStruct():
+		if n.ImportPath == "time" && n.StructName == "Time" {
 			return true, messages
 		}
 		for _, v := range sts {
-			if v.ImportPath == a.ImportPath && v.Name == a.StructName {
+			if v.ImportPath == n.ImportPath && v.Name == n.StructName {
 				return true, messages
 			}
 		}
-		return false, append(messages, fmt.Sprintf("struct %s.%s is not generated.", a.ImportPath, a.StructName))
+		return false, append(messages, fmt.Sprintf("struct %s.%s is not generated.", n.ImportPath, n.StructName))
 
-	case a.IsSlice():
-		return a.Elm().CanGenerate(sts)
+	case n.IsSlice():
+		return n.Elm().CanGenerate(sts)
 
-	case a.IsArray():
-		return a.Elm().CanGenerate(sts)
+	case n.IsArray():
+		return n.Elm().CanGenerate(sts)
 
-	case a.IsMap():
-		k, v := a.KeyValue()
+	case n.IsMap():
+		k, v := n.KeyValue()
 		kb, kMessages := k.CanGenerate(sts)
 		vb, vMessages := v.CanGenerate(sts)
 		messages = append(messages, kMessages...)
 		messages = append(messages, vMessages...)
 		return kb && vb, messages
 
-	case a.IsPointer():
-		return a.Elm().CanGenerate(sts)
+	case n.IsPointer():
+		return n.Elm().CanGenerate(sts)
 	}
 	return false, append(messages, "unreachable code")
 }
 
-func (a Node) TypeJenChain(sts []*Structure, s ...*Statement) *Statement {
+func (n Node) TypeJenChain(sts []*Structure, s ...*Statement) *Statement {
 	var str *Statement
 	if len(s) > 0 {
 		str = s[0]
@@ -98,61 +99,53 @@ func (a Node) TypeJenChain(sts []*Structure, s ...*Statement) *Statement {
 	}
 
 	switch {
-	case a.IsIdentical():
-		str = str.Id(a.IdenticalName)
+	case n.IsIdentical():
+		str = str.Id(n.IdenticalName)
 
-	case a.IsStruct():
-		if a.ImportPath == "time" && a.StructName == "Time" {
-			str = str.Qual(a.ImportPath, a.StructName)
+	case n.IsStruct():
+		if n.ImportPath == "time" && n.StructName == "Time" {
+			str = str.Qual(n.ImportPath, n.StructName)
 		} else {
 			// todo : performance
 			var asRef *Structure
 			for _, v := range sts {
-				if v.ImportPath == a.ImportPath && v.Name == a.StructName {
+				if v.ImportPath == n.ImportPath && v.Name == n.StructName {
 					asRef = v
 					break
 				}
 			}
 			if asRef == nil {
 				// unreachable
-				panic(fmt.Sprintf("not found struct %s.%s", a.ImportPath, a.StructName))
+				panic(fmt.Sprintf("not found struct %s.%s", n.ImportPath, n.StructName))
 			}
 
 			if asRef.NoUseQual {
-				str = str.Id(a.StructName)
+				str = str.Id(n.StructName)
 			} else {
-				str = str.Qual(a.ImportPath, a.StructName)
+				str = str.Qual(n.ImportPath, n.StructName)
 			}
 		}
 
-	case a.IsSlice():
+	case n.IsSlice():
 		str = str.Id("[]")
-		str = a.Elm().TypeJenChain(sts, str)
+		str = n.Elm().TypeJenChain(sts, str)
 
-	case a.IsArray():
-		str = str.Id(fmt.Sprintf("[%d]", a.ArrayLen))
-		str = a.Elm().TypeJenChain(sts, str)
+	case n.IsArray():
+		str = str.Id(fmt.Sprintf("[%d]", n.ArrayLen))
+		str = n.Elm().TypeJenChain(sts, str)
 
-	case a.IsMap():
+	case n.IsMap():
 		str = str.Id("map[")
-		k, v := a.KeyValue()
+		k, v := n.KeyValue()
 		str = k.TypeJenChain(sts, str)
 		str = str.Id("]")
 		str = v.TypeJenChain(sts, str)
 
-	case a.IsPointer():
+	case n.IsPointer():
 		str = str.Id("*")
-		str = a.Elm().TypeJenChain(sts, str)
+		str = n.Elm().TypeJenChain(sts, str)
 	}
 	return str
-}
-
-func (n *Node) SetKeyNode(key *Node) {
-	n.Key = key
-}
-
-func (n *Node) SetValueNode(value *Node) {
-	n.Value = value
 }
 
 func CreateIdentNode(ident *ast.Ident, parent *Node) *Node {
