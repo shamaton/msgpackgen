@@ -322,8 +322,8 @@ func (g *generator) output(f *File, genFileName string) error {
 		return err
 	}
 
-	fileName := g.outputDir + "/" + genFileName
-	file, err := os.Create(fileName)
+	path := g.outputDir + "/" + genFileName
+	file, err := os.Create(filepath.Clean(path))
 	if err != nil {
 		return err
 	}
@@ -340,7 +340,7 @@ func (g *generator) output(f *File, genFileName string) error {
 	}
 
 	if g.verbose {
-		fmt.Println(fileName, "generated.")
+		fmt.Println(path, "generated.")
 	} else {
 		fmt.Println(genFileName, "generated.")
 	}
