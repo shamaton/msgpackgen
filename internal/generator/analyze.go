@@ -356,7 +356,7 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *structure.Node,
 	}
 
 	// unreachable
-	return nil, false, []string{fmt.Sprintf("this field is unknown field")}
+	return nil, false, []string{"this field is unknown field"}
 }
 
 func (g *generator) createAnalyzedFields(packageName, structName string, analyzedFieldMap map[string]*structure.Node, fset *token.FileSet, file *ast.File) ([]structure.Field, error) {
