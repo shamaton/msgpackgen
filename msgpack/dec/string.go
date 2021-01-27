@@ -10,10 +10,6 @@ import (
 var emptyString = ""
 var emptyBytes = []byte{}
 
-func (d *Decoder) isCodeString(code byte) bool {
-	return d.isFixString(code) || code == def.Str8 || code == def.Str16 || code == def.Str32
-}
-
 func (d *Decoder) isFixString(v byte) bool {
 	return def.FixStr <= v && v <= def.FixStr+0x1f
 }
@@ -22,7 +18,7 @@ func (d *Decoder) StringByteLength(offset int) (int, int, error) {
 	code := d.data[offset]
 	offset++
 
-	if def.FixStr <= code && code <= def.FixStr+0x1f {
+	if d.isFixString(code) {
 		l := int(code - def.FixStr)
 		return l, offset, nil
 	} else if code == def.Str8 {
