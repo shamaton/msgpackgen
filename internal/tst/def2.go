@@ -1,9 +1,5 @@
 package tst
 
-type embedded struct {
-	Int int
-}
-
-type Embedded struct {
+type Outside struct {
 	Int int
 }

@@ -509,34 +509,34 @@ func TestStruct(t *testing.T) {
 	if v.Int != v1.Int || v.Int != v2.Int {
 		t.Error("value different", v.Int, v1.Int, v2.Int)
 	}
-	if v.Int == v1.Emb.Int || v.Int == v2.Embedded.Int {
-		t.Error("value something wrong", v.Int, v1.Emb.Int, v2.Embedded.Int)
+	if v.Int == v1.Inside.Int || v.Int == v2.Outside.Int {
+		t.Error("value something wrong", v.Int, v1.Inside.Int, v2.Outside.Int)
 	}
 
 	v = TestingStruct{}
-	v.Embedded = Embedded{Int: rand.Int()}
+	v.Inside = Inside{Int: rand.Int()}
 	v1, v2, err = check(v)
 	if err != nil {
 		t.Error(err)
 	}
-	if !reflect.DeepEqual(v.Embedded, v1.Embedded) || !reflect.DeepEqual(v.Embedded, v2.Embedded) {
-		t.Error("value different", v.Embedded, v1.Embedded, v2.Embedded)
+	if !reflect.DeepEqual(v.Inside, v1.Inside) || !reflect.DeepEqual(v.Inside, v2.Inside) {
+		t.Error("value different", v.Inside, v1.Inside, v2.Inside)
 	}
-	if v.Embedded.Int == v1.Int || v.Embedded.Int == v2.Emb.Int {
-		t.Error("value something wrong", v.Embedded.Int, v1.Int, v2.Emb.Int)
+	if v.Inside.Int == v1.Int || v.Inside.Int == v2.Outside.Int {
+		t.Error("value something wrong", v.Inside.Int, v1.Int, v2.Outside.Int)
 	}
 
 	v = TestingStruct{}
-	v.Emb = embedded{Int: rand.Int()}
+	v.Outside = Outside{Int: rand.Int()}
 	v1, v2, err = check(v)
 	if err != nil {
 		t.Error(err)
 	}
-	if !reflect.DeepEqual(v.Emb, v1.Emb) || !reflect.DeepEqual(v.Emb, v2.Emb) {
-		t.Error("value different", v.Emb, v1.Emb, v2.Emb)
+	if !reflect.DeepEqual(v.Outside, v1.Outside) || !reflect.DeepEqual(v.Outside, v2.Outside) {
+		t.Error("value different", v.Outside, v1.Outside, v2.Outside)
 	}
-	if v.Emb.Int == v1.Int || v.Emb.Int == v2.Embedded.Int {
-		t.Error("value something wrong", v.Emb.Int, v1.Int, v2.Embedded.Int)
+	if v.Outside.Int == v1.Int || v.Outside.Int == v2.Inside.Int {
+		t.Error("value something wrong", v.Outside.Int, v1.Int, v2.Inside.Int)
 	}
 
 	v = TestingStruct{}
@@ -582,6 +582,26 @@ func TestStruct(t *testing.T) {
 	}
 	if v.Time.Int == v1.Int || v.Time.Int == v2.Int {
 		t.Error("value something wrong", v.Time.Int, v1.Int, v2.Int)
+	}
+
+	v = TestingStruct{}
+	v.R = &Recursive{Int: rand.Int()}
+	v.R.R = &Recursive{Int: rand.Int()}
+	v1, v2, err = check(v)
+	if err != nil {
+		t.Error(err)
+	}
+	if !reflect.DeepEqual(v.R, v1.R) || !reflect.DeepEqual(v.R, v2.R) {
+		t.Error("value different", v.R, v1.R, v2.R)
+	}
+	if v.R.Int != v1.R.Int || v.R.Int != v2.R.Int {
+		t.Error("value different", v.R.Int, v1.R.Int, v2.R.Int)
+	}
+	if v.R.R.Int != v1.R.R.Int || v.R.R.Int != v2.R.R.Int {
+		t.Error("value different", v.R.R.Int, v1.R.R.Int, v2.R.R.Int)
+	}
+	if v.R.R.R != nil || v1.R.R.R != nil || v2.R.R.R != nil {
+		t.Error("value different", v.R.R.R, v1.R.R.R, v2.R.R.R)
 	}
 }
 
@@ -718,7 +738,7 @@ func TestNotGenerated(t *testing.T) {
 }
 
 func TestPrivate(t *testing.T) {
-	v := Private{}
+	v := Private{i: rand.Int()}
 	b1, b2, err1, err2 := marshal(v, v)
 	if err1 != nil || err2 != nil {
 		t.Errorf("somthing wrong %v, %v", err1, err2)

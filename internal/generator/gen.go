@@ -14,6 +14,7 @@ import (
 	"github.com/shamaton/msgpackgen/internal/generator/structure"
 )
 
+// todo : 名称修正
 var analyzedStructs []*structure.Structure
 
 // todo : ドットインポートのコンフリクトチェック
@@ -124,10 +125,7 @@ func (g *generator) run(input, out, fileName string) error {
 			fmt.Println(s)
 		}
 	}
-	err = g.setOthers()
-	if err != nil {
-		return err
-	}
+	g.setOthers()
 	f := g.generateCode()
 
 	err = g.output(f, fileName)
@@ -208,27 +206,10 @@ func (g *generator) filter(sts []*structure.Structure, reasons []string) ([]*str
 	}
 }
 
-func (g *generator) setOthers() error {
-
+func (g *generator) setOthers() {
 	for i := range analyzedStructs {
-		// todo : 整理
 		analyzedStructs[i].Others = analyzedStructs
-		continue
-
-		others := make([]*structure.Structure, len(analyzedStructs)-1)
-		index := 0
-		for _, v := range analyzedStructs {
-			if v.ImportPath != analyzedStructs[i].ImportPath || v.Name != analyzedStructs[i].Name {
-				others[index] = v
-				index++
-			}
-		}
-		if index != len(others) {
-			return fmt.Errorf("other package should be %d. but result is %d", len(others), index)
-		}
-		analyzedStructs[i].Others = others
 	}
-	return nil
 }
 
 func (g *generator) generateCode() *File {
@@ -308,7 +289,6 @@ func (g *generator) generateCode() *File {
 	g.decodeTopTemplate("decodeAsArray", f).Block(decodeAsArrayCode...)
 	g.decodeTopTemplate("decodeAsMap", f).Block(decodeAsMapCode...)
 
-	// todo : 名称修正
 	for _, st := range analyzedStructs {
 		st.CreateCode(f)
 	}

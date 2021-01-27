@@ -72,11 +72,8 @@ type TestingTag struct {
 type TestingStruct struct {
 	Int int
 	// embedded
-	Embedded
-	Emb embedded
-	// todo : same file struct
-	// todo : other file struct
-	// todo : recursive struct
+	Inside
+	Outside
 
 	// package name
 	other.A
@@ -84,6 +81,18 @@ type TestingStruct struct {
 	// dot import
 	BB DotImport
 	Time
+
+	// recursive
+	R *Recursive
+}
+
+type Inside struct {
+	Int int
+}
+
+type Recursive struct {
+	Int int
+	R   *Recursive
 }
 
 type Private struct {

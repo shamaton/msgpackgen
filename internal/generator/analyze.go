@@ -343,16 +343,16 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *structure.Node,
 
 	// not supported
 	if _, ok := expr.(*ast.InterfaceType); ok {
-		return nil, false, []string{fmt.Sprintf("interface type is not supported")}
+		return nil, false, []string{"interface type is not supported"}
 	}
 	if _, ok := expr.(*ast.StructType); ok {
-		return nil, false, []string{fmt.Sprintf("inner struct is not supported")}
+		return nil, false, []string{"inner struct is not supported"}
 	}
 	if _, ok := expr.(*ast.ChanType); ok {
-		return nil, false, []string{fmt.Sprintf("chan type is not supported")}
+		return nil, false, []string{"chan type is not supported"}
 	}
 	if _, ok := expr.(*ast.FuncType); ok {
-		return nil, false, []string{fmt.Sprintf("func type is not supported")}
+		return nil, false, []string{"func type is not supported"}
 	}
 
 	// unreachable
@@ -376,11 +376,11 @@ func (g *generator) createAnalyzedFields(packageName, structName string, analyze
 		Scopes: make(map[ast.Node]*types.Scope),
 	}
 
-	pkg, err := conf.Check(packageName, fset, []*ast.File{file}, info)
-	if err != nil {
-		// Consider reporting these errors when golint operates on entire packages
-		// https://github.com/golang/lint/blob/master/lint.go#L153
-	}
+	pkg, _ /*err*/ := conf.Check(packageName, fset, []*ast.File{file}, info)
+	//if err != nil {
+	//	// Consider reporting these errors when golint operates on entire packages
+	//	// https://github.com/golang/lint/blob/master/lint.go#L153
+	//}
 
 	obj := pkg.Scope().Lookup(structName)
 	internal := obj.Type().Underlying().(*types.Struct)
