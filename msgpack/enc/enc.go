@@ -2,8 +2,8 @@ package enc
 
 type Encoder struct {
 	//buf  *bytes.Buffer
-	d    []byte
-	size int
+	//size int
+	d []byte
 }
 
 func NewEncoder() *Encoder {

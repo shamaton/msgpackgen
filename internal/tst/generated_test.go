@@ -411,6 +411,16 @@ func TestSliceArray(t *testing.T) {
 	if err := check(v); err != nil {
 		t.Error(err)
 	}
+
+	v = TestingValue{}
+	v.Bytes = make([]byte, 100)
+	for i := range v.Bytes {
+		v.Bytes[i] = byte(rand.Intn(255))
+	}
+	if err := check(v); err != nil {
+		t.Error(err)
+	}
+
 	v = TestingValue{}
 	for i := range v.Array1 {
 		v.Array1[i] = float32(rand.Intn(0xff))

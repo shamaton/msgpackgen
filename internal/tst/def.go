@@ -37,6 +37,7 @@ type TestingValue struct {
 	Complex128 complex128
 
 	Slice  []int
+	Bytes  []byte
 	Array1 [8]float32
 	Array2 [31280]string
 	Array3 [1031280]bool
