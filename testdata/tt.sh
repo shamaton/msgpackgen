@@ -6,4 +6,7 @@ cd "$DIR"
 
 go generate
 sleep 1
-go test -coverpkg=. -v github.com/shamaton/msgpackgen/. -count=1
+cd ..
+go test -v -count=1 --coverpkg=github.com/shamaton/msgpackgen/... --coverprofile=coverage.coverprofile --covermode=atomic ./...
+
+git checkout testdata/resolver.go

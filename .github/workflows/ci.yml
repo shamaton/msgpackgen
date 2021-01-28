@@ -45,7 +45,7 @@ jobs:
           cd testdata
           go generate
           cd ../
-          go test -race -coverpkg=. --coverprofile=coverage.coverprofile --covermode=atomic .
+          go test -race --coverpkg=github.com/shamaton/msgpackgen/... --coverprofile=coverage.coverprofile --covermode=atomic ./...
 
       - name: Upload coverage to Codecov
         if: success() && matrix.go == 1.15 && matrix.os == 'ubuntu-latest'
