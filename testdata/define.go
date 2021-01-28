@@ -8,6 +8,8 @@ import (
 	. "github.com/shamaton/msgpackgen/testdata/define/define"
 )
 
+//go:generate go run github.com/shamaton/msgpackgen -s -p 2 -v -g resolver.go
+
 // point
 // ドットインポートできる
 // 別名インポートも出力できる

@@ -1,7 +1,5 @@
 package main
 
-//go:generate go run github.com/shamaton/msgpackgen -s -p 2 -v -g resolver_test.go
-
 import (
 	"fmt"
 	"math"

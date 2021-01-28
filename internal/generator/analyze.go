@@ -78,10 +78,6 @@ func (g *generator) getPackages(files []string) error {
 func (g *generator) analyze() error {
 	analyzedMap := map[*ast.File]bool{}
 	for _, parseFile := range g.parseFiles {
-		// done analysis
-		if _, ok := analyzedMap[parseFile]; ok {
-			continue
-		}
 
 		fullPackageName, ok := g.parseFile2fullPackage[parseFile]
 		if !ok {
@@ -102,6 +98,10 @@ func (g *generator) analyze() error {
 }
 
 func (g *generator) createAnalyzedStructs(parseFile *ast.File, packageName, importPath string, analyzedMap map[*ast.File]bool) error {
+	// done analysis
+	if _, ok := analyzedMap[parseFile]; ok {
+		return nil
+	}
 
 	importMap, dotImports := g.createImportMap(parseFile)
 	// dot imports
