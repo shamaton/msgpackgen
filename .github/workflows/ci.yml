@@ -42,10 +42,10 @@ jobs:
 
       - name: Test
         run: |
-          cd internal/tst
+          cd testdata
           go generate
-          cd ../../
-          go test -race --coverprofile=coverage.coverprofile --covermode=atomic ./...
+          cd ../
+          go test -race -coverpkg=. --coverprofile=coverage.coverprofile --covermode=atomic .
 
       - name: Upload coverage to Codecov
         if: success() && matrix.go == 1.15 && matrix.os == 'ubuntu-latest'
