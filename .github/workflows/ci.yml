@@ -41,12 +41,8 @@ jobs:
         run: go build -v ./...
 
       - name: Test
-        run: |
-          cd testdata
-          go generate
-          cd ../
-          go test -race --coverpkg=github.com/shamaton/msgpackgen/... --coverprofile=coverage.coverprofile --covermode=atomic ./...
-
+        run: sh testdata/test.sh
+          
       - name: Upload coverage to Codecov
         if: success() && matrix.go == 1.15 && matrix.os == 'ubuntu-latest'
         uses: codecov/codecov-action@v1
