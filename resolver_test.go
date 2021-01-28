@@ -1,4 +1,4 @@
-package testdata
+package main
 
 func RegisterGeneratedResolver() {
 	panic("this is dummy.")

@@ -1,4 +1,4 @@
-package testdata
+package main
 
 import (
 	"bytes"
@@ -8,7 +8,7 @@ import (
 	. "github.com/shamaton/msgpackgen/testdata/define/define"
 )
 
-//go:generate go run github.com/shamaton/msgpackgen -s -p 2 -v -g resolver.go
+//go:generate go run github.com/shamaton/msgpackgen -s -p 2 -v -g resolver_test.go
 
 // point
 // ドットインポートできる
