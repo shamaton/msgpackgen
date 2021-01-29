@@ -27,9 +27,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestGenerateCode(t *testing.T) {
-	if fromMain {
-		return
-	}
 	//flag.CommandLine.Set("target", strconv.Itoa(tt.i)) // -target=iと指定したかの様に設定できる
 
 	// diff resolver_test.go main.go | wc -l
