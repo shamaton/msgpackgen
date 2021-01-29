@@ -15,7 +15,10 @@ import (
 	"github.com/shamaton/msgpackgen/testdata/define/define"
 )
 
+var fromMain = false
+
 func TestMain(m *testing.M) {
+	fromMain = true
 	RegisterGeneratedResolver()
 
 	code := m.Run()
@@ -23,11 +26,14 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func TestADFG(t *testing.T) {
+func TestGenerateCode(t *testing.T) {
+	if fromMain {
+		return
+	}
 	//flag.CommandLine.Set("target", strconv.Itoa(tt.i)) // -target=iと指定したかの様に設定できる
 
 	// diff resolver_test.go main.go | wc -l
-	// main()
+	main()
 
 	// todo : 意図通りに出力があるか確認する
 	// todo : 問題なければ、次のテスト用にコード生成する
