@@ -42,7 +42,7 @@ jobs:
 
       - name: Test
         run: sh testdata/test.sh
-          
+
       - name: Upload coverage to Codecov
         if: success() && matrix.go == 1.15 && matrix.os == 'ubuntu-latest'
         uses: codecov/codecov-action@v1

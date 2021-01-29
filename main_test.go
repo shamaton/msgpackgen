@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"math"
 	"math/rand"
@@ -27,25 +28,22 @@ func TestMain(m *testing.M) {
 }
 
 func TestGenerateCode(t *testing.T) {
-	//flag.CommandLine.Set("target", strconv.Itoa(tt.i)) // -target=iと指定したかの様に設定できる
+
+	err := flag.CommandLine.Set("s", "true")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = flag.CommandLine.Set("v", "true")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = flag.CommandLine.Set("p", "2")
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// diff resolver_test.go main.go | wc -l
 	main()
-
-	// todo : 意図通りに出力があるか確認する
-	// todo : 問題なければ、次のテスト用にコード生成する
-
-	//err := generator.Run(
-	//	".",
-	//	".",
-	//	"resolver.msgpackgen.go",
-	//	2,
-	//	false,
-	//	false,
-	//)
-	//if err != nil {
-	//	panic(err)
-	//}
 }
 
 func TestInt(t *testing.T) {
@@ -69,7 +67,9 @@ func TestInt(t *testing.T) {
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
-
+	if v.Function() != v.Int*2 {
+		t.Errorf("value diffrent %d, %d", v.Function(), v.Int*2)
+	}
 }
 
 func TestUint(t *testing.T) {
