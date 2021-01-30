@@ -57,7 +57,6 @@ func (g *generator) getPackages(files []string) error {
 			g.noUserQualMap[prefix] = true
 		} else if packageName == "main" {
 			if g.verbose {
-				// todo : 動作確認
 				fmt.Println("skipping other main package ", file)
 			}
 			continue
@@ -272,7 +271,6 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *structure.Node,
 			return structure.CreateStructNode("time", "time", ident.Name, parent), true, reasons
 		}
 		// same hierarchy struct
-		// todo : いらないかもしれない
 		if ident.Obj != nil && ident.Obj.Kind == ast.Typ {
 			return structure.CreateStructNode(importPath, packageName, ident.Name, parent), true, reasons
 		}

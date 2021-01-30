@@ -212,7 +212,6 @@ func (g *generator) setOthers() {
 
 func (g *generator) generateCode() *File {
 
-	// todo : ソースコードが存在している場所だったら、そちらにパッケージ名をあわせる
 	f := NewFilePath(g.outputImportPath())
 
 	registerName := "RegisterGeneratedResolver"
