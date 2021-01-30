@@ -17,8 +17,6 @@ import (
 // todo : 名称修正
 var analyzedStructs []*structure.Structure
 
-// todo : ドットインポートのコンフリクトチェック
-
 // todo : complexのext値を変更できるようにする
 
 type generator struct {
