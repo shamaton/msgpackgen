@@ -64,13 +64,13 @@ func (g *generator) getPackages(files []string) error {
 		}
 
 		g.parseFiles = append(g.parseFiles, parseFile)
-		g.parseFile2fullPackage[parseFile] = prefix
-		g.fullPackage2package[prefix] = packageName
+		g.parseFile2ImportPath[parseFile] = prefix
+		g.importPath2package[prefix] = packageName
 		g.targetPackages[packageName] = true
-		if _, ok := g.fullPackage2ParseFiles[prefix]; !ok {
-			g.fullPackage2ParseFiles[prefix] = make([]*ast.File, 0)
+		if _, ok := g.importPath2ParseFiles[prefix]; !ok {
+			g.importPath2ParseFiles[prefix] = make([]*ast.File, 0)
 		}
-		g.fullPackage2ParseFiles[prefix] = append(g.fullPackage2ParseFiles[prefix], parseFile)
+		g.importPath2ParseFiles[prefix] = append(g.importPath2ParseFiles[prefix], parseFile)
 	}
 	return nil
 }
@@ -79,11 +79,11 @@ func (g *generator) analyze() error {
 	analyzedMap := map[*ast.File]bool{}
 	for _, parseFile := range g.parseFiles {
 
-		fullPackageName, ok := g.parseFile2fullPackage[parseFile]
+		fullPackageName, ok := g.parseFile2ImportPath[parseFile]
 		if !ok {
 			return fmt.Errorf("not found fullPackageName")
 		}
-		packageName, ok := g.fullPackage2package[fullPackageName]
+		packageName, ok := g.importPath2package[fullPackageName]
 		if !ok {
 			return fmt.Errorf("not found package name")
 		}
@@ -107,11 +107,11 @@ func (g *generator) createAnalyzedStructs(parseFile *ast.File, packageName, impo
 	// dot imports
 	dotStructs := map[string]*structure.Structure{}
 	for _, dotImport := range dotImports {
-		pfs, ok := g.fullPackage2ParseFiles[dotImport]
+		pfs, ok := g.importPath2ParseFiles[dotImport]
 		if !ok {
 			continue
 		}
-		name, ok := g.fullPackage2package[dotImport]
+		name, ok := g.importPath2package[dotImport]
 		if !ok {
 			continue
 		}
@@ -142,7 +142,7 @@ func (g *generator) createAnalyzedStructs(parseFile *ast.File, packageName, impo
 		if _, ok := x.Type.(*ast.StructType); ok {
 
 			structName := x.Name.String()
-			if importPath != g.outputPackageFullName() && !unicode.IsUpper(rune(structName[0])) {
+			if importPath != g.outputImportPath() && !unicode.IsUpper(rune(structName[0])) {
 				return true
 			}
 			structNames = append(structNames, structName)
