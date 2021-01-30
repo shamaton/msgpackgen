@@ -69,7 +69,7 @@ func (n *Node) GetPointerInfo() (ptrCount int, isParentTypeArrayOrMap bool) {
 	return
 }
 
-func (n Node) CanGenerate(sts []*Structure) (bool, []string) {
+func (n Node) CanGenerate(structures []*Structure) (bool, []string) {
 	messages := make([]string, 0)
 	switch {
 	case n.IsIdentical():
@@ -79,7 +79,7 @@ func (n Node) CanGenerate(sts []*Structure) (bool, []string) {
 		if n.ImportPath == "time" && n.StructName == "Time" {
 			return true, messages
 		}
-		for _, v := range sts {
+		for _, v := range structures {
 			if v.ImportPath == n.ImportPath && v.Name == n.StructName {
 				return true, messages
 			}
@@ -87,29 +87,29 @@ func (n Node) CanGenerate(sts []*Structure) (bool, []string) {
 		return false, append(messages, fmt.Sprintf("struct %s.%s is not generated.", n.ImportPath, n.StructName))
 
 	case n.IsSlice():
-		return n.Elm().CanGenerate(sts)
+		return n.Elm().CanGenerate(structures)
 
 	case n.IsArray():
-		return n.Elm().CanGenerate(sts)
+		return n.Elm().CanGenerate(structures)
 
 	case n.IsMap():
 		k, v := n.KeyValue()
-		kb, kMessages := k.CanGenerate(sts)
-		vb, vMessages := v.CanGenerate(sts)
+		kb, kMessages := k.CanGenerate(structures)
+		vb, vMessages := v.CanGenerate(structures)
 		messages = append(messages, kMessages...)
 		messages = append(messages, vMessages...)
 		return kb && vb, messages
 
 	case n.IsPointer():
-		return n.Elm().CanGenerate(sts)
+		return n.Elm().CanGenerate(structures)
 	}
 	return false, append(messages, "unreachable code")
 }
 
-func (n Node) TypeJenChain(sts []*Structure, s ...*Statement) *Statement {
+func (n Node) TypeJenChain(structures []*Structure, statements ...*Statement) *Statement {
 	var str *Statement
-	if len(s) > 0 {
-		str = s[0]
+	if len(statements) > 0 {
+		str = statements[0]
 	} else {
 		str = Id("")
 	}
@@ -122,9 +122,8 @@ func (n Node) TypeJenChain(sts []*Structure, s ...*Statement) *Statement {
 		if n.ImportPath == "time" && n.StructName == "Time" {
 			str = str.Qual(n.ImportPath, n.StructName)
 		} else {
-			// todo : performance
 			var asRef *Structure
-			for _, v := range sts {
+			for _, v := range structures {
 				if v.ImportPath == n.ImportPath && v.Name == n.StructName {
 					asRef = v
 					break
@@ -144,22 +143,22 @@ func (n Node) TypeJenChain(sts []*Structure, s ...*Statement) *Statement {
 
 	case n.IsSlice():
 		str = str.Id("[]")
-		str = n.Elm().TypeJenChain(sts, str)
+		str = n.Elm().TypeJenChain(structures, str)
 
 	case n.IsArray():
 		str = str.Id(fmt.Sprintf("[%d]", n.ArrayLen))
-		str = n.Elm().TypeJenChain(sts, str)
+		str = n.Elm().TypeJenChain(structures, str)
 
 	case n.IsMap():
 		str = str.Id("map[")
 		k, v := n.KeyValue()
-		str = k.TypeJenChain(sts, str)
+		str = k.TypeJenChain(structures, str)
 		str = str.Id("]")
-		str = v.TypeJenChain(sts, str)
+		str = v.TypeJenChain(structures, str)
 
 	case n.IsPointer():
 		str = str.Id("*")
-		str = n.Elm().TypeJenChain(sts, str)
+		str = n.Elm().TypeJenChain(structures, str)
 	}
 	return str
 }

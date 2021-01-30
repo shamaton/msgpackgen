@@ -165,16 +165,16 @@ func (g *generator) getTargetFiles(dir string) ([]string, error) {
 	return absPaths, nil
 }
 
-func (g *generator) filter(sts []*structure.Structure, reasons []string) ([]*structure.Structure, []string) {
+func (g *generator) filter(structures []*structure.Structure, reasons []string) ([]*structure.Structure, []string) {
 	newStructs := make([]*structure.Structure, 0)
 	allOk := true
-	for _, v := range sts {
+	for _, v := range structures {
 		ok := true
 
 		var rs []string
 		if v.CanGen {
 			for _, field := range v.Fields {
-				if canGen, msgs := field.Node.CanGenerate(sts); !canGen {
+				if canGen, msgs := field.Node.CanGenerate(structures); !canGen {
 					ok = false
 					rs = msgs
 				}
