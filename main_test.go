@@ -28,8 +28,8 @@ func TestMain(m *testing.M) {
 }
 
 func TestGenerateCode(t *testing.T) {
-
-	err := flag.CommandLine.Set("s", "true")
+	var err error
+	err = flag.CommandLine.Set("s", "true")
 	if err != nil {
 		t.Fatal(err)
 	}

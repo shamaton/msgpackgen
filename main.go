@@ -8,12 +8,12 @@ import (
 )
 
 var (
-	input    string
-	output   string
-	filename string
-	strict   bool
-	verbose  bool
-	pointer  int
+	input    = flag.String("i", ".", "input directory")
+	output   = flag.String("o", ".", "output directory")
+	filename = flag.String("g", defaultFileName, "generated file name")
+	pointer  = flag.Int("p", defaultPointerLevel, "pointer level to consider")
+	strict   = flag.Bool("s", false, "strict mode")
+	verbose  = flag.Bool("v", false, "verbose diagnostics")
 )
 
 const (
@@ -23,15 +23,9 @@ const (
 
 func main() {
 
-	flag.StringVar(&input, "i", ".", "input directory")
-	flag.StringVar(&output, "o", input, "output directory")
-	flag.StringVar(&filename, "g", defaultFileName, "generated file name")
-	flag.IntVar(&pointer, "p", defaultPointerLevel, "pointer level to consider")
-	flag.BoolVar(&strict, "s", false, "strict mode")
-	flag.BoolVar(&verbose, "v", false, "verbose diagnostics")
 	flag.Parse()
 
-	err := generator.Run(input, output, filename, pointer, strict, verbose)
+	err := generator.Run(*input, *output, *filename, *pointer, *strict, *verbose)
 	if err != nil {
 		log.Fatal(err)
 	}
