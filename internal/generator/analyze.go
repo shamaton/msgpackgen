@@ -23,11 +23,11 @@ func (g *generator) getPackages(files []string) error {
 	for _, file := range files {
 
 		dir := filepath.Dir(file)
-		paths := strings.SplitN(filepath.ToSlash(dir), "src/", 2)
-		if len(paths) != 2 {
-			return fmt.Errorf("%s get import path failed", file)
+		importPath, err := getImportPath(dir)
+		if err != nil {
+			return err
 		}
-		prefix := paths[1]
+		prefix := importPath
 
 		source, err := ioutil.ReadFile(file)
 		if err != nil {

@@ -76,6 +76,23 @@ func Run(input, out, fileName string, pointer int, strict, verbose bool) error {
 	return g.run(input, out, fileName)
 }
 
+func getImportPath(path string) (string, error) {
+	goPathAll := os.Getenv("GOPATH")
+	goPaths := strings.Split(goPathAll, ":")
+
+	for _, goPath := range goPaths {
+		if !strings.HasPrefix(path, goPath) {
+			continue
+		}
+		paths := strings.SplitN(filepath.ToSlash(path), goPath+"/src/", 2)
+		if len(paths) != 2 {
+			return "", fmt.Errorf("%s get import path failed", path)
+		}
+		return paths[1], nil
+	}
+	return "", fmt.Errorf("path %s is outside goppath", path)
+}
+
 func (g *generator) run(input, out, fileName string) error {
 
 	outAbs, err := filepath.Abs(out)
@@ -84,11 +101,11 @@ func (g *generator) run(input, out, fileName string) error {
 	}
 
 	g.outputDir = outAbs
-	paths := strings.SplitN(filepath.ToSlash(g.outputDir), "src/", 2)
-	if len(paths) != 2 {
-		return fmt.Errorf("%s get import path failed", outAbs)
+	importPath, err := getImportPath(g.outputDir)
+	if err != nil {
+		return err
 	}
-	g.outputPackageName = paths[1]
+	g.outputPackageName = importPath
 
 	filePaths, err := g.getTargetFiles(input)
 	if err != nil {
