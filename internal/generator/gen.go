@@ -12,9 +12,9 @@ import (
 	. "github.com/dave/jennifer/jen"
 	"github.com/shamaton/msgpackgen/internal/generator/ptn"
 	"github.com/shamaton/msgpackgen/internal/generator/structure"
+	"golang.org/x/tools/go/ssa/interp/testdata/src/runtime"
 )
 
-// todo : 名称修正
 var analyzedStructs []*structure.Structure
 
 // todo : complexのext値を変更できるようにする
@@ -78,13 +78,17 @@ func Run(input, out, fileName string, pointer int, strict, verbose bool) error {
 
 func getImportPath(path string) (string, error) {
 	goPathAll := os.Getenv("GOPATH")
-	goPaths := strings.Split(goPathAll, ":")
+	sep := ":"
+	if runtime.GOOS == "windows" {
+		sep = ";"
+	}
+	goPaths := strings.Split(goPathAll, sep)
 
 	for _, goPath := range goPaths {
 		if !strings.HasPrefix(path, goPath) {
 			continue
 		}
-		paths := strings.SplitN(filepath.ToSlash(path), goPath+"/src/", 2)
+		paths := strings.SplitN(filepath.ToSlash(path), filepath.ToSlash(goPath)+"/src/", 2)
 		if len(paths) != 2 {
 			return "", fmt.Errorf("%s get import path failed", path)
 		}
