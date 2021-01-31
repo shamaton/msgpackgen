@@ -7,12 +7,12 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	. "github.com/dave/jennifer/jen"
 	"github.com/shamaton/msgpackgen/internal/generator/ptn"
 	"github.com/shamaton/msgpackgen/internal/generator/structure"
-	"golang.org/x/tools/go/ssa/interp/testdata/src/runtime"
 )
 
 var analyzedStructs []*structure.Structure
