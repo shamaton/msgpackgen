@@ -30,7 +30,7 @@ func (st *Structure) createIdentCode(node *Node, encodeFieldName, decodeFieldNam
 
 func (g identCodeGen) createCalcCode(funcName string, params ...Code) []Code {
 	return []Code{
-		CreateAddSizeCode(funcName, params...),
+		createAddSizeCode(funcName, params...),
 	}
 }
 

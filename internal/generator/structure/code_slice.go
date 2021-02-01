@@ -36,7 +36,7 @@ func (st *Structure) createSliceCode(node *Node, encodeFieldName, decodeFieldNam
 
 func (g sliceCodeGen) createCalcCode(fieldName, childName string, isChildTypeByte bool, elmCodes []Code) []Code {
 
-	blockCodes := CreateAddSizeErrCheckCode("CalcSliceLength", Len(Id(fieldName)), Lit(isChildTypeByte))
+	blockCodes := createAddSizeErrCheckCode("CalcSliceLength", Len(Id(fieldName)), Lit(isChildTypeByte))
 	blockCodes = append(blockCodes, For(List(Id("_"), Id(childName)).Op(":=").Range(). /*Op(ptrOp).*/ Id(fieldName)).Block(
 		elmCodes...,
 	))
@@ -45,7 +45,7 @@ func (g sliceCodeGen) createCalcCode(fieldName, childName string, isChildTypeByt
 	codes = append(codes, If(Id(fieldName).Op("!=").Nil()).Block(
 		blockCodes...,
 	).Else().Block(
-		CreateAddSizeCode("CalcNil"),
+		createAddSizeCode("CalcNil"),
 	))
 	return codes
 }

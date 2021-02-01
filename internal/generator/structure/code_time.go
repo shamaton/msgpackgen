@@ -23,7 +23,7 @@ func (st *Structure) createTimeCode(encodeFieldName, decodeFieldName string, nod
 
 func (g timeCodeGen) createCalcCode(funcName string, params ...Code) []Code {
 	return []Code{
-		CreateAddSizeCode(funcName, params...),
+		createAddSizeCode(funcName, params...),
 	}
 }
 

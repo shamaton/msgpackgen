@@ -39,7 +39,7 @@ func (st *Structure) createArrayCode(node *Node, encodeFieldName, decodeFieldNam
 }
 
 func (g arrayCodeGen) createCalcCode(fieldName, childName string, isChildByte bool, elmCodes []Code) []Code {
-	blockCodes := CreateAddSizeErrCheckCode("CalcSliceLength", Len(Id(fieldName)), Lit(isChildByte))
+	blockCodes := createAddSizeErrCheckCode("CalcSliceLength", Len(Id(fieldName)), Lit(isChildByte))
 	blockCodes = append(blockCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Id(fieldName)).Block(
 		elmCodes...,
 	))

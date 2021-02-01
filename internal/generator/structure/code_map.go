@@ -43,7 +43,7 @@ func (st *Structure) createMapCode(node *Node, encodeFieldName, decodeFieldName 
 func (g mapCodeGen) createCalcCode(
 	fieldName, childKeyName, childValueName string,
 	elmKeyCodes, elmValueCodes []Code) []Code {
-	calcCodes := CreateAddSizeErrCheckCode("CalcMapLength", Len(Id(fieldName)))
+	calcCodes := createAddSizeErrCheckCode("CalcMapLength", Len(Id(fieldName)))
 	calcCodes = append(calcCodes, For(List(Id(childKeyName), Id(childValueName)).Op(":=").Range().Id(fieldName)).Block(
 		append(elmKeyCodes, elmValueCodes...)...,
 	))
@@ -52,7 +52,7 @@ func (g mapCodeGen) createCalcCode(
 	codes = append(codes, If(Id(fieldName).Op("!=").Nil()).Block(
 		calcCodes...,
 	).Else().Block(
-		CreateAddSizeCode("CalcNil"),
+		createAddSizeCode("CalcNil"),
 	))
 	return codes
 }
