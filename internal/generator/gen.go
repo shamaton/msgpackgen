@@ -18,7 +18,7 @@ import (
 var analyzedStructs []*structure.Structure
 
 // todo : complexのext値を変更できるようにする
-// todo : define error
+// todo : define error (xerrors?)
 
 type generator struct {
 	fileSet               *token.FileSet
