@@ -404,46 +404,89 @@ func (st *Structure) createSliceCode(ast *Node, encodeFieldName, decodeFieldName
 	decodeChildIndexName := decodeChildName + "i"
 	decodeChildChildName := decodeChildName + "v"
 
-	ca, _, ea, _, da, _, _ := st.createFieldCode(ast.Elm(), encodeChildName, decodeChildName)
+	ca, cm, ea, em, da, dm, _ := st.createFieldCode(ast.Elm(), encodeChildName, decodeChildName)
 	isChildByte := ast.Elm().IsIdentical() && ast.Elm().IdenticalName == "byte"
 
-	calcCodes := st.addSizePattern2("CalcSliceLength", Len( /*Op(ptrOp).*/ Id(encodeFieldName)), Lit(isChildByte))
-	calcCodes = append(calcCodes, For(List(Id("_"), Id(encodeChildName)).Op(":=").Range(). /*Op(ptrOp).*/ Id(encodeFieldName)).Block(
+	// calc array
+	caCodes := st.addSizePattern2("CalcSliceLength", Len( /*Op(ptrOp).*/ Id(encodeFieldName)), Lit(isChildByte))
+	caCodes = append(caCodes, For(List(Id("_"), Id(encodeChildName)).Op(":=").Range(). /*Op(ptrOp).*/ Id(encodeFieldName)).Block(
 		ca...,
 	))
 
 	cArray = append(cArray, If( /*Op(ptrOp).*/ Id(encodeFieldName).Op("!=").Nil()).Block(
-		calcCodes...,
+		caCodes...,
 	).Else().Block(
 		st.addSizePattern1("CalcNil"),
 	))
 
-	encCodes := make([]Code, 0)
-	encCodes = append(encCodes, Id("offset").Op("=").Id(ptn.IdEncoder).Dot("WriteSliceLength").Call(Len( /*Op(ptrOp).*/ Id(encodeFieldName)), Id("offset"), Lit(isChildByte)))
-	encCodes = append(encCodes, For(List(Id("_"), Id(encodeChildName)).Op(":=").Range(). /*Op(ptrOp).*/ Id(encodeFieldName)).Block(
+	// calc map
+	cmCodes := st.addSizePattern2("CalcSliceLength", Len( /*Op(ptrOp).*/ Id(encodeFieldName)), Lit(isChildByte))
+	cmCodes = append(cmCodes, For(List(Id("_"), Id(encodeChildName)).Op(":=").Range(). /*Op(ptrOp).*/ Id(encodeFieldName)).Block(
+		cm...,
+	))
+
+	cMap = append(cMap, If( /*Op(ptrOp).*/ Id(encodeFieldName).Op("!=").Nil()).Block(
+		cmCodes...,
+	).Else().Block(
+		st.addSizePattern1("CalcNil"),
+	))
+
+	// encode array
+	eaCodes := make([]Code, 0)
+	eaCodes = append(eaCodes, Id("offset").Op("=").Id(ptn.IdEncoder).Dot("WriteSliceLength").Call(Len( /*Op(ptrOp).*/ Id(encodeFieldName)), Id("offset"), Lit(isChildByte)))
+	eaCodes = append(eaCodes, For(List(Id("_"), Id(encodeChildName)).Op(":=").Range(). /*Op(ptrOp).*/ Id(encodeFieldName)).Block(
 		ea...,
 	))
 
 	eArray = append(eArray, If( /*Op(ptrOp).*/ Id(encodeFieldName).Op("!=").Nil()).Block(
-		encCodes...,
+		eaCodes...,
 	).Else().Block(
 		Id("offset").Op("=").Id(ptn.IdEncoder).Dot("WriteNil").Call(Id("offset")),
 	))
 
-	decCodes := make([]Code, 0)
-	decCodes = append(decCodes, ast.TypeJenChain(st.Others, Var().Id(decodeChildName)))
-	decCodes = append(decCodes, Var().Id(decodeChildLengthName).Int())
-	decCodes = append(decCodes, List(Id(decodeChildLengthName), Id("offset"), Err()).Op("=").Id(ptn.IdDecoder).Dot("SliceLength").Call(Id("offset")))
-	decCodes = append(decCodes, If(Err().Op("!=").Nil()).Block(
+	// encode map
+	emCodes := make([]Code, 0)
+	emCodes = append(emCodes, Id("offset").Op("=").Id(ptn.IdEncoder).Dot("WriteSliceLength").Call(Len( /*Op(ptrOp).*/ Id(encodeFieldName)), Id("offset"), Lit(isChildByte)))
+	emCodes = append(emCodes, For(List(Id("_"), Id(encodeChildName)).Op(":=").Range(). /*Op(ptrOp).*/ Id(encodeFieldName)).Block(
+		em...,
+	))
+
+	eMap = append(eMap, If( /*Op(ptrOp).*/ Id(encodeFieldName).Op("!=").Nil()).Block(
+		emCodes...,
+	).Else().Block(
+		Id("offset").Op("=").Id(ptn.IdEncoder).Dot("WriteNil").Call(Id("offset")),
+	))
+
+	daCodes := make([]Code, 0)
+	daCodes = append(daCodes, ast.TypeJenChain(st.Others, Var().Id(decodeChildName)))
+	daCodes = append(daCodes, Var().Id(decodeChildLengthName).Int())
+	daCodes = append(daCodes, List(Id(decodeChildLengthName), Id("offset"), Err()).Op("=").Id(ptn.IdDecoder).Dot("SliceLength").Call(Id("offset")))
+	daCodes = append(daCodes, If(Err().Op("!=").Nil()).Block(
 		Return(Lit(0), Err()),
 	))
-	decCodes = append(decCodes, Id(decodeChildName).Op("=").Make(ast.TypeJenChain(st.Others), Id(decodeChildLengthName)))
+	daCodes = append(daCodes, Id(decodeChildName).Op("=").Make(ast.TypeJenChain(st.Others), Id(decodeChildLengthName)))
 
 	da = append([]Code{ast.Elm().TypeJenChain(st.Others, Var().Id(decodeChildChildName))}, da...)
 	da = append(da, Id(decodeChildName).Index(Id(decodeChildIndexName)).Op("=").Id(decodeChildChildName))
 
-	decCodes = append(decCodes, For(Id(decodeChildIndexName).Op(":=").Range().Id(decodeChildName)).Block(
+	daCodes = append(daCodes, For(Id(decodeChildIndexName).Op(":=").Range().Id(decodeChildName)).Block(
 		da...,
+	))
+
+	dmCodes := make([]Code, 0)
+	dmCodes = append(dmCodes, ast.TypeJenChain(st.Others, Var().Id(decodeChildName)))
+	dmCodes = append(dmCodes, Var().Id(decodeChildLengthName).Int())
+	dmCodes = append(dmCodes, List(Id(decodeChildLengthName), Id("offset"), Err()).Op("=").Id(ptn.IdDecoder).Dot("SliceLength").Call(Id("offset")))
+	dmCodes = append(dmCodes, If(Err().Op("!=").Nil()).Block(
+		Return(Lit(0), Err()),
+	))
+	dmCodes = append(dmCodes, Id(decodeChildName).Op("=").Make(ast.TypeJenChain(st.Others), Id(decodeChildLengthName)))
+
+	dm = append([]Code{ast.Elm().TypeJenChain(st.Others, Var().Id(decodeChildChildName))}, dm...)
+	dm = append(dm, Id(decodeChildName).Index(Id(decodeChildIndexName)).Op("=").Id(decodeChildChildName))
+
+	dmCodes = append(dmCodes, For(Id(decodeChildIndexName).Op(":=").Range().Id(decodeChildName)).Block(
+		dm...,
 	))
 
 	name := decodeChildName
@@ -454,24 +497,30 @@ func (st *Structure) createSliceCode(ast *Node, encodeFieldName, decodeFieldName
 	}
 	for i := 0; i < prtCount-1; i++ {
 		n := "_" + name
-		decCodes = append(decCodes, Id(n).Op(":=").Op("&").Id(name))
+		daCodes = append(daCodes, Id(n).Op(":=").Op("&").Id(name))
+		dmCodes = append(dmCodes, Id(n).Op(":=").Op("&").Id(name))
 		name = n
 	}
 
-	decCodes = append(decCodes, Id(decodeFieldName).Op("=").Op(andOp).Id(name))
+	daCodes = append(daCodes, Id(decodeFieldName).Op("=").Op(andOp).Id(name))
+	dmCodes = append(dmCodes, Id(decodeFieldName).Op("=").Op(andOp).Id(name))
 
 	if ast.HasParent() && ast.Parent.IsPointer() {
-		dArray = decCodes
+		dArray = daCodes
+		dMap = dmCodes
 	} else {
-
 		dArray = append(dArray, If(Op("!").Id(ptn.IdDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
-			decCodes...,
+			daCodes...,
+		).Else().Block(
+			Id("offset").Op("++"),
+		))
+		dMap = append(dMap, If(Op("!").Id(ptn.IdDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
+			dmCodes...,
 		).Else().Block(
 			Id("offset").Op("++"),
 		))
 	}
-
-	return cArray, cArray, eArray, eArray, dArray, dArray, nil
+	return
 }
 
 func (st *Structure) createArrayCode(ast *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
