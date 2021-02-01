@@ -86,6 +86,11 @@ type TestingStruct struct {
 
 	// recursive
 	R *Recursive
+
+	TmpSlice   []Inside
+	TmpArray   [1]Inside
+	TmpMap     map[Inside]Inside
+	TmpPointer *Inside
 }
 
 type Inside struct {
