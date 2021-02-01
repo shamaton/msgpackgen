@@ -100,7 +100,7 @@ func (st *Structure) CreateCode(f *File) {
 		calcMapSizeCodes = append(calcMapSizeCodes, calcKeyStringCode)
 		encMapCodes = append(encMapCodes, writeKeyStringCode)
 
-		cArray, cMap, eArray, eMap, dArray, dMap, _ := st.createFieldCode(field.Node, fieldName, fieldName)
+		cArray, cMap, eArray, eMap, dArray, dMap := st.createFieldCode(field.Node, fieldName, fieldName)
 		calcArraySizeCodes = append(calcArraySizeCodes, cArray...)
 
 		calcMapSizeCodes = append(calcMapSizeCodes, cMap...)
@@ -220,7 +220,7 @@ func (st *Structure) CreateStructCode(fieldNum int) (Code, Code, Code) {
 		Id("offset").Op("=").Id(ptn.IdEncoder).Dot(" WriteStructHeader"+suffix+"AsMap").Call(Lit(fieldNum), Id("offset"))
 }
 
-func (st *Structure) createFieldCode(ast *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
+func (st *Structure) createFieldCode(ast *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code) {
 
 	switch {
 	case ast.IsIdentical():
@@ -251,21 +251,21 @@ func (st *Structure) createFieldCode(ast *Node, encodeFieldName, decodeFieldName
 			dArray = append(dArray, st.decodeBasicPattern(ast, decodeFieldName, "offset", "AsDateTime")...)
 			dMap = append(dMap, st.decodeBasicPattern(ast, decodeFieldName, "offset", "AsDateTime")...)
 		} else {
-			cArray, cMap, eArray, eMap, dArray, dMap = st.createNamedCode(encodeFieldName, decodeFieldName, ast)
+			return st.createNamedCode(encodeFieldName, decodeFieldName, ast)
 		}
 	}
 
-	return cArray, cMap, eArray, eMap, dArray, dMap, err
+	return cArray, cMap, eArray, eMap, dArray, dMap
 }
 
-func (st *Structure) createPointerCode(ast *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
+func (st *Structure) createPointerCode(ast *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code) {
 
 	encodeChildName := encodeFieldName + "p"
 	if isRootField(encodeFieldName) {
 		encodeChildName = "vp"
 	}
 
-	ca, _, ea, _, da, _, _ := st.createFieldCode(ast.Elm(), encodeChildName, decodeFieldName)
+	ca, _, ea, _, da, _ := st.createFieldCode(ast.Elm(), encodeChildName, decodeFieldName)
 
 	cArray = make([]Code, 0)
 	cArray = append(cArray, If(Id(encodeFieldName).Op("!=").Nil()).Block(
@@ -296,10 +296,10 @@ func (st *Structure) createPointerCode(ast *Node, encodeFieldName, decodeFieldNa
 		))
 	}
 
-	return cArray, cArray, eArray, eArray, dArray, dArray, err
+	return cArray, cArray, eArray, eArray, dArray, dArray
 }
 
-func (st *Structure) createMapCode(ast *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
+func (st *Structure) createMapCode(ast *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code) {
 
 	key, value := ast.KeyValue()
 
@@ -315,8 +315,8 @@ func (st *Structure) createMapCode(ast *Node, encodeFieldName, decodeFieldName s
 		decodeChildValue = "vv"
 	}
 
-	caKey, _, eaKey, _, daKey, _, _ := st.createFieldCode(key, encodeChildKey, decodeChildKey)
-	caValue, _, eaValue, _, daValue, _, _ := st.createFieldCode(value, encodeChildValue, decodeChildValue)
+	caKey, _, eaKey, _, daKey, _ := st.createFieldCode(key, encodeChildKey, decodeChildKey)
+	caValue, _, eaValue, _, daValue, _ := st.createFieldCode(value, encodeChildValue, decodeChildValue)
 
 	calcCodes := st.addSizePattern2("CalcMapLength", Len(Id(encodeFieldName)))
 	calcCodes = append(calcCodes, For(List(Id(encodeChildKey), Id(encodeChildValue)).Op(":=").Range().Id(encodeFieldName)).Block(
@@ -387,10 +387,10 @@ func (st *Structure) createMapCode(ast *Node, encodeFieldName, decodeFieldName s
 		))
 	}
 
-	return cArray, cArray, eArray, eArray, dArray, dArray, nil
+	return cArray, cArray, eArray, eArray, dArray, dArray
 }
 
-func (st *Structure) createSliceCode(ast *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
+func (st *Structure) createSliceCode(ast *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code) {
 
 	encodeChildName, decodeChildName := encodeFieldName+"v", decodeFieldName+""
 	if isRootField(encodeFieldName) {
@@ -404,7 +404,7 @@ func (st *Structure) createSliceCode(ast *Node, encodeFieldName, decodeFieldName
 	decodeChildIndexName := decodeChildName + "i"
 	decodeChildChildName := decodeChildName + "v"
 
-	ca, cm, ea, em, da, dm, _ := st.createFieldCode(ast.Elm(), encodeChildName, decodeChildName)
+	ca, cm, ea, em, da, dm := st.createFieldCode(ast.Elm(), encodeChildName, decodeChildName)
 	isChildByte := ast.Elm().IsIdentical() && ast.Elm().IdenticalName == "byte"
 
 	// calc array
@@ -523,7 +523,7 @@ func (st *Structure) createSliceCode(ast *Node, encodeFieldName, decodeFieldName
 	return
 }
 
-func (st *Structure) createArrayCode(ast *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
+func (st *Structure) createArrayCode(ast *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code) {
 
 	encodeChildName := encodeFieldName + "v"
 	if isRootField(encodeFieldName) {
@@ -535,7 +535,7 @@ func (st *Structure) createArrayCode(ast *Node, encodeFieldName, decodeFieldName
 		decodeChildName = "vv"
 	}
 
-	ca, _, ea, _, da, _, _ := st.createFieldCode(ast.Elm(), encodeChildName, decodeChildName)
+	ca, _, ea, _, da, _ := st.createFieldCode(ast.Elm(), encodeChildName, decodeChildName)
 	isChildByte := ast.Elm().IsIdentical() && ast.Elm().IdenticalName == "byte"
 
 	calcCodes := st.addSizePattern2("CalcSliceLength", Len( /*Op(ptrOp).*/ Id(encodeFieldName)), Lit(isChildByte))
@@ -604,10 +604,10 @@ func (st *Structure) createArrayCode(ast *Node, encodeFieldName, decodeFieldName
 		))
 	}
 
-	return cArray, cArray, eArray, eArray, dArray, dArray, nil
+	return cArray, cArray, eArray, eArray, dArray, dArray
 }
 
-func (st *Structure) createBasicCode(ast *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code, err error) {
+func (st *Structure) createBasicCode(ast *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code) {
 
 	funcSuffix := strings.Title(ast.IdenticalName)
 
@@ -620,7 +620,7 @@ func (st *Structure) createBasicCode(ast *Node, encodeFieldName, decodeFieldName
 	dArray = append(dArray, st.decodeBasicPattern(ast, decodeFieldName, "offset", "As"+funcSuffix)...)
 	dMap = append(dMap, st.decodeBasicPattern(ast, decodeFieldName, "offset", "As"+funcSuffix)...)
 
-	return cArray, cMap, eArray, eMap, dArray, dMap, err
+	return
 }
 
 func (st *Structure) addSizePattern1(funcName string, params ...Code) Code {
