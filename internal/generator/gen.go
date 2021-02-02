@@ -18,6 +18,7 @@ import (
 var analyzedStructs []*structure.Structure
 
 // todo : complexのext値を変更できるようにする
+// todo : ファイル指定でのinputをできるようにする、そしてtestdataや. / _を対象外にする
 // todo : define error (xerrors?)
 
 type generator struct {
