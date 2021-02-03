@@ -3,6 +3,7 @@ package generator
 import (
 	"fmt"
 	"go/ast"
+	"go/importer"
 	"go/parser"
 	"go/token"
 	"go/types"
@@ -14,7 +15,6 @@ import (
 	"unicode"
 
 	"github.com/shamaton/msgpackgen/internal/generator/structure"
-	"golang.org/x/tools/go/gcexportdata"
 )
 
 func (g *generator) getPackages(files []string) error {
@@ -360,11 +360,11 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *structure.Node,
 func (g *generator) createAnalyzedFields(packageName, structName string, analyzedFieldMap map[string]*structure.Node, fset *token.FileSet, file *ast.File) ([]structure.Field, error) {
 
 	// todo : should solve import check, but can not solve now
-	//   can not use importer.Default(). see below https://github.com/golang/go/issues/13847
+	//   see below - https://github.com/golang/go/issues/13847
+	//   see also - https://github.com/golang/lint/blob/master/lint.go#L267
 	conf := types.Config{
-		Importer: gcexportdata.NewImporter(fset, make(map[string]*types.Package)),
-		// see : https://github.com/golang/lint/blob/master/lint.go#L267
-		Error: func(err error) {},
+		Importer: importer.Default(), // gcexportdata.NewImporter(fset, make(map[string]*types.Package)),
+		Error:    func(err error) {},
 	}
 
 	info := &types.Info{
