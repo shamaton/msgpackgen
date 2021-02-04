@@ -18,7 +18,6 @@ import (
 var analyzedStructs []*structure.Structure
 
 // todo : complexのext値を変更できるようにする
-// todo : ファイル指定でのinputをできるようにする、そしてtestdataや. / _を対象外にする
 // todo : define error (xerrors?)
 
 type generator struct {
@@ -46,21 +45,47 @@ func (g *generator) outputImportPath() string {
 	return fmt.Sprintf("%s/%s", g.outputPackagePrefix, g.outputPackageName)
 }
 
-func Run(input, out, fileName string, pointer int, strict, verbose bool) error {
+func Run(inputDir, inputFile, outDir, fileName string, pointer int, dryRun, strict, verbose bool) error {
 
-	_, err := os.Stat(input)
-	if err != nil {
-		return err
+	// can not input at same time
+	if len(inputFile) > 0 && inputDir != "." {
+		return fmt.Errorf("can not input directory and file at same time")
 	}
 
-	if out == "" {
-		out = input
+	input := inputDir
+	isInputDir := true
+	if len(inputFile) < 1 {
+		fi, err := os.Stat(inputDir)
+		if err != nil {
+			return fmt.Errorf("input directory error. os.Stat says %v", err)
+		}
+		if !fi.IsDir() {
+			return fmt.Errorf("this(%s) path is not directory", inputDir)
+		}
+	} else {
+		fi, err := os.Stat(inputFile)
+		if err != nil {
+			return fmt.Errorf("input file error. os.Stat says %v", err)
+		}
+		if fi.IsDir() {
+			return fmt.Errorf("this(%s) is a directory", inputFile)
+		}
+		if !strings.HasSuffix(inputFile, ".go") {
+			return fmt.Errorf("this(%s) is not .go file", inputFile)
+		}
+		input = inputFile
+		isInputDir = false
+	}
+
+	if outDir == "" {
+		outDir = inputDir
 	}
 
 	if pointer < 0 {
 		pointer = 1
 	}
 
+	analyzedStructs = make([]*structure.Structure, 0)
 	g := generator{
 		pointer:               pointer,
 		strict:                strict,
@@ -75,7 +100,7 @@ func Run(input, out, fileName string, pointer int, strict, verbose bool) error {
 		parseFile2ImportMap:    map[*ast.File]map[string]string{},
 		parseFile2DotImportMap: map[*ast.File]map[string]*structure.Structure{},
 	}
-	return g.run(input, out, fileName)
+	return g.run(input, outDir, fileName, isInputDir, dryRun)
 }
 
 func getImportPath(path string) (string, error) {
@@ -99,7 +124,7 @@ func getImportPath(path string) (string, error) {
 	return "", fmt.Errorf("path %s is outside goppath", path)
 }
 
-func (g *generator) run(input, out, fileName string) error {
+func (g *generator) run(input, out, fileName string, isInputDir, dryRun bool) error {
 
 	outAbs, err := filepath.Abs(out)
 	if err != nil {
@@ -113,12 +138,20 @@ func (g *generator) run(input, out, fileName string) error {
 	}
 	g.outputPackageName = importPath
 
-	filePaths, err := g.getTargetFiles(input)
-	if err != nil {
-		return err
-	}
-	if len(filePaths) < 1 {
-		return fmt.Errorf("not found go File")
+	var filePaths []string
+	if isInputDir {
+		filePaths, err = g.getTargetFiles(input)
+		if err != nil {
+			return err
+		}
+		if len(filePaths) < 1 {
+			return fmt.Errorf("not found go File")
+		}
+	} else {
+		filePaths, err = g.getAbsolutePaths([]string{input})
+		if err != nil {
+			return err
+		}
 	}
 
 	err = g.getPackages(filePaths)
@@ -147,6 +180,10 @@ func (g *generator) run(input, out, fileName string) error {
 	g.setOthers()
 	f := g.generateCode()
 
+	if dryRun {
+		fmt.Printf("%#v", f)
+		return nil
+	}
 	err = g.output(f, fileName)
 	if err != nil {
 		return err
@@ -163,6 +200,13 @@ func (g *generator) getTargetFiles(dir string) ([]string, error) {
 	var paths []string
 	for _, file := range files {
 		if file.IsDir() {
+			if n := file.Name(); strings.HasPrefix(n, ".") || strings.HasPrefix(n, "_") || n == "testdata" {
+				if g.verbose {
+					fmt.Printf("%s is not covered directory. skipping. \n", n)
+				}
+				continue
+			}
+
 			path, err := g.getTargetFiles(filepath.Join(dir, file.Name()))
 			if err != nil {
 				return nil, err
@@ -175,13 +219,21 @@ func (g *generator) getTargetFiles(dir string) ([]string, error) {
 		}
 	}
 
-	var absPaths []string
-	for _, path := range paths {
+	absPaths, err := g.getAbsolutePaths(paths)
+	if err != nil {
+		return nil, err
+	}
+	return absPaths, nil
+}
+
+func (g *generator) getAbsolutePaths(paths []string) ([]string, error) {
+	absPaths := make([]string, len(paths))
+	for i, path := range paths {
 		abs, err := filepath.Abs(path)
 		if err != nil {
 			return nil, err
 		}
-		absPaths = append(absPaths, abs)
+		absPaths[i] = abs
 	}
 	return absPaths, nil
 }

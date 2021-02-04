@@ -1,7 +1,7 @@
 package define
 
 import (
-	define2 "github.com/shamaton/msgpackgen/testdata/define/define"
+	define2 "github.com/shamaton/msgpackgen/internal/fortest/define/define"
 )
 
 type A struct {

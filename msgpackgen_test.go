@@ -11,15 +11,20 @@ import (
 	"testing"
 	"time"
 
+	define2 "github.com/shamaton/msgpackgen/internal/fortest/define"
+	"github.com/shamaton/msgpackgen/internal/fortest/define/define"
 	"github.com/shamaton/msgpackgen/msgpack"
-	define2 "github.com/shamaton/msgpackgen/testdata/define"
-	"github.com/shamaton/msgpackgen/testdata/define/define"
 )
 
-var fromMain = false
+var (
+	iDir  = "."
+	iFile = ""
+	oDir  = "."
+	oFile = defaultFileName
+	ptr   = defaultPointerLevel
+)
 
 func TestMain(m *testing.M) {
-	fromMain = true
 	RegisterGeneratedResolver()
 
 	code := m.Run()
@@ -27,9 +32,35 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func TestGenerateCode(t *testing.T) {
+func TestGenerateCodeNotFoundInputDir(t *testing.T) {
+
+	d := "./noname"
+
+	err := generate(d, iFile, oDir, oFile, ptr, true, false, false)
+	if err == nil {
+		t.Fatal("error has to return")
+	}
+	if !strings.Contains(err.Error(), "input directory error") {
+		t.Fatal(err)
+	}
+}
+
+func TestGenerateCodeDuplicateTag(t *testing.T) {
+
+	f := "./testdata/def.go"
+
+	err := generate(iDir, f, oDir, oFile, ptr, true, false, false)
+	if err == nil {
+		t.Fatal("error has to return")
+	}
+	if !strings.Contains(err.Error(), "duplicate tags") {
+		t.Fatal(err)
+	}
+}
+
+func TestGenerateCodeOK(t *testing.T) {
 	var err error
-	err = flag.CommandLine.Set("s", "true")
+	err = flag.CommandLine.Set("strict", "true")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,7 +68,11 @@ func TestGenerateCode(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = flag.CommandLine.Set("p", "2")
+	err = flag.CommandLine.Set("pointer", "2")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = flag.CommandLine.Set("output-file", "resolver_test.go")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"time"
 
-	define2 "github.com/shamaton/msgpackgen/testdata/define"
-	. "github.com/shamaton/msgpackgen/testdata/define/define"
+	define2 "github.com/shamaton/msgpackgen/internal/fortest/define"
+	. "github.com/shamaton/msgpackgen/internal/fortest/define/define"
 )
 
-//go:generate go run github.com/shamaton/msgpackgen -s -p 2 -v -g resolver_test.go
+//go:generate go run github.com/shamaton/msgpackgen -output-file resolver_test.go -pointer 2 -strict -v
 
 // point
 // ドットインポートできる
