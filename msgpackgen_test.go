@@ -81,6 +81,29 @@ func TestGenerateCodeOK(t *testing.T) {
 	main()
 }
 
+func TestSwitchDefaultBehaviour(t *testing.T) {
+	msgpack.SetStructAsArray(false)
+
+	v := Inside{Int: 1}
+	b1, err := msgpack.Encode(v)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	msgpack.SetStructAsArray(true)
+
+	b2, err := msgpack.Encode(v)
+	if err != nil {
+		t.Error(err)
+	}
+	msgpack.SetStructAsArray(false)
+
+	if b1[0] != 0x81 || b2[0] != 0x91 {
+		t.Fatalf("format may be different 0x%x, 0x%x", b1[0], b2[0])
+	}
+
+}
+
 func TestInt(t *testing.T) {
 	v := TestingValue{Int: -8, Int8: math.MinInt8, Int16: math.MinInt16}
 	if err := checkValue(v); err != nil {
@@ -203,6 +226,10 @@ func TestComplex(t *testing.T) {
 		Complex64:  complex(math.MaxFloat32, math.SmallestNonzeroFloat32),
 		Complex128: complex(math.MaxFloat64, math.SmallestNonzeroFloat64),
 	}
+	if err := checkValue(v); err != nil {
+		t.Error(err)
+	}
+	msgpack.SetComplexTypeCode(-123)
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
