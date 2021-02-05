@@ -4,15 +4,15 @@ import (
 	"github.com/shamaton/msgpack"
 )
 
-// Encode returns the MessagePack-encoded byte array of v.
-func Encode(v interface{}) ([]byte, error) {
+// Marshal returns the MessagePack-encoded byte array of v.
+func Marshal(v interface{}) ([]byte, error) {
 	if StructAsArray() {
-		return EncodeAsArray(v)
+		return MarshalAsArray(v)
 	}
-	return EncodeAsMap(v)
+	return MarshalAsMap(v)
 }
 
-func EncodeAsMap(v interface{}) ([]byte, error) {
+func MarshalAsMap(v interface{}) ([]byte, error) {
 	if b, err := encAsMapResolver(v); err != nil {
 		return nil, err
 	} else if b != nil {
@@ -22,7 +22,7 @@ func EncodeAsMap(v interface{}) ([]byte, error) {
 	return msgpack.MarshalAsMap(v)
 }
 
-func EncodeAsArray(v interface{}) ([]byte, error) {
+func MarshalAsArray(v interface{}) ([]byte, error) {
 	if b, err := encAsArrayResolver(v); err != nil {
 		return nil, err
 	} else if b != nil {
@@ -32,16 +32,16 @@ func EncodeAsArray(v interface{}) ([]byte, error) {
 	return msgpack.MarshalAsArray(v)
 }
 
-// Decode analyzes the MessagePack-encoded data and stores
+// Unmarshal analyzes the MessagePack-encoded data and stores
 // the result into the pointer of v.
-func Decode(data []byte, v interface{}) error {
+func Unmarshal(data []byte, v interface{}) error {
 	if StructAsArray() {
-		return DecodeAsArray(data, v)
+		return UnmarshalAsArray(data, v)
 	}
-	return DecodeAsMap(data, v)
+	return UnmarshalAsMap(data, v)
 }
 
-func DecodeAsMap(data []byte, v interface{}) error {
+func UnmarshalAsMap(data []byte, v interface{}) error {
 	b, err := decAsMapResolver(data, v)
 	if err != nil {
 		return err
@@ -52,7 +52,7 @@ func DecodeAsMap(data []byte, v interface{}) error {
 	return msgpack.UnmarshalAsMap(data, v)
 }
 
-func DecodeAsArray(data []byte, v interface{}) error {
+func UnmarshalAsArray(data []byte, v interface{}) error {
 	b, err := decAsArrayResolver(data, v)
 	if err != nil {
 		return err

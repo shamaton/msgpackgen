@@ -85,14 +85,14 @@ func TestSwitchDefaultBehaviour(t *testing.T) {
 	msgpack.SetStructAsArray(false)
 
 	v := Inside{Int: 1}
-	b1, err := msgpack.Encode(v)
+	b1, err := msgpack.Marshal(v)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	msgpack.SetStructAsArray(true)
 
-	b2, err := msgpack.Encode(v)
+	b2, err := msgpack.Marshal(v)
 	if err != nil {
 		t.Error(err)
 	}
@@ -271,7 +271,7 @@ func TestMap(t *testing.T) {
 	//v = TestingValue{
 	//	MapIntInt: make(map[string]int, math.MaxUint32+1),
 	//}
-	//_, err := msgpack.Encode(v)
+	//_, err := msgpack.Marshal(v)
 	//if err == nil {
 	//	t.Errorf("error must occur")
 	//}
@@ -412,12 +412,12 @@ func TestTime(t *testing.T) {
 	now := time.Now()
 	add := now.Add(1 * time.Minute)
 	v := TestingTime{Time: time.Now(), TimePointer: &add}
-	b, err := msgpack.Encode(v)
+	b, err := msgpack.Marshal(v)
 	if err != nil {
 		t.Error(err)
 	}
 	var _v TestingTime
-	err = msgpack.Decode(b, &_v)
+	err = msgpack.Unmarshal(b, &_v)
 	if err != nil {
 		t.Error(err)
 	}
@@ -429,12 +429,12 @@ func TestTime(t *testing.T) {
 	}
 
 	vv := TestingTime{}
-	b, err = msgpack.EncodeAsArray(vv)
+	b, err = msgpack.MarshalAsArray(vv)
 	if err != nil {
 		t.Error(err)
 	}
 	var _vv TestingTime
-	err = msgpack.DecodeAsArray(b, &_vv)
+	err = msgpack.UnmarshalAsArray(b, &_vv)
 	if err != nil {
 		t.Error(err)
 	}
@@ -947,11 +947,11 @@ func checkUndefined(m1, m2, u1, u2 interface{}) error {
 }
 
 func marshal(v1, v2 interface{}) ([]byte, []byte, error, error) {
-	b1, e1 := msgpack.Encode(v1)
-	b2, e2 := msgpack.EncodeAsArray(v2)
+	b1, e1 := msgpack.Marshal(v1)
+	b2, e2 := msgpack.MarshalAsArray(v2)
 	return b1, b2, e1, e2
 }
 
 func unmarshal(b1, b2 []byte, v1, v2 interface{}) (error, error) {
-	return msgpack.Decode(b1, v1), msgpack.DecodeAsArray(b2, v2)
+	return msgpack.Unmarshal(b1, v1), msgpack.UnmarshalAsArray(b2, v2)
 }
