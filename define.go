@@ -54,6 +54,10 @@ type TestingValue struct {
 
 	IntPointers []*int
 	MapPointers map[*uint]**string
+
+	P2IntSlice     **[]int
+	P2MapStringInt **map[string]int
+	P2IntArray     **[1]int
 }
 
 func (v TestingValue) Function() int {
