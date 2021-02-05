@@ -267,7 +267,7 @@ func TestFloat(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		if r.F != 1.23 {
+		if float32(r.F) != 1.23 {
 			t.Errorf("not equal %v", r)
 		}
 	}
