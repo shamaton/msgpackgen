@@ -60,6 +60,14 @@ func (v TestingValue) Function() int {
 	return v.Int + v.Int
 }
 
+type TestingFloat32 struct {
+	F float32
+}
+
+type TestingFloat64 struct {
+	F float64
+}
+
 type TestingTime struct {
 	Time        time.Time
 	TimePointer *time.Time

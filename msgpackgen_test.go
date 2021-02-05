@@ -25,11 +25,33 @@ var (
 )
 
 func TestMain(m *testing.M) {
+	testBeforeRegister()
 	RegisterGeneratedResolver()
 
 	code := m.Run()
 
 	os.Exit(code)
+}
+
+func testBeforeRegister() {
+	v := rand.Int()
+	b, err := msgpack.Marshal(v)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	var vv int
+	err = msgpack.Unmarshal(b, &vv)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	if v != vv {
+		fmt.Println(v, vv, "different")
+		os.Exit(1)
+	}
 }
 
 func TestGenerateCodeNotFoundInputDir(t *testing.T) {
@@ -172,6 +194,67 @@ func TestFloat(t *testing.T) {
 		t.Error(err)
 	}
 
+	{
+		vv := Inside{Int: 1}
+		var r TestingFloat32
+		b, err := msgpack.MarshalAsArray(vv)
+		if err != nil {
+			t.Error(err)
+		}
+		err = msgpack.UnmarshalAsArray(b, &r)
+		if err != nil {
+			t.Error(err)
+		}
+		if r.F != 1 {
+			t.Errorf("not equal %v", r)
+		}
+	}
+	{
+		vv := Inside{Int: -1}
+		var r TestingFloat32
+		b, err := msgpack.MarshalAsArray(vv)
+		if err != nil {
+			t.Error(err)
+		}
+		err = msgpack.UnmarshalAsArray(b, &r)
+		if err != nil {
+			t.Error(err)
+		}
+		if r.F != -1 {
+			t.Errorf("not equal %v", r)
+		}
+	}
+
+	{
+		vv := Inside{Int: 1}
+		var r TestingFloat64
+		b, err := msgpack.MarshalAsArray(vv)
+		if err != nil {
+			t.Error(err)
+		}
+		err = msgpack.UnmarshalAsArray(b, &r)
+		if err != nil {
+			t.Error(err)
+		}
+		if r.F != 1 {
+			t.Errorf("not equal %v", r)
+		}
+	}
+	{
+		vv := Inside{Int: -1}
+		var r TestingFloat64
+		b, err := msgpack.MarshalAsArray(vv)
+		if err != nil {
+			t.Error(err)
+		}
+		err = msgpack.UnmarshalAsArray(b, &r)
+		if err != nil {
+			t.Error(err)
+		}
+		if r.F != -1 {
+			t.Errorf("not equal %v", r)
+		}
+	}
 }
 
 func TestString(t *testing.T) {
