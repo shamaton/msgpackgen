@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/shamaton/msgpack/def"
 	define2 "github.com/shamaton/msgpackgen/internal/fortest/define"
 	"github.com/shamaton/msgpackgen/internal/fortest/define/define"
 	"github.com/shamaton/msgpackgen/msgpack"
@@ -253,6 +254,61 @@ func TestFloat(t *testing.T) {
 		}
 		if r.F != -1 {
 			t.Errorf("not equal %v", r)
+		}
+	}
+	{
+		vv := TestingFloat32{F: 1.23}
+		var r TestingFloat64
+		b, err := msgpack.MarshalAsArray(vv)
+		if err != nil {
+			t.Error(err)
+		}
+		err = msgpack.UnmarshalAsArray(b, &r)
+		if err != nil {
+			t.Error(err)
+		}
+		if r.F != 1.23 {
+			t.Errorf("not equal %v", r)
+		}
+	}
+	{
+		var r TestingFloat32
+		err := msgpack.UnmarshalAsArray([]byte{0x91, def.Nil}, &r)
+		if err != nil {
+			t.Error(err)
+		}
+		if r.F != 0 {
+			t.Errorf("not equal %v", r)
+		}
+	}
+	{
+		var r TestingFloat64
+		err := msgpack.UnmarshalAsArray([]byte{0x91, def.Nil}, &r)
+		if err != nil {
+			t.Error(err)
+		}
+		if r.F != 0 {
+			t.Errorf("not equal %v", r)
+		}
+	}
+	{
+		var r TestingFloat32
+		err := msgpack.UnmarshalAsArray([]byte{0x91, def.True}, &r)
+		if err == nil {
+			t.Errorf("error must occur")
+		}
+		if !strings.Contains(err.Error(), "AsFloat32") {
+			t.Error(err)
+		}
+	}
+	{
+		var r TestingFloat64
+		err := msgpack.UnmarshalAsArray([]byte{0x91, def.True}, &r)
+		if err == nil {
+			t.Errorf("error must occur")
+		}
+		if !strings.Contains(err.Error(), "AsFloat64") {
+			t.Error(err)
 		}
 	}
 }
