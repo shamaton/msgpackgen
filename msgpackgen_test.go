@@ -243,9 +243,9 @@ func TestMap(t *testing.T) {
 		t.Error(err)
 	}
 	v = TestingValue{
-		MapIntInt: make(map[string]int, 1000),
+		MapIntInt: map[string]int{},
 	}
-	for i := 0; i < len(v.MapIntInt); i++ {
+	for i := 0; i < 1000; i++ {
 		v.MapIntInt[fmt.Sprint(i)] = i + 1
 	}
 	if err := checkValue(v); err != nil {
@@ -253,9 +253,9 @@ func TestMap(t *testing.T) {
 	}
 
 	v = TestingValue{
-		MapIntInt: make(map[string]int, math.MaxUint16+1),
+		MapIntInt: map[string]int{},
 	}
-	for i := 0; i < len(v.MapIntInt); i++ {
+	for i := 0; i < math.MaxUint16+1; i++ {
 		v.MapIntInt[fmt.Sprint(i)] = i + 1
 	}
 	if err := checkValue(v); err != nil {
@@ -267,6 +267,17 @@ func TestMap(t *testing.T) {
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
+
+	//v = TestingValue{
+	//	MapIntInt: make(map[string]int, math.MaxUint32+1),
+	//}
+	//_, err := msgpack.Encode(v)
+	//if err == nil {
+	//	t.Errorf("error must occur")
+	//}
+	//if !strings.Contains(err.Error(), "not support this map length") {
+	//	t.Error(err)
+	//}
 }
 
 func TestPointerValue(t *testing.T) {
@@ -474,6 +485,24 @@ func TestSliceArray(t *testing.T) {
 
 	v = TestingValue{}
 	v.Bytes = make([]byte, 100)
+	for i := range v.Bytes {
+		v.Bytes[i] = byte(rand.Intn(255))
+	}
+	if err := check(v); err != nil {
+		t.Error(err)
+	}
+
+	v = TestingValue{}
+	v.Bytes = make([]byte, math.MaxUint8+1)
+	for i := range v.Bytes {
+		v.Bytes[i] = byte(rand.Intn(255))
+	}
+	if err := check(v); err != nil {
+		t.Error(err)
+	}
+
+	v = TestingValue{}
+	v.Bytes = make([]byte, math.MaxUint16+1)
 	for i := range v.Bytes {
 		v.Bytes[i] = byte(rand.Intn(255))
 	}
