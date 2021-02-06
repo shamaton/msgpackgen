@@ -81,6 +81,14 @@ func TestGenerateCodeDuplicateTag(t *testing.T) {
 	}
 }
 
+func TestGenerateCodeDryRun(t *testing.T) {
+
+	err := generate(iDir, iFile, oDir, oFile, ptr, true, false, false)
+	if err != nil {
+		t.Fatal("error has to return")
+	}
+}
+
 func TestGenerateCodeOK(t *testing.T) {
 	var err error
 	err = flag.CommandLine.Set("strict", "true")
@@ -175,6 +183,94 @@ func TestUint(t *testing.T) {
 		t.Error(err)
 	}
 
+	{
+		vv := Inside{Int: -1}
+		var r TestingUint
+		b, err := msgpack.MarshalAsArray(vv)
+		if err != nil {
+			t.Error(err)
+		}
+		err = msgpack.UnmarshalAsArray(b, &r)
+		if err != nil {
+			t.Error(err)
+		}
+		if r.U != math.MaxUint64 {
+			t.Errorf("not equal %v", r)
+		}
+	}
+
+	{
+		vv := Inside{Int: math.MinInt8}
+		var r TestingUint
+		b, err := msgpack.MarshalAsArray(vv)
+		if err != nil {
+			t.Error(err)
+		}
+		err = msgpack.UnmarshalAsArray(b, &r)
+		if err != nil {
+			t.Error(err)
+		}
+		if r.U != math.MaxUint64+math.MinInt8+1 {
+			t.Errorf("not equal %v", r)
+		}
+	}
+
+	{
+		vv := Inside{Int: math.MinInt16}
+		var r TestingUint
+		b, err := msgpack.MarshalAsArray(vv)
+		if err != nil {
+			t.Error(err)
+		}
+		err = msgpack.UnmarshalAsArray(b, &r)
+		if err != nil {
+			t.Error(err)
+		}
+		if r.U != math.MaxUint64+math.MinInt16+1 {
+			t.Errorf("not equal %v", r)
+		}
+	}
+
+	{
+		vv := Inside{Int: math.MinInt32}
+		var r TestingUint
+		b, err := msgpack.MarshalAsArray(vv)
+		if err != nil {
+			t.Error(err)
+		}
+		err = msgpack.UnmarshalAsArray(b, &r)
+		if err != nil {
+			t.Error(err)
+		}
+		if r.U != math.MaxUint64+math.MinInt32+1 {
+			t.Errorf("not equal %v", r)
+		}
+	}
+	{
+		vv := Inside{Int: math.MinInt32 - 1}
+		var r TestingUint
+		b, err := msgpack.MarshalAsArray(vv)
+		if err != nil {
+			t.Error(err)
+		}
+		err = msgpack.UnmarshalAsArray(b, &r)
+		if err != nil {
+			t.Error(err)
+		}
+		if r.U != math.MaxUint64+math.MinInt32 {
+			t.Errorf("not equal %v", r)
+		}
+	}
+	{
+		var r TestingUint
+		err := msgpack.UnmarshalAsArray([]byte{0x91, def.Nil}, &r)
+		if err != nil {
+			t.Error(err)
+		}
+		if r.U != 0 {
+			t.Errorf("not equal %v", r)
+		}
+	}
 }
 
 func TestFloat(t *testing.T) {
@@ -371,6 +467,48 @@ func TestComplex(t *testing.T) {
 	msgpack.SetComplexTypeCode(-123)
 	if err := checkValue(v); err != nil {
 		t.Error(err)
+	}
+
+	b64, err := msgpack.MarshalAsArray(TestingComplex64{})
+	if err != nil {
+		t.Error(err)
+	}
+	b128, err := msgpack.MarshalAsArray(TestingComplex128{})
+	if err != nil {
+		t.Error(err)
+	}
+
+	msgpack.SetComplexTypeCode(-122)
+
+	{
+		var r TestingComplex64
+		err = msgpack.UnmarshalAsArray(b64, &r)
+		if err == nil || !strings.Contains(err.Error(), "fixext8") {
+			t.Error(err)
+		}
+		err := msgpack.UnmarshalAsArray([]byte{0x91, def.True}, &r)
+		if err == nil {
+			t.Errorf("error must occur")
+		}
+		if !strings.Contains(err.Error(), "AsComplex64") {
+			t.Error(err)
+		}
+	}
+	{
+		var r TestingComplex128
+		err = msgpack.UnmarshalAsArray(b128, &r)
+		if err == nil || !strings.Contains(err.Error(), "fixext16") {
+			t.Error(err)
+		}
+		err := msgpack.UnmarshalAsArray([]byte{0x91, def.True}, &r)
+		if err == nil {
+			t.Errorf("error must occur")
+		}
+		if !strings.Contains(err.Error(), "AsComplex128") {
+			t.Error(err)
+		}
+	}
+	{
 	}
 }
 

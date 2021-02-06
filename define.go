@@ -64,12 +64,24 @@ func (v TestingValue) Function() int {
 	return v.Int + v.Int
 }
 
+type TestingUint struct {
+	U uint
+}
+
 type TestingFloat32 struct {
 	F float32
 }
 
 type TestingFloat64 struct {
 	F float64
+}
+
+type TestingComplex64 struct {
+	C complex64
+}
+
+type TestingComplex128 struct {
+	C complex128
 }
 
 type TestingTime struct {
