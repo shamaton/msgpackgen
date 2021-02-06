@@ -44,7 +44,7 @@ jobs:
         run: sh testdata/test.sh
 
       - name: Upload coverage to Codecov
-        if: success() && matrix.go == 1.15 && matrix.os == 'ubuntu-latest'
+        if: success() && matrix.go == 1.15 && matrix.os == 'windows-latest'
         uses: codecov/codecov-action@v1
         with:
           token:
@@ -53,7 +53,7 @@ jobs:
 
   lint:
     needs: test
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
