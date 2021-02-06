@@ -35,36 +35,117 @@ func TestMain(m *testing.M) {
 }
 
 func testBeforeRegister() {
-	v := rand.Int()
-	b, err := msgpack.Marshal(v)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	{
+		v := rand.Int()
+		b, err := msgpack.Marshal(v)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 
-	var vv int
-	err = msgpack.Unmarshal(b, &vv)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+		var vv int
+		err = msgpack.Unmarshal(b, &vv)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 
-	if v != vv {
-		fmt.Println(v, vv, "different")
-		os.Exit(1)
+		if v != vv {
+			fmt.Println(v, vv, "different")
+			os.Exit(1)
+		}
 	}
+	msgpack.SetStructAsArray(true)
+	{
+		v := rand.Int()
+		b, err := msgpack.Marshal(v)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		var vv int
+		err = msgpack.Unmarshal(b, &vv)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		if v != vv {
+			fmt.Println(v, vv, "different")
+			os.Exit(1)
+		}
+	}
+	msgpack.SetStructAsArray(false)
 }
 
-func TestGenerateCodeNotFoundInputDir(t *testing.T) {
+func TestGenerateCodeErrorInput(t *testing.T) {
+	{
+		d := "./noname"
 
-	d := "./noname"
-
-	err := generate(d, iFile, oDir, oFile, ptr, true, false, false)
-	if err == nil {
-		t.Fatal("error has to return")
+		err := generate(d, iFile, oDir, oFile, ptr, true, false, false)
+		if err == nil {
+			t.Fatal("error has to return")
+		}
+		if !strings.Contains(err.Error(), "input directory error") {
+			t.Fatal(err)
+		}
 	}
-	if !strings.Contains(err.Error(), "input directory error") {
-		t.Fatal(err)
+	{
+		d := "./noname"
+		f := "foo.go"
+
+		err := generate(d, f, oDir, oFile, ptr, true, false, false)
+		if err == nil {
+			t.Fatal("error has to return")
+		}
+		if !strings.Contains(err.Error(), "at same time") {
+			t.Fatal(err)
+		}
+	}
+	{
+		d := "main.go"
+
+		err := generate(d, iFile, oDir, oFile, ptr, true, false, false)
+		if err == nil {
+			t.Fatal("error has to return")
+		}
+		if !strings.Contains(err.Error(), "is not directory") {
+			t.Fatal(err)
+		}
+	}
+	{
+		f := "foo.go"
+
+		err := generate(iDir, f, oDir, oFile, ptr, true, false, false)
+		if err == nil {
+			t.Fatal("error has to return")
+		}
+		if !strings.Contains(err.Error(), "input file error") {
+			t.Fatal(err)
+		}
+	}
+	{
+		f := "internal"
+
+		err := generate(iDir, f, oDir, oFile, ptr, true, false, false)
+		if err == nil {
+			t.Fatal("error has to return")
+		}
+		if !strings.Contains(err.Error(), "is a directory") {
+			t.Fatal(err)
+		}
+	}
+	{
+		f := "./testdata/test.sh"
+
+		err := generate(iDir, f, oDir, oFile, ptr, true, false, false)
+		if err == nil {
+			t.Fatal("error has to return")
+		}
+		if !strings.Contains(err.Error(), "is not .go file") {
+			t.Fatal(err)
+		}
 	}
 }
 
@@ -83,7 +164,7 @@ func TestGenerateCodeDuplicateTag(t *testing.T) {
 
 func TestGenerateCodeDryRun(t *testing.T) {
 
-	err := generate(iDir, iFile, oDir, oFile, ptr, true, false, false)
+	err := generate(iDir, iFile, "", oFile, 0, true, false, false)
 	if err != nil {
 		t.Fatal("error has to return")
 	}
@@ -978,6 +1059,20 @@ func TestStruct(t *testing.T) {
 	}
 	if v.R.R.R != nil || v1.R.R.R != nil || v2.R.R.R != nil {
 		t.Error("value different", v.R.R.R, v1.R.R.R, v2.R.R.R)
+	}
+
+	{
+		b1 := []byte{def.Array32, 0x00, 0x00, 0x00, 0x02}
+		var r Inside
+		err := msgpack.UnmarshalAsArray(b1, &r)
+		if err == nil || !strings.Contains(err.Error(), "data length wrong") {
+			t.Error("something wrong", err)
+		}
+		b2 := []byte{def.Map32, 0x00, 0x00, 0x00, 0x02}
+		err = msgpack.UnmarshalAsArray(b2, &r)
+		if err == nil || !strings.Contains(err.Error(), "data length wrong") {
+			t.Error("something wrong", err)
+		}
 	}
 }
 
