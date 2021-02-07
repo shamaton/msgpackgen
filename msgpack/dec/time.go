@@ -15,7 +15,7 @@ func (d *Decoder) AsDateTime(offset int) (time.Time, int, error) {
 	case def.Fixext4:
 		t, offset := d.readSize1(offset)
 		if int8(t) != def.TimeStamp {
-			return time.Time{}, 0, fmt.Errorf("fixext4. time type is diffrent %d, %d", t, def.TimeStamp)
+			return time.Time{}, 0, fmt.Errorf("fixext4. time type is different %d, %d", t, def.TimeStamp)
 		}
 		bs, offset := d.readSize4(offset)
 		return time.Unix(int64(binary.BigEndian.Uint32(bs)), 0), offset, nil
@@ -23,7 +23,7 @@ func (d *Decoder) AsDateTime(offset int) (time.Time, int, error) {
 	case def.Fixext8:
 		t, offset := d.readSize1(offset)
 		if int8(t) != def.TimeStamp {
-			return time.Time{}, 0, fmt.Errorf("fixext8. time type is diffrent %d, %d", t, def.TimeStamp)
+			return time.Time{}, 0, fmt.Errorf("fixext8. time type is different %d, %d", t, def.TimeStamp)
 		}
 		bs, offset := d.readSize8(offset)
 		data64 := binary.BigEndian.Uint64(bs)

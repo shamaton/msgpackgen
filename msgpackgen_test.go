@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/binary"
 	"flag"
 	"fmt"
 	"math"
@@ -767,9 +768,7 @@ func TestPointerValue(t *testing.T) {
 }
 
 func TestTime(t *testing.T) {
-	now := time.Now()
-	add := now.Add(1 * time.Minute)
-	v := TestingTime{Time: time.Now(), TimePointer: &add}
+	v := TestingTime{Time: time.Now()}
 	b, err := msgpack.Marshal(v)
 	if err != nil {
 		t.Error(err)
@@ -780,9 +779,6 @@ func TestTime(t *testing.T) {
 		t.Error(err)
 	}
 	if v.Time.UnixNano() != _v.Time.UnixNano() {
-		t.Errorf("time different %v, %v", v.Time, _v.Time)
-	}
-	if v.TimePointer.UnixNano() != _v.TimePointer.UnixNano() {
 		t.Errorf("time different %v, %v", v.Time, _v.Time)
 	}
 
@@ -799,7 +795,82 @@ func TestTime(t *testing.T) {
 	if vv.Time.UnixNano() != _vv.Time.UnixNano() {
 		t.Errorf("time different %v, %v", vv.Time, _vv.Time)
 	}
-	if vv.TimePointer != nil || _vv.TimePointer != nil {
+
+	{
+		now := time.Now().Unix()
+		nowByte := make([]byte, 4)
+		binary.BigEndian.PutUint32(nowByte, uint32(now))
+
+		var r TestingTime
+		c := def.TimeStamp
+		err = msgpack.UnmarshalAsArray(append([]byte{def.FixArray + 1, def.Fixext4, byte(c)}, nowByte...), &r)
+		if err != nil {
+			t.Error(err)
+		}
+		if r.Time.Unix() != now {
+			t.Error("different time", r.Time.Unix(), now, nowByte)
+		}
+
+		err = msgpack.UnmarshalAsArray(append([]byte{def.FixArray + 1, def.Fixext4, 3}, nowByte...), &r)
+		if err == nil || !strings.Contains(err.Error(), "fixext4. time type is different") {
+			t.Error("something wrong", err)
+		}
+
+		err = msgpack.UnmarshalAsArray([]byte{def.FixArray + 1, def.Fixext8, 3}, &r)
+		if err == nil || !strings.Contains(err.Error(), "fixext8. time type is different") {
+			t.Error("something wrong", err)
+		}
+
+		err = msgpack.UnmarshalAsArray([]byte{def.FixArray + 1, def.Ext8, 11}, &r)
+		if err == nil || !strings.Contains(err.Error(), "ext8. time ext length is different") {
+			t.Error("something wrong", err)
+		}
+
+		err = msgpack.UnmarshalAsArray([]byte{def.FixArray + 1, def.Ext8, 12, 3}, &r)
+		if err == nil || !strings.Contains(err.Error(), "ext8. time type is different") {
+			t.Error("something wrong", err)
+		}
+
+		//nano := 999999999 + 1
+		//nanoByte := make([]byte, 8)
+		//binary.BigEndian.PutUint64(nanoByte, uint64(nano))
+		//data := uint64(nano)<<34
+
+		err = msgpack.UnmarshalAsArray(append([]byte{def.FixArray + 1, def.Fixext1}), &r)
+		if err == nil || !strings.Contains(err.Error(), "AsDateTime") {
+			t.Error("something wrong", err)
+		}
+	}
+}
+
+func TestTimePointer(t *testing.T) {
+	now := time.Now()
+	add := now.Add(1 * time.Minute)
+	v := TestingTimePointer{Time: &add}
+	b, err := msgpack.Marshal(v)
+	if err != nil {
+		t.Error(err)
+	}
+	var _v TestingTimePointer
+	err = msgpack.Unmarshal(b, &_v)
+	if err != nil {
+		t.Error(err)
+	}
+	if v.Time.UnixNano() != _v.Time.UnixNano() {
+		t.Errorf("time different %v, %v", v.Time, _v.Time)
+	}
+
+	vv := TestingTimePointer{}
+	b, err = msgpack.MarshalAsArray(vv)
+	if err != nil {
+		t.Error(err)
+	}
+	var _vv TestingTimePointer
+	err = msgpack.UnmarshalAsArray(b, &_vv)
+	if err != nil {
+		t.Error(err)
+	}
+	if vv.Time != nil || _vv.Time != nil {
 		t.Errorf("time different %v, %v", vv.Time, _vv.Time)
 	}
 }

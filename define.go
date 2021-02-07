@@ -85,8 +85,11 @@ type TestingComplex128 struct {
 }
 
 type TestingTime struct {
-	Time        time.Time
-	TimePointer *time.Time
+	Time time.Time
+}
+
+type TestingTimePointer struct {
+	Time *time.Time
 }
 
 type TestingTag struct {
