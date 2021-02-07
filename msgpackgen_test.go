@@ -811,6 +811,11 @@ func TestTime(t *testing.T) {
 			t.Error("different time", r.Time.Unix(), now, nowByte)
 		}
 
+		_, err := msgpack.MarshalAsArray(r)
+		if err != nil {
+			t.Error(err)
+		}
+
 		err = msgpack.UnmarshalAsArray(append([]byte{def.FixArray + 1, def.Fixext4, 3}, nowByte...), &r)
 		if err == nil || !strings.Contains(err.Error(), "fixext4. time type is different") {
 			t.Error("something wrong", err)
