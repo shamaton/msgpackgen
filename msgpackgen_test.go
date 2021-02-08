@@ -885,7 +885,7 @@ func TestTime(t *testing.T) {
 		//binary.BigEndian.PutUint64(nanoByte, uint64(nano))
 		//data := uint64(nano)<<34
 
-		err = msgpack.UnmarshalAsArray(append([]byte{def.FixArray + 1, def.Fixext1}), &r)
+		err = msgpack.UnmarshalAsArray([]byte{def.FixArray + 1, def.Fixext1}, &r)
 		if err == nil || !strings.Contains(err.Error(), "AsDateTime") {
 			t.Error("something wrong", err)
 		}
