@@ -15,7 +15,10 @@ import (
 	"github.com/shamaton/msgpackgen/internal/generator/structure"
 )
 
-var analyzedStructs []*structure.Structure
+var (
+	analyzedStructs []*structure.Structure
+	structsInBrace  []string
+)
 
 type generator struct {
 	fileSet               *token.FileSet
@@ -83,6 +86,7 @@ func Run(inputDir, inputFile, outDir, fileName string, pointer int, dryRun, stri
 	}
 
 	analyzedStructs = make([]*structure.Structure, 0)
+	structsInBrace = make([]string, 0)
 	g := generator{
 		pointer:               pointer,
 		strict:                strict,
@@ -207,7 +211,12 @@ func (g *generator) run(input, out, fileName string, isInputDir, dryRun bool) er
 				notGen++
 			}
 		}
-		fmt.Printf("=========== %d not generated ==========\n", notGen)
+		fmt.Printf("=========== %d not generated ==========\n", notGen+len(structsInBrace))
+		for _, s := range structsInBrace {
+			fmt.Println(s)
+			fmt.Println("reason")
+			fmt.Println(" └  defined in function")
+		}
 		for _, s := range reasons {
 			if strings.Contains(s, "notgen:") {
 				fmt.Println(strings.ReplaceAll(s, "notgen:", ""))
@@ -215,6 +224,7 @@ func (g *generator) run(input, out, fileName string, isInputDir, dryRun bool) er
 				fmt.Println(s)
 			}
 		}
+		fmt.Println("=========================================")
 	}
 	g.setOthers()
 	f := g.generateCode()

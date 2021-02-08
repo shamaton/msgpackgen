@@ -137,17 +137,30 @@ func (g *generator) createAnalyzedStructs(parseFile *ast.File, packageName, impo
 		}
 	}
 
+	var lBrace, rBrace token.Pos
+
 	structNames := make([]string, 0)
 	ast.Inspect(parseFile, func(n ast.Node) bool {
+
+		xx, ok := n.(*ast.FuncDecl)
+		if ok {
+			lBrace = xx.Body.Lbrace
+			rBrace = xx.Body.Rbrace
+		}
 
 		x, ok := n.(*ast.TypeSpec)
 		if !ok {
 			return true
 		}
 
-		if _, ok := x.Type.(*ast.StructType); ok {
-
+		if _, ok = x.Type.(*ast.StructType); ok {
 			structName := x.Name.String()
+
+			if lBrace <= n.Pos() && n.End() <= rBrace {
+				structsInBrace = append(structsInBrace, fmt.Sprintf("%s.%s", importPath, structName))
+				return true
+			}
+
 			if importPath != g.outputImportPath() && !unicode.IsUpper(rune(structName[0])) {
 				return true
 			}
@@ -386,7 +399,7 @@ func (g *generator) createAnalyzedFields(packageName, structName string, analyze
 	//	// Consider reporting these errors when golint operates on entire packages
 	//	// https://github.com/golang/lint/blob/master/lint.go#L153
 	//}
-	fmt.Println(packageName, structName)
+
 	obj := pkg.Scope().Lookup(structName)
 	internal := obj.Type().Underlying().(*types.Struct)
 
