@@ -118,7 +118,7 @@ func getImportPath(path string) (string, error) {
 		}
 		return paths[1], nil
 	}
-	return "", fmt.Errorf("path %s is outside goppath", path)
+	return "", fmt.Errorf("path %s is outside gopath", path)
 }
 
 func (g *generator) run(input, out, fileName string, isInputDir, dryRun bool) error {
@@ -386,11 +386,11 @@ func (g *generator) output(f *File, genFileName string) error {
 		return err
 	}
 
+	p := genFileName
 	if g.verbose {
-		fmt.Println(path, "generated.")
-	} else {
-		fmt.Println(genFileName, "generated.")
+		p = path
 	}
+	fmt.Println(p, "generated.")
 	return err
 }
 

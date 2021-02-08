@@ -217,28 +217,28 @@ func (st *Structure) createFieldCode(node *Node, encodeFieldName, decodeFieldNam
 
 	switch {
 	case node.IsIdentical():
-		return st.createIdentCode(node, encodeFieldName, decodeFieldName)
+		cArray, cMap, eArray, eMap, dArray, dMap = st.createIdentCode(node, encodeFieldName, decodeFieldName)
 
 	case node.IsSlice():
-		return st.createSliceCode(node, encodeFieldName, decodeFieldName)
+		cArray, cMap, eArray, eMap, dArray, dMap = st.createSliceCode(node, encodeFieldName, decodeFieldName)
 
 	case node.IsArray():
-		return st.createArrayCode(node, encodeFieldName, decodeFieldName)
+		cArray, cMap, eArray, eMap, dArray, dMap = st.createArrayCode(node, encodeFieldName, decodeFieldName)
 
 	case node.IsMap():
-		return st.createMapCode(node, encodeFieldName, decodeFieldName)
+		cArray, cMap, eArray, eMap, dArray, dMap = st.createMapCode(node, encodeFieldName, decodeFieldName)
 
 	case node.IsPointer():
-		return st.createPointerCode(node, encodeFieldName, decodeFieldName)
+		cArray, cMap, eArray, eMap, dArray, dMap = st.createPointerCode(node, encodeFieldName, decodeFieldName)
 
 	case node.IsStruct():
 
 		if node.ImportPath == "time" {
-			return st.createTimeCode(encodeFieldName, decodeFieldName, node)
+			cArray, cMap, eArray, eMap, dArray, dMap = st.createTimeCode(encodeFieldName, decodeFieldName, node)
 		} else {
-			return st.createNamedCode(encodeFieldName, decodeFieldName, node)
+			cArray, cMap, eArray, eMap, dArray, dMap = st.createNamedCode(encodeFieldName, decodeFieldName, node)
 		}
 	}
 
-	return cArray, cMap, eArray, eMap, dArray, dMap
+	return
 }

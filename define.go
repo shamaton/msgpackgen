@@ -58,6 +58,10 @@ type TestingValue struct {
 	P2IntSlice     **[]int
 	P2MapStringInt **map[string]int
 	P2IntArray     **[1]int
+
+	Abcdefghijabcdefghij int
+
+	AbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghij int
 }
 
 func (v TestingValue) Function() int {
@@ -89,7 +93,8 @@ type TestingTime struct {
 }
 
 type TestingTimePointer struct {
-	Time *time.Time
+	Time  *time.Time
+	Times []*time.Time
 }
 
 type TestingTag struct {

@@ -150,6 +150,29 @@ func TestGenerateCodeErrorInput(t *testing.T) {
 	}
 }
 
+func TestGenerateCodeGoPathOutside(t *testing.T) {
+
+	g := os.Getenv("GOPATH")
+	path := os.Getenv("PATH")
+	err := os.Setenv("GOPATH", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = generate(iDir, iFile, oDir, oFile, ptr, true, false, false)
+	if err == nil {
+		t.Fatal("error has to return")
+	}
+	if !strings.Contains(err.Error(), "outside gopath") {
+		t.Fatal(err)
+	}
+
+	err = os.Setenv("GOPATH", g)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestGenerateCodeDuplicateTag(t *testing.T) {
 
 	f := "./testdata/def.go"
@@ -165,7 +188,7 @@ func TestGenerateCodeDuplicateTag(t *testing.T) {
 
 func TestGenerateCodeDryRun(t *testing.T) {
 
-	err := generate(iDir, iFile, "", oFile, 0, true, false, false)
+	err := generate(iDir, iFile, "", oFile, -1, true, false, false)
 	if err != nil {
 		t.Fatal("error has to return")
 	}
@@ -234,7 +257,11 @@ func TestInt(t *testing.T) {
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingValue{Int: math.MinInt64 + 12345}
+	v = TestingValue{
+		Int:                  math.MinInt64 + 12345,
+		Abcdefghijabcdefghij: rand.Int(),
+		AbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghij: rand.Int(),
+	}
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
@@ -768,34 +795,51 @@ func TestPointerValue(t *testing.T) {
 }
 
 func TestTime(t *testing.T) {
-	v := TestingTime{Time: time.Now()}
-	b, err := msgpack.Marshal(v)
-	if err != nil {
-		t.Error(err)
+	{
+		v := TestingTime{Time: time.Now()}
+		b, err := msgpack.Marshal(v)
+		if err != nil {
+			t.Error(err)
+		}
+		var _v TestingTime
+		err = msgpack.Unmarshal(b, &_v)
+		if err != nil {
+			t.Error(err)
+		}
+		if v.Time.UnixNano() != _v.Time.UnixNano() {
+			t.Errorf("time different %v, %v", v.Time, _v.Time)
+		}
 	}
-	var _v TestingTime
-	err = msgpack.Unmarshal(b, &_v)
-	if err != nil {
-		t.Error(err)
+	{
+		vv := TestingTime{}
+		b, err := msgpack.MarshalAsArray(vv)
+		if err != nil {
+			t.Error(err)
+		}
+		var _vv TestingTime
+		err = msgpack.UnmarshalAsArray(b, &_vv)
+		if err != nil {
+			t.Error(err)
+		}
+		if vv.Time.UnixNano() != _vv.Time.UnixNano() {
+			t.Errorf("time different %v, %v", vv.Time, _vv.Time)
+		}
 	}
-	if v.Time.UnixNano() != _v.Time.UnixNano() {
-		t.Errorf("time different %v, %v", v.Time, _v.Time)
+	{
+		v := define2.AA{Time: time.Now()}
+		b, err := msgpack.Marshal(v)
+		if err != nil {
+			t.Error(err)
+		}
+		var _v define2.AA
+		err = msgpack.Unmarshal(b, &_v)
+		if err != nil {
+			t.Error(err)
+		}
+		if v.UnixNano() != _v.UnixNano() {
+			t.Errorf("time different %v, %v", v.Time, _v.Time)
+		}
 	}
-
-	vv := TestingTime{}
-	b, err = msgpack.MarshalAsArray(vv)
-	if err != nil {
-		t.Error(err)
-	}
-	var _vv TestingTime
-	err = msgpack.UnmarshalAsArray(b, &_vv)
-	if err != nil {
-		t.Error(err)
-	}
-	if vv.Time.UnixNano() != _vv.Time.UnixNano() {
-		t.Errorf("time different %v, %v", vv.Time, _vv.Time)
-	}
-
 	{
 		now := time.Now().Unix()
 		nowByte := make([]byte, 4)
@@ -803,7 +847,7 @@ func TestTime(t *testing.T) {
 
 		var r TestingTime
 		c := def.TimeStamp
-		err = msgpack.UnmarshalAsArray(append([]byte{def.FixArray + 1, def.Fixext4, byte(c)}, nowByte...), &r)
+		err := msgpack.UnmarshalAsArray(append([]byte{def.FixArray + 1, def.Fixext4, byte(c)}, nowByte...), &r)
 		if err != nil {
 			t.Error(err)
 		}
@@ -811,7 +855,7 @@ func TestTime(t *testing.T) {
 			t.Error("different time", r.Time.Unix(), now, nowByte)
 		}
 
-		_, err := msgpack.MarshalAsArray(r)
+		_, err = msgpack.MarshalAsArray(r)
 		if err != nil {
 			t.Error(err)
 		}
