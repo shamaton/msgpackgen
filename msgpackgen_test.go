@@ -268,6 +268,23 @@ func TestInt(t *testing.T) {
 	if v.Function() != v.Int*2 {
 		t.Errorf("value diffrent %d, %d", v.Function(), v.Int*2)
 	}
+
+	{
+		var r TestingInt
+		r.I = 1234
+		err := msgpack.UnmarshalAsArray([]byte{0x91, def.Nil}, &r)
+		if err != nil {
+			t.Error(err)
+		}
+		if r.I != 0 {
+			t.Errorf("not equal %v", r)
+		}
+
+		err = msgpack.UnmarshalAsArray([]byte{0x91, def.True}, &r)
+		if err == nil || !strings.Contains(err.Error(), "asInt") {
+			t.Error("something wrong", err)
+		}
+	}
 }
 
 func TestUint(t *testing.T) {
@@ -539,6 +556,23 @@ func TestString(t *testing.T) {
 	v = TestingValue{String: strings.Repeat(base, (math.MaxUint16/len(base))+1)}
 	if err := checkValue(v); err != nil {
 		t.Error(err)
+	}
+
+	{
+		var r TestingString
+		r.S = "setset"
+		err := msgpack.UnmarshalAsArray([]byte{0x91, def.Nil}, &r)
+		if err != nil {
+			t.Error(err)
+		}
+		if r.S != "" {
+			t.Errorf("not equal %v", r)
+		}
+
+		err = msgpack.UnmarshalAsArray([]byte{0x91, def.True}, &r)
+		if err == nil || !strings.Contains(err.Error(), "StringByteLength") {
+			t.Error("something wrong", err)
+		}
 	}
 }
 
@@ -1030,6 +1064,14 @@ func TestSliceArray(t *testing.T) {
 	if err := check(v); err != nil {
 		t.Error(err)
 	}
+
+	v = TestingValue{}
+	v.Bytes = make([]byte, math.MaxUint32+1)
+	_, err := msgpack.MarshalAsArray(v)
+	if err == nil || !strings.Contains(err.Error(), "not support this array length") {
+		t.Error("something wrong", err)
+	}
+
 }
 
 func _checkValue(v interface{}, u1, u2 interface{}, eqs ...func() (bool, interface{}, interface{})) error {

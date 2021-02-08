@@ -68,6 +68,10 @@ func (v TestingValue) Function() int {
 	return v.Int + v.Int
 }
 
+type TestingInt struct {
+	I int
+}
+
 type TestingUint struct {
 	U uint
 }
@@ -78,6 +82,10 @@ type TestingFloat32 struct {
 
 type TestingFloat64 struct {
 	F float64
+}
+
+type TestingString struct {
+	S string
 }
 
 type TestingComplex64 struct {
