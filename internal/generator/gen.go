@@ -121,23 +121,54 @@ func getImportPath(path string) (string, error) {
 	return "", fmt.Errorf("path %s is outside gopath", path)
 }
 
-func (g *generator) run(input, out, fileName string, isInputDir, dryRun bool) error {
+func (g *generator) setOutputInfo(out string) error {
 
 	outAbs, err := filepath.Abs(out)
 	if err != nil {
 		return err
 	}
-
 	g.outputDir = outAbs
+
 	importPath, err := getImportPath(g.outputDir)
 	if err != nil {
 		return err
 	}
-	g.outputPackageName = importPath
+	g.outputPackagePrefix = filepath.Dir(importPath)
+	g.outputPackageName = filepath.Base(importPath)
+
+	// if exist go file
+	fi, err := os.Stat(outAbs)
+	if err != nil {
+		// end proc.
+		return nil
+	}
+	if !fi.IsDir() {
+		return fmt.Errorf("this(%s) path is not directory", out)
+	}
+
+	files, err := g.getTargetFiles(outAbs, false)
+	if len(files) < 1 {
+		return nil
+	}
+	_, packageName, _, err := g.getImportPathAndParseFile(files[0])
+	if err != nil {
+		return err
+	}
+	g.outputPackageName = packageName
+	return nil
+}
+
+func (g *generator) run(input, out, fileName string, isInputDir, dryRun bool) error {
+	g.fileSet = token.NewFileSet()
+
+	err := g.setOutputInfo(out)
+	if err != nil {
+		return err
+	}
 
 	var filePaths []string
 	if isInputDir {
-		filePaths, err = g.getTargetFiles(input)
+		filePaths, err = g.getTargetFiles(input, true)
 		if err != nil {
 			return err
 		}
@@ -199,7 +230,7 @@ func (g *generator) run(input, out, fileName string, isInputDir, dryRun bool) er
 	return nil
 }
 
-func (g *generator) getTargetFiles(dir string) ([]string, error) {
+func (g *generator) getTargetFiles(dir string, recursive bool) ([]string, error) {
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return nil, err
@@ -207,7 +238,7 @@ func (g *generator) getTargetFiles(dir string) ([]string, error) {
 
 	var paths []string
 	for _, file := range files {
-		if file.IsDir() {
+		if file.IsDir() && recursive {
 			if n := file.Name(); strings.HasPrefix(n, ".") || strings.HasPrefix(n, "_") || n == "testdata" {
 				if g.verbose {
 					fmt.Printf("%s is not covered directory. skipping. \n", n)
@@ -215,7 +246,7 @@ func (g *generator) getTargetFiles(dir string) ([]string, error) {
 				continue
 			}
 
-			path, err := g.getTargetFiles(filepath.Join(dir, file.Name()))
+			path, err := g.getTargetFiles(filepath.Join(dir, file.Name()), recursive)
 			if err != nil {
 				return nil, err
 			}

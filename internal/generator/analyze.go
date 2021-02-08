@@ -18,43 +18,18 @@ import (
 )
 
 func (g *generator) getPackages(files []string) error {
-	g.fileSet = token.NewFileSet()
 
 	for _, file := range files {
 
-		dir := filepath.Dir(file)
-		importPath, err := getImportPath(dir)
-		if err != nil {
-			return err
-		}
-		prefix := importPath
-
-		source, err := ioutil.ReadFile(file)
+		importPath, packageName, parseFile, err := g.getImportPathAndParseFile(file)
 		if err != nil {
 			return err
 		}
 
-		parseFile, err := parser.ParseFile(g.fileSet, file, source, parser.AllErrors)
-		if err != nil {
-			return err
-		}
-
-		var packageName string
-		ast.Inspect(parseFile, func(n ast.Node) bool {
-
-			switch x := n.(type) {
-			case *ast.File:
-				packageName = x.Name.String()
-				//fmt.Println(x.Name)
-			}
-
-			return true
-		})
-
-		if dir == g.outputDir {
-			g.outputPackagePrefix = filepath.Dir(prefix)
+		if filepath.Dir(file) == g.outputDir {
+			g.outputPackagePrefix = filepath.Dir(importPath)
 			g.outputPackageName = packageName
-			g.noUserQualMap[prefix] = true
+			g.noUserQualMap[importPath] = true
 		} else if packageName == "main" {
 			if g.verbose {
 				fmt.Println("skipping other main package ", file)
@@ -63,15 +38,47 @@ func (g *generator) getPackages(files []string) error {
 		}
 
 		g.parseFiles = append(g.parseFiles, parseFile)
-		g.parseFile2ImportPath[parseFile] = prefix
-		g.importPath2package[prefix] = packageName
+		g.parseFile2ImportPath[parseFile] = importPath
+		g.importPath2package[importPath] = packageName
 		g.targetPackages[packageName] = true
-		if _, ok := g.importPath2ParseFiles[prefix]; !ok {
-			g.importPath2ParseFiles[prefix] = make([]*ast.File, 0)
+		if _, ok := g.importPath2ParseFiles[importPath]; !ok {
+			g.importPath2ParseFiles[importPath] = make([]*ast.File, 0)
 		}
-		g.importPath2ParseFiles[prefix] = append(g.importPath2ParseFiles[prefix], parseFile)
+		g.importPath2ParseFiles[importPath] = append(g.importPath2ParseFiles[importPath], parseFile)
 	}
 	return nil
+}
+
+func (g *generator) getImportPathAndParseFile(file string) (string, string, *ast.File, error) {
+
+	dir := filepath.Dir(file)
+	importPath, err := getImportPath(dir)
+	if err != nil {
+		return "", "", nil, err
+	}
+
+	source, err := ioutil.ReadFile(file)
+	if err != nil {
+		return "", "", nil, err
+	}
+
+	parseFile, err := parser.ParseFile(g.fileSet, file, source, parser.AllErrors)
+	if err != nil {
+		return "", "", nil, err
+	}
+
+	var packageName string
+	ast.Inspect(parseFile, func(n ast.Node) bool {
+
+		switch x := n.(type) {
+		case *ast.File:
+			packageName = x.Name.String()
+			//fmt.Println(x.Name)
+		}
+
+		return true
+	})
+	return importPath, packageName, parseFile, nil
 }
 
 func (g *generator) analyze() error {
