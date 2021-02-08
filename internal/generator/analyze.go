@@ -379,7 +379,7 @@ func (g *generator) createAnalyzedFields(packageName, structName string, analyze
 	//	// Consider reporting these errors when golint operates on entire packages
 	//	// https://github.com/golang/lint/blob/master/lint.go#L153
 	//}
-
+	fmt.Println(packageName, structName)
 	obj := pkg.Scope().Lookup(structName)
 	internal := obj.Type().Underlying().(*types.Struct)
 

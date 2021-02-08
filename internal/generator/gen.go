@@ -165,13 +165,24 @@ func (g *generator) run(input, out, fileName string, isInputDir, dryRun bool) er
 	analyzedStructs, reasons = g.filter(analyzedStructs, reasons)
 
 	if g.verbose {
-		fmt.Println("=========== generated ==========")
+		fmt.Printf("=========== %d generated ==========\n", len(analyzedStructs))
 		for _, v := range analyzedStructs {
 			fmt.Println(v.ImportPath, v.Name)
 		}
-		fmt.Println("=========== not generated ==========")
+
+		notGen := 0
 		for _, s := range reasons {
-			fmt.Println(s)
+			if strings.Contains(s, "notgen:") {
+				notGen++
+			}
+		}
+		fmt.Printf("=========== %d not generated ==========\n", notGen)
+		for _, s := range reasons {
+			if strings.Contains(s, "notgen:") {
+				fmt.Println(strings.ReplaceAll(s, "notgen:", ""))
+			} else {
+				fmt.Println(s)
+			}
 		}
 	}
 	g.setOthers()
@@ -258,10 +269,14 @@ func (g *generator) filter(structures []*structure.Structure, reasons []string) 
 		}
 
 		if !ok {
-			reasons = append(reasons, fmt.Sprintf("can not generate %s.%s", v.ImportPath, v.Name))
-			reasons = append(reasons, "reason:")
-			for _, s := range rs {
-				reasons = append(reasons, "\t"+s)
+			reasons = append(reasons, fmt.Sprintf("notgen:%s.%s", v.ImportPath, v.Name))
+			reasons = append(reasons, "reason")
+			for i, s := range rs {
+				mark := " ├  "
+				if i == len(rs)-1 {
+					mark = " └  "
+				}
+				reasons = append(reasons, mark+s)
 			}
 		}
 

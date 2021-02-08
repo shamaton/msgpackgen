@@ -88,12 +88,24 @@ type TestingString struct {
 	S string
 }
 
+type TestingBool struct {
+	B bool
+}
+
 type TestingComplex64 struct {
 	C complex64
 }
 
 type TestingComplex128 struct {
 	C complex128
+}
+
+type TestingSlice struct {
+	Slice []int
+}
+
+type TestingMap struct {
+	Map map[string]int
 }
 
 type TestingTime struct {

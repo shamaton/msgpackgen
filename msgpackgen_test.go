@@ -281,7 +281,7 @@ func TestInt(t *testing.T) {
 		}
 
 		err = msgpack.UnmarshalAsArray([]byte{0x91, def.True}, &r)
-		if err == nil || !strings.Contains(err.Error(), "asInt") {
+		if err == nil || !strings.Contains(err.Error(), "AsInt") {
 			t.Error("something wrong", err)
 		}
 	}
@@ -389,12 +389,21 @@ func TestUint(t *testing.T) {
 	}
 	{
 		var r TestingUint
+		r.U = 1234
 		err := msgpack.UnmarshalAsArray([]byte{0x91, def.Nil}, &r)
 		if err != nil {
 			t.Error(err)
 		}
 		if r.U != 0 {
 			t.Errorf("not equal %v", r)
+		}
+
+		err = msgpack.UnmarshalAsArray([]byte{0x91, def.True}, &r)
+		if err == nil {
+			t.Errorf("error must occur")
+		}
+		if !strings.Contains(err.Error(), "AsUint") {
+			t.Error(err)
 		}
 	}
 }
@@ -593,6 +602,25 @@ func TestByteRune(t *testing.T) {
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
+
+	{
+		var r TestingBool
+		r.B = true
+		err := msgpack.UnmarshalAsArray([]byte{0x91, def.Nil}, &r)
+		if err != nil {
+			t.Error(err)
+		}
+		if r.B != false {
+			t.Errorf("not equal %v", r)
+		}
+		err = msgpack.UnmarshalAsArray([]byte{0x91, def.Uint8, 0x01}, &r)
+		if err == nil {
+			t.Errorf("error must occur")
+		}
+		if !strings.Contains(err.Error(), "AsBool") {
+			t.Error(err)
+		}
+	}
 }
 
 func TestComplex(t *testing.T) {
@@ -651,8 +679,6 @@ func TestComplex(t *testing.T) {
 			t.Error(err)
 		}
 	}
-	{
-	}
 }
 
 func TestMap(t *testing.T) {
@@ -688,16 +714,16 @@ func TestMap(t *testing.T) {
 		t.Error(err)
 	}
 
-	//v = TestingValue{
-	//	MapIntInt: make(map[string]int, math.MaxUint32+1),
-	//}
-	//_, err := msgpack.Marshal(v)
-	//if err == nil {
-	//	t.Errorf("error must occur")
-	//}
-	//if !strings.Contains(err.Error(), "not support this map length") {
-	//	t.Error(err)
-	//}
+	{
+		var r TestingMap
+		err := msgpack.UnmarshalAsArray([]byte{0x91, def.True}, &r)
+		if err == nil {
+			t.Errorf("error must occur")
+		}
+		if !strings.Contains(err.Error(), "MapLength") {
+			t.Error(err)
+		}
+	}
 }
 
 func TestPointerValue(t *testing.T) {
@@ -914,10 +940,25 @@ func TestTime(t *testing.T) {
 			t.Error("something wrong", err)
 		}
 
-		//nano := 999999999 + 1
-		//nanoByte := make([]byte, 8)
-		//binary.BigEndian.PutUint64(nanoByte, uint64(nano))
-		//data := uint64(nano)<<34
+		nanoByte := make([]byte, 64)
+		for i := range nanoByte[:30] {
+			nanoByte[i] = 0xff
+		}
+		b := append([]byte{def.FixArray + 1, def.Fixext8, byte(c)}, nanoByte...)
+		err = msgpack.UnmarshalAsArray(b, &r)
+		if err == nil || !strings.Contains(err.Error(), "in timestamp 64 formats") {
+			t.Error(err)
+		}
+
+		nanoByte = make([]byte, 96)
+		for i := range nanoByte[:32] {
+			nanoByte[i] = 0xff
+		}
+		b = append([]byte{def.FixArray + 1, def.Ext8, byte(12), byte(c)}, nanoByte...)
+		err = msgpack.UnmarshalAsArray(b, &r)
+		if err == nil || !strings.Contains(err.Error(), "in timestamp 96 formats") {
+			t.Error(err)
+		}
 
 		err = msgpack.UnmarshalAsArray([]byte{def.FixArray + 1, def.Fixext1}, &r)
 		if err == nil || !strings.Contains(err.Error(), "AsDateTime") {
@@ -1070,6 +1111,25 @@ func TestSliceArray(t *testing.T) {
 	_, err := msgpack.MarshalAsArray(v)
 	if err == nil || !strings.Contains(err.Error(), "not support this array length") {
 		t.Error("something wrong", err)
+	}
+
+	{
+		var r TestingSlice
+		err = msgpack.UnmarshalAsArray([]byte{0x91, def.True}, &r)
+		if err == nil {
+			t.Errorf("error must occur")
+		}
+		if !strings.Contains(err.Error(), "SliceLength") {
+			t.Error(err)
+		}
+	}
+	{
+		vv := TestingSlice{}
+		vv.Slice = make([]int, math.MaxUint32+1)
+		_, err := msgpack.MarshalAsArray(v)
+		if err == nil || !strings.Contains(err.Error(), "not support this array length") {
+			t.Error("something wrong", err)
+		}
 	}
 
 }

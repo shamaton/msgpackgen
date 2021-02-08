@@ -92,7 +92,7 @@ func (d *Decoder) asInt(offset int) (int64, int, error) {
 		return 0, offset, nil
 	}
 
-	return 0, 0, d.errorTemplate(code, "asInt")
+	return 0, 0, d.errorTemplate(code, "AsInt")
 }
 
 func (d *Decoder) isPositiveFixNum(v byte) bool {

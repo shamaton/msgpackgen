@@ -17,17 +17,11 @@ func (d *Decoder) AsFloat32(offset int) (float32, int, error) {
 		return v, offset, nil
 
 	case d.isPositiveFixNum(code), code == def.Uint8, code == def.Uint16, code == def.Uint32, code == def.Uint64:
-		v, offset, err := d.AsUint(offset)
-		if err != nil {
-			break
-		}
+		v, offset, _ := d.AsUint(offset)
 		return float32(v), offset, nil
 
 	case d.isNegativeFixNum(code), code == def.Int8, code == def.Int16, code == def.Int32, code == def.Int64:
-		v, offset, err := d.AsInt(offset)
-		if err != nil {
-			break
-		}
+		v, offset, _ := d.AsInt(offset)
 		return float32(v), offset, nil
 
 	case code == def.Nil:
@@ -54,17 +48,11 @@ func (d *Decoder) AsFloat64(offset int) (float64, int, error) {
 		return float64(v), offset, nil
 
 	case d.isPositiveFixNum(code), code == def.Uint8, code == def.Uint16, code == def.Uint32, code == def.Uint64:
-		v, offset, err := d.AsUint(offset)
-		if err != nil {
-			break
-		}
+		v, offset, _ := d.AsUint(offset)
 		return float64(v), offset, nil
 
 	case d.isNegativeFixNum(code), code == def.Int8, code == def.Int16, code == def.Int32, code == def.Int64:
-		v, offset, err := d.AsInt(offset)
-		if err != nil {
-			break
-		}
+		v, offset, _ := d.AsInt(offset)
 		return float64(v), offset, nil
 
 	case code == def.Nil:
