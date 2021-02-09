@@ -97,7 +97,7 @@ type TestingComplex128 struct {
 }
 
 type TestingSlice struct {
-	Slice []int
+	Slice []int8
 }
 
 type TestingMap struct {
