@@ -1063,16 +1063,16 @@ func TestSlice(t *testing.T) {
 		t.Error(err)
 	}
 
-	v = TestingValue{}
-	v.Bytes = make([]byte, math.MaxUint32+1)
-	_, err := msgpack.MarshalAsArray(v)
-	if err == nil || !strings.Contains(err.Error(), "not support this array length") {
-		t.Error("something wrong", err)
-	}
+	//v = TestingValue{}
+	//v.Bytes = make([]byte, math.MaxUint32+1)
+	//_, err := msgpack.MarshalAsArray(v)
+	//if err == nil || !strings.Contains(err.Error(), "not support this array length") {
+	//	t.Error("something wrong", err)
+	//}
 
 	{
 		var r TestingSlice
-		err = msgpack.UnmarshalAsArray([]byte{0x91, def.True}, &r)
+		err := msgpack.UnmarshalAsArray([]byte{0x91, def.True}, &r)
 		if err == nil {
 			t.Errorf("error must occur")
 		}
