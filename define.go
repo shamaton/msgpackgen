@@ -37,7 +37,7 @@ type TestingValue struct {
 	Complex64  complex64
 	Complex128 complex128
 
-	Slice []int
+	Slice []int8
 	Bytes []byte
 
 	MapIntInt map[string]int

@@ -1006,10 +1006,10 @@ func checkValue(v TestingValue, eqs ...func() (bool, interface{}, interface{})) 
 
 func TestSlice(t *testing.T) {
 
-	f := func(l int) []int {
-		slice := make([]int, l)
+	f := func(l int) []int8 {
+		slice := make([]int8, l)
 		for i := range slice {
-			slice[i] = rand.Intn(math.MaxInt32)
+			slice[i] = int8(rand.Intn(math.MaxUint8) + math.MinInt8)
 		}
 		return slice
 	}
@@ -1023,11 +1023,11 @@ func TestSlice(t *testing.T) {
 	if err := check(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingValue{Slice: f(30015)}
+	v = TestingValue{Slice: f(150)}
 	if err := check(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingValue{Slice: f(1030015)}
+	v = TestingValue{Slice: f(math.MaxUint16 + 1)}
 	if err := check(v); err != nil {
 		t.Error(err)
 	}
