@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"os"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -1069,6 +1070,7 @@ func TestSlice(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "not support this array length") {
 		t.Error("something wrong", err)
 	}
+	runtime.GC()
 
 	{
 		var r TestingSlice
@@ -1089,6 +1091,7 @@ func TestSlice(t *testing.T) {
 		}
 	}
 
+	runtime.GC()
 }
 
 func TestArray(t *testing.T) {
