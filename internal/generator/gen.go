@@ -151,6 +151,9 @@ func (g *generator) setOutputInfo(out string) error {
 	}
 
 	files, err := g.getTargetFiles(outAbs, false)
+	if err != nil {
+		return err
+	}
 	if len(files) < 1 {
 		return nil
 	}

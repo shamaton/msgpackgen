@@ -60,8 +60,10 @@ type TestingValue struct {
 
 func (v TestingValue) Function() int {
 	type NotGenerated9 struct {
+		Int int
 	}
-	return v.Int + v.Int
+	ng := NotGenerated9{}
+	return v.Int + v.Int + ng.Int
 }
 
 type TestingInt struct {
