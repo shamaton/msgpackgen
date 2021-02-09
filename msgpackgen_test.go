@@ -1004,7 +1004,7 @@ func checkValue(v TestingValue, eqs ...func() (bool, interface{}, interface{})) 
 	return _checkValue(v, &v1, &v2, eqs...)
 }
 
-func TestSliceArray(t *testing.T) {
+func TestSlice(t *testing.T) {
 
 	f := func(l int) []int {
 		slice := make([]int, l)
@@ -1064,49 +1064,6 @@ func TestSliceArray(t *testing.T) {
 	}
 
 	v = TestingValue{}
-	for i := range v.Array1 {
-		v.Array1[i] = float32(rand.Intn(0xff))
-	}
-	if err := check(v); err != nil {
-		t.Error(err)
-	}
-	v = TestingValue{}
-	for i := range v.Array2 {
-		v.Array2[i] = "a"
-	}
-	if err := check(v); err != nil {
-		t.Error(err)
-	}
-	v = TestingValue{}
-	for i := range v.Array3 {
-		v.Array3[i] = rand.Intn(0xff) > 0x7f
-	}
-	if err := check(v); err != nil {
-		t.Error(err)
-	}
-	v = TestingValue{}
-	for i := range v.Array4 {
-		v.Array4[i] = rand.Intn(math.MaxInt32)
-	}
-	if err := check(v); err != nil {
-		t.Error(err)
-	}
-	v = TestingValue{}
-	for i := range v.Array5 {
-		v.Array5[i] = rand.Intn(math.MaxInt32)
-	}
-	if err := check(v); err != nil {
-		t.Error(err)
-	}
-	v = TestingValue{}
-	for i := range v.Array6 {
-		v.Array6[i] = rand.Intn(math.MaxInt32)
-	}
-	if err := check(v); err != nil {
-		t.Error(err)
-	}
-
-	v = TestingValue{}
 	v.Bytes = make([]byte, math.MaxUint32+1)
 	_, err := msgpack.MarshalAsArray(v)
 	if err == nil || !strings.Contains(err.Error(), "not support this array length") {
@@ -1132,6 +1089,58 @@ func TestSliceArray(t *testing.T) {
 		}
 	}
 
+}
+
+func TestArray(t *testing.T) {
+	check := func(v TestingArrays) error {
+		var v1, v2 TestingArrays
+		return _checkValue(v, &v1, &v2)
+	}
+
+	var v TestingArrays
+
+	v = TestingArrays{}
+	for i := range v.Array1 {
+		v.Array1[i] = float32(rand.Intn(0xff))
+	}
+	if err := check(v); err != nil {
+		t.Error(err)
+	}
+	v = TestingArrays{}
+	for i := range v.Array2 {
+		v.Array2[i] = "a"
+	}
+	if err := check(v); err != nil {
+		t.Error(err)
+	}
+	v = TestingArrays{}
+	for i := range v.Array3 {
+		v.Array3[i] = rand.Intn(0xff) > 0x7f
+	}
+	if err := check(v); err != nil {
+		t.Error(err)
+	}
+	v = TestingArrays{}
+	for i := range v.Array4 {
+		v.Array4[i] = rand.Intn(math.MaxInt32)
+	}
+	if err := check(v); err != nil {
+		t.Error(err)
+	}
+	v = TestingArrays{}
+	for i := range v.Array5 {
+		v.Array5[i] = rand.Intn(math.MaxInt32)
+	}
+	if err := check(v); err != nil {
+		t.Error(err)
+	}
+	v = TestingArrays{}
+	for i := range v.Array6 {
+		v.Array6[i] = rand.Intn(math.MaxInt32)
+	}
+	if err := check(v); err != nil {
+		t.Error(err)
+	}
 }
 
 func _checkValue(v interface{}, u1, u2 interface{}, eqs ...func() (bool, interface{}, interface{})) error {

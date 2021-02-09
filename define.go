@@ -37,14 +37,8 @@ type TestingValue struct {
 	Complex64  complex64
 	Complex128 complex128
 
-	Slice  []int
-	Bytes  []byte
-	Array1 [8]float32
-	Array2 [31280]string
-	Array3 [1031280]bool
-	Array4 [0b11]int
-	Array5 [0o22]int
-	Array6 [0x33]int
+	Slice []int
+	Bytes []byte
 
 	MapIntInt map[string]int
 
@@ -117,6 +111,15 @@ type TestingTime struct {
 type TestingTimePointer struct {
 	Time  *time.Time
 	Times []*time.Time
+}
+
+type TestingArrays struct {
+	Array1 [8]float32
+	Array2 [31280]string
+	Array3 [1031280]bool
+	Array4 [0b11]int
+	Array5 [0o22]int
+	Array6 [0x33]int
 }
 
 type TestingTag struct {
