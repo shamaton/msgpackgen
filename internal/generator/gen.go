@@ -313,9 +313,9 @@ func (g *generator) filter(structures []*structure.Structure, reasons []string) 
 			reasons = append(reasons, fmt.Sprintf("notgen:%s.%s", v.ImportPath, v.Name))
 			reasons = append(reasons, "reason")
 			for i, s := range rs {
-				mark := " ├  "
+				mark := " |-  "
 				if i == len(rs)-1 {
-					mark = " └  "
+					mark = " `-  "
 				}
 				reasons = append(reasons, mark+s)
 			}
