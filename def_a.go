@@ -10,13 +10,6 @@ import (
 
 //go:generate go run github.com/shamaton/msgpackgen -output-file resolver_test.go -pointer 2 -strict -v
 
-// point
-// ドットインポートできる
-// 別名インポートも出力できる
-// can embedded
-// ワンファイル
-// msgp以上にこうそく
-
 type TestingValue struct {
 	Int        int
 	Int8       int8
@@ -209,4 +202,9 @@ type NotGenerated7 struct {
 type NotGenerated8 struct {
 	Child bytes.Buffer
 	Int   int
+}
+
+type NotGeneratedInt int
+type NotGenerated10 struct {
+	Int NotGeneratedInt
 }

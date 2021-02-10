@@ -1247,6 +1247,10 @@ func TestNotGenerated(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+	err = checkUndefined(NotGenerated10{}, NotGenerated10{}, &NotGenerated10{}, &NotGenerated10{})
+	if err != nil {
+		t.Error(err)
+	}
 }
 
 func TestPrivate(t *testing.T) {
