@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -45,7 +46,7 @@ func (g *generator) outputImportPath() string {
 	return fmt.Sprintf("%s/%s", g.outputPackagePrefix, g.outputPackageName)
 }
 
-func Run(inputDir, inputFile, outDir, fileName string, pointer int, dryRun, strict, verbose bool) error {
+func Run(inputDir, inputFile, outDir, fileName string, pointer int, dryRun, strict, verbose bool, w io.Writer) error {
 
 	// can not input at same time
 	if len(inputFile) > 0 && inputDir != "." {
@@ -101,7 +102,7 @@ func Run(inputDir, inputFile, outDir, fileName string, pointer int, dryRun, stri
 		parseFile2ImportMap:    map[*ast.File]map[string]string{},
 		parseFile2DotImportMap: map[*ast.File]map[string]*structure.Structure{},
 	}
-	return g.run(input, outDir, fileName, isInputDir, dryRun)
+	return g.run(input, outDir, fileName, isInputDir, dryRun, w)
 }
 
 func getImportPath(path string) (string, error) {
@@ -165,7 +166,7 @@ func (g *generator) setOutputInfo(out string) error {
 	return nil
 }
 
-func (g *generator) run(input, out, fileName string, isInputDir, dryRun bool) error {
+func (g *generator) run(input, out, fileName string, isInputDir, dryRun bool, w io.Writer) error {
 	g.fileSet = token.NewFileSet()
 
 	err := g.setOutputInfo(out)
@@ -233,7 +234,7 @@ func (g *generator) run(input, out, fileName string, isInputDir, dryRun bool) er
 	f := g.generateCode()
 
 	if dryRun {
-		fmt.Printf("%#v", f)
+		fmt.Fprintf(w, "%#v", f)
 		return nil
 	}
 	err = g.output(f, fileName)

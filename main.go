@@ -2,7 +2,9 @@ package main
 
 import (
 	"flag"
+	"io"
 	"log"
+	"os"
 
 	"github.com/shamaton/msgpackgen/internal/generator"
 )
@@ -25,12 +27,22 @@ const (
 
 func main() {
 	flag.Parse()
-	err := generate(*inputDir, *inputFile, *outputDir, *filename, *pointer, *dryRun, *strict, *verbose)
+	err := generate(
+		*inputDir,
+		*inputFile,
+		*outputDir,
+		*filename,
+		*pointer,
+		*dryRun,
+		*strict,
+		*verbose,
+		os.Stdout,
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
-func generate(iDir, iFile, oDir, oFile string, p int, dry, s, v bool) error {
-	return generator.Run(iDir, iFile, oDir, oFile, p, dry, s, v)
+func generate(iDir, iFile, oDir, oFile string, p int, dry, s, v bool, w io.Writer) error {
+	return generator.Run(iDir, iFile, oDir, oFile, p, dry, s, v, w)
 }
