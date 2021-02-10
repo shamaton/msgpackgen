@@ -253,7 +253,10 @@ func (g *generator) getTargetFiles(dir string, recursive bool) ([]string, error)
 	var paths []string
 	for _, file := range files {
 		if file.IsDir() && recursive {
-			if n := file.Name(); strings.HasPrefix(n, ".") || strings.HasPrefix(n, "_") || n == "testdata" {
+			if n := file.Name(); strings.HasPrefix(n, ".") ||
+				strings.HasPrefix(n, "_") ||
+				n == "testdata" ||
+				n == "vendor" {
 				if g.verbose {
 					fmt.Printf("%s is not covered directory. skipping. \n", n)
 				}
