@@ -72,41 +72,6 @@ Renaming or omitting are available.
 * Renaming fields via `msgpack:"field_name"`
 * Omitting fields via `msgpack:"-"`
 
-### Not Generated Case
-Not generated in the following cases:
-
-```go
-// ex. a/example.go
-type Example struct {
-	// unsupported types
-	Interface interface{}
-	Uintptr uintptr
-	Error error
-	Chan chan
-	Func func()
-	
-	// nested struct is also unsupported
-	NestedStruct struct {}
-	
-	// because b.Example is not generated
-	B b.Example
-	
-	// because bytes.Butffer is in outside package
-	Buf bytes.Buffer
-}
-
-func (e Example) F() {
-	// unsupported  struct defined in func
-	type InFunction struct {}
-}
-
-// ex a/b/example.go
-type Example struct {
-	Interface interface{}
-}
-```
-If you serialize a struct that wasn't code generated, it will be processed by [shamaton/msgpack](https://github.com/shamaton/msgpack).
-
 
 ### Switch Default Behaviour
 Default serialization behaviour is map type. But the performance of array type is better.
@@ -142,18 +107,46 @@ import ("
 )
 ```
 
+### Not Generated Case
+Not generated in the following cases:
+
+```go
+// ex. a/example.go
+type Example struct {
+	// unsupported types
+	Interface interface{}
+	Uintptr uintptr
+	Error error
+	Chan chan
+	Func func()
+	
+	// nested struct is also unsupported
+	NestedStruct struct {}
+	
+	// because b.Example is not generated
+	B b.Example
+	
+	// because bytes.Butffer is in outside package
+	Buf bytes.Buffer
+}
+
+func (e Example) F() {
+	// unsupported  struct defined in func
+	type InFunction struct {}
+}
+
+// ex a/b/example.go
+type Example struct {
+	Interface interface{}
+}
+```
+If you serialize a struct that wasn't code generated, it will be processed by [shamaton/msgpack](https://github.com/shamaton/msgpack).
+
 ### Strict Mode
+If you use strict mode(option `-strict`), you will get an error if an unrecognized structure is passed.
+In other words,  [shamaton/msgpack](https://github.com/shamaton/msgpack) is not used.
 
-If you are using deeper pointers, you can optionally generate them as well.
-
-If you want to make an error other than the generated code, use strict mode.
-
-### Pointer Level
-* Can specify the pointer level
-  
-### Strict Mode
-* Can use strict mode
-
+---
 
 See also `msgpackgen -h`
 ```shell
