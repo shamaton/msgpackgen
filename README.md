@@ -170,4 +170,5 @@ Usage of msgpackgen:
 
 ## Benchmarks
 
-tdb
+These results are recorded by [msgpack_bench](https://github.com/shamaton/msgpack_bench) at 2021/02.
+<img width="866" alt="bench" src="https://user-images.githubusercontent.com/4637556/107843994-23439e00-6e13-11eb-9303-296be7c24282.png">
