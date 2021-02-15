@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/shamaton/msgpack/def"
+	"github.com/shamaton/msgpack/v2/def"
 )
 
 func (d *Decoder) CheckStructHeader(fieldNum, offset int) (int, error) {

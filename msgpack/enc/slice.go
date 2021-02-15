@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/shamaton/msgpack/def"
+	"github.com/shamaton/msgpack/v2/def"
 )
 
 func (e *Encoder) CalcSliceLength(l int, isChildTypeByte bool) (int, error) {

@@ -1,7 +1,7 @@
 package dec
 
 import (
-	"github.com/shamaton/msgpack/def"
+	"github.com/shamaton/msgpack/v2/def"
 )
 
 func (d *Decoder) readSize1(index int) (byte, int) {

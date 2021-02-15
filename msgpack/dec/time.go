@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/shamaton/msgpack/def"
+	"github.com/shamaton/msgpack/v2/def"
 )
 
 func (d *Decoder) AsDateTime(offset int) (time.Time, int, error) {

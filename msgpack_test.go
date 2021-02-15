@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/shamaton/msgpack/def"
+	"github.com/shamaton/msgpack/v2/def"
 	define2 "github.com/shamaton/msgpackgen/internal/fortest/define"
 	"github.com/shamaton/msgpackgen/internal/fortest/define/define"
 	"github.com/shamaton/msgpackgen/msgpack"

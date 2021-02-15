@@ -3,7 +3,7 @@ package dec
 import (
 	"encoding/binary"
 
-	"github.com/shamaton/msgpack/def"
+	"github.com/shamaton/msgpack/v2/def"
 )
 
 func (d *Decoder) isFixMap(v byte) bool {

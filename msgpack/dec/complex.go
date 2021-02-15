@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/shamaton/msgpack/def"
+	"github.com/shamaton/msgpack/v2/def"
 )
 
 func (d *Decoder) AsComplex64(offset int) (complex64, int, error) {

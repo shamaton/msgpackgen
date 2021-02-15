@@ -2,8 +2,9 @@ package dec
 
 import (
 	"encoding/binary"
-	"github.com/shamaton/msgpack/def"
 	"math"
+
+	"github.com/shamaton/msgpack/v2/def"
 )
 
 func (d *Decoder) AsFloat32(offset int) (float32, int, error) {

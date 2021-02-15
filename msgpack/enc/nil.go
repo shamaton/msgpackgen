@@ -1,6 +1,6 @@
 package enc
 
-import "github.com/shamaton/msgpack/def"
+import "github.com/shamaton/msgpack/v2/def"
 
 func (e *Encoder) CalcNil() int {
 	return def.Byte1

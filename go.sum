@@ -1,4 +1,4 @@
 github.com/dave/jennifer v1.4.1 h1:XyqG6cn5RQsTj3qlWQTKlRGAyrTcsk1kUmWdZBzRjDw=
 github.com/dave/jennifer v1.4.1/go.mod h1:7jEdnm+qBcxl8PC0zyp7vxcpSRnzXSt9r39tpTVGlwA=
-github.com/shamaton/msgpack v1.2.0 h1:fj6Xk4d2WEzQDBN6LssD6CTf3uJDjKoTsHDjRVmnRjU=
-github.com/shamaton/msgpack v1.2.0/go.mod h1:ibiaNQRTCUISAYkkyOpaSCEBiCAxXe6u6Mu1sQ6945U=
+github.com/shamaton/msgpack/v2 v2.0.0 h1:qaFDySYUa5LPaWNBQc9wA72YGaNts86aW9364i8ztGM=
+github.com/shamaton/msgpack/v2 v2.0.0/go.mod h1:aTUEmh31ziGX1Ml7wMPLVY0f4vT3CRsCvZRoSCs+VGg=

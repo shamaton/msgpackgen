@@ -3,7 +3,7 @@ package enc
 import (
 	"time"
 
-	"github.com/shamaton/msgpack/def"
+	"github.com/shamaton/msgpack/v2/def"
 )
 
 func (e *Encoder) CalcTime(t time.Time) int {
