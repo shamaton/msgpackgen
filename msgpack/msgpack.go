@@ -12,26 +12,6 @@ func Marshal(v interface{}) ([]byte, error) {
 	return MarshalAsMap(v)
 }
 
-func MarshalAsMap(v interface{}) ([]byte, error) {
-	if b, err := encAsMapResolver(v); err != nil {
-		return nil, err
-	} else if b != nil {
-		return b, nil
-	}
-
-	return msgpack.MarshalAsMap(v)
-}
-
-func MarshalAsArray(v interface{}) ([]byte, error) {
-	if b, err := encAsArrayResolver(v); err != nil {
-		return nil, err
-	} else if b != nil {
-		return b, nil
-	}
-
-	return msgpack.MarshalAsArray(v)
-}
-
 // Unmarshal analyzes the MessagePack-encoded data and stores
 // the result into the pointer of v.
 func Unmarshal(data []byte, v interface{}) error {
@@ -41,32 +21,14 @@ func Unmarshal(data []byte, v interface{}) error {
 	return UnmarshalAsMap(data, v)
 }
 
-func UnmarshalAsMap(data []byte, v interface{}) error {
-	b, err := decAsMapResolver(data, v)
-	if err != nil {
-		return err
-	}
-	if b {
-		return nil
-	}
-	return msgpack.UnmarshalAsMap(data, v)
-}
-
-func UnmarshalAsArray(data []byte, v interface{}) error {
-	b, err := decAsArrayResolver(data, v)
-	if err != nil {
-		return err
-	}
-	if b {
-		return nil
-	}
-	return msgpack.UnmarshalAsArray(data, v)
-}
-
+// SetStructAsArray sets default encoding option.
+// If this option sets true, default encoding sets to array-format.
 func SetStructAsArray(on bool) {
 	msgpack.StructAsArray = on
 }
 
+// StructAsArray gets default encoding option.
+// If this option sets true, default encoding sets to array-format.
 func StructAsArray() bool {
 	return msgpack.StructAsArray
 }
