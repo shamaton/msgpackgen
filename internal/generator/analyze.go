@@ -27,8 +27,6 @@ func (g *generator) getPackages(files []string) error {
 		}
 
 		if filepath.Dir(file) == g.outputDir {
-			g.outputPackagePrefix = filepath.Dir(importPath)
-			g.outputPackageName = packageName
 			g.noUserQualMap[importPath] = true
 		} else if packageName == "main" {
 			if g.verbose {
@@ -73,7 +71,6 @@ func (g *generator) getImportPathAndParseFile(file string) (string, string, *ast
 		switch x := n.(type) {
 		case *ast.File:
 			packageName = x.Name.String()
-			//fmt.Println(x.Name)
 		}
 
 		return true
@@ -161,7 +158,7 @@ func (g *generator) createAnalyzedStructs(parseFile *ast.File, packageName, impo
 				return true
 			}
 
-			if importPath != g.outputImportPath() && !unicode.IsUpper(rune(structName[0])) {
+			if importPath != g.outputImportPath && !unicode.IsUpper(rune(structName[0])) {
 				return true
 			}
 			structNames = append(structNames, structName)
