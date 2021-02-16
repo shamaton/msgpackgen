@@ -7,6 +7,7 @@ import (
 	"github.com/shamaton/msgpack/v2/def"
 )
 
+// CheckStructHeader checks if fieldNum matches the number of fields on the data.
 func (d *Decoder) CheckStructHeader(fieldNum, offset int) (int, error) {
 	code, offset := d.readSize1(offset)
 	var l int
