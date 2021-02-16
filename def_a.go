@@ -125,9 +125,9 @@ type testingTag struct {
 
 type testingStruct struct {
 	Int int
-	// embedded
-	inside
-	Outside
+
+	Inside  inside
+	Outside outside
 
 	// package name
 	define2.A

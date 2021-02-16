@@ -14,6 +14,7 @@ func (e *Encoder) isNegativeFixInt64(v int64) bool {
 	return def.NegativeFixintMin <= v && v <= def.NegativeFixintMax
 }
 
+// CalcInt checks value and returns data size that need.
 func (e *Encoder) CalcInt(v int) int {
 	return e.calcInt(int64(v))
 }

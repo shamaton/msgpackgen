@@ -6,6 +6,7 @@ import (
 	"github.com/shamaton/msgpack/v2/def"
 )
 
+// AsInt checks codes and returns the got bytes as int
 func (d *Decoder) AsInt(offset int) (int, int, error) {
 	v, offset, err := d.asInt(offset)
 	return int(v), offset, err

@@ -9,6 +9,7 @@ import (
 	"github.com/shamaton/msgpackgen/internal/generator/ptn"
 )
 
+// Structure has information needed for code generation
 type Structure struct {
 	ImportPath string
 	Package    string
@@ -23,32 +24,39 @@ type Structure struct {
 	Reasons []string
 }
 
+// Field has a field information in structure
 type Field struct {
 	Name string
 	Tag  string
 	Node *Node
 }
 
+// CalcArraySizeFuncName gets the function name for each structure
 func (st *Structure) CalcArraySizeFuncName() string {
 	return st.createFuncName("calcArraySize")
 }
 
+// CalcMapSizeFuncName gets the function name for each structure
 func (st *Structure) CalcMapSizeFuncName() string {
 	return st.createFuncName("calcMapSize")
 }
 
+// EncodeArrayFuncName gets the function name for each structure
 func (st *Structure) EncodeArrayFuncName() string {
 	return st.createFuncName("encodeArray")
 }
 
+// EncodeMapFuncName gets the function name for each structure
 func (st *Structure) EncodeMapFuncName() string {
 	return st.createFuncName("encodeMap")
 }
 
+// DecodeArrayFuncName gets the function name for each structure
 func (st *Structure) DecodeArrayFuncName() string {
 	return st.createFuncName("decodeArray")
 }
 
+// DecodeMapFuncName gets the function name for each structure
 func (st *Structure) DecodeMapFuncName() string {
 	return st.createFuncName("decodeMap")
 }
@@ -57,6 +65,7 @@ func (st *Structure) createFuncName(prefix string) string {
 	return createFuncName(prefix, st.Name, st.ImportPath)
 }
 
+// CreateCode creates codes to serialize structure
 func (st *Structure) CreateCode(f *File) {
 	v := "v"
 

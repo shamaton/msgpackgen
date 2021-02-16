@@ -1,5 +1,5 @@
 package main
 
-type Outside struct {
+type outside struct {
 	Int int
 }

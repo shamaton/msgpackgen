@@ -42,6 +42,7 @@ type generator struct {
 	strict  bool
 }
 
+// Run runs code analyzing and generation.
 func Run(inputDir, inputFile, outDir, fileName string, pointer int, dryRun, strict, verbose bool, w io.Writer) error {
 
 	// can not input at same time
@@ -199,33 +200,8 @@ func (g *generator) run(input, out, fileName string, isInputDir, dryRun bool, w 
 	var reasons []string
 	analyzedStructs, reasons = g.filter(analyzedStructs, reasons)
 
-	if g.verbose {
-		fmt.Printf("=========== %d generated ==========\n", len(analyzedStructs))
-		for _, v := range analyzedStructs {
-			fmt.Println(v.ImportPath, v.Name)
-		}
+	g.printAnalyzedResult(reasons)
 
-		notGen := 0
-		for _, s := range reasons {
-			if strings.Contains(s, "notgen:") {
-				notGen++
-			}
-		}
-		fmt.Printf("=========== %d not generated ==========\n", notGen+len(structsInBrace))
-		for _, s := range structsInBrace {
-			fmt.Println(s)
-			fmt.Println("reason")
-			fmt.Println(" └  defined in function")
-		}
-		for _, s := range reasons {
-			if strings.Contains(s, "notgen:") {
-				fmt.Println(strings.ReplaceAll(s, "notgen:", ""))
-			} else {
-				fmt.Println(s)
-			}
-		}
-		fmt.Println("=========================================")
-	}
 	g.setOthers()
 	f := g.generateCode()
 
@@ -328,9 +304,8 @@ func (g *generator) filter(structures []*structure.Structure, reasons []string) 
 	}
 	if !allOk {
 		return g.filter(newStructs, reasons)
-	} else {
-		return newStructs, reasons
 	}
+	return newStructs, reasons
 }
 
 func (g *generator) setOthers() {
@@ -451,6 +426,38 @@ func (g *generator) output(f *File, genFileName string) error {
 	}
 	fmt.Println(p, "generated.")
 	return err
+}
+
+func (g *generator) printAnalyzedResult(reasons []string) {
+	if !g.verbose {
+		return
+	}
+
+	fmt.Printf("=========== %d generated ==========\n", len(analyzedStructs))
+	for _, v := range analyzedStructs {
+		fmt.Println(v.ImportPath, v.Name)
+	}
+
+	notGen := 0
+	for _, s := range reasons {
+		if strings.Contains(s, "notgen:") {
+			notGen++
+		}
+	}
+	fmt.Printf("=========== %d not generated ==========\n", notGen+len(structsInBrace))
+	for _, s := range structsInBrace {
+		fmt.Println(s)
+		fmt.Println("reason")
+		fmt.Println(" └  defined in function")
+	}
+	for _, s := range reasons {
+		if strings.Contains(s, "notgen:") {
+			fmt.Println(strings.ReplaceAll(s, "notgen:", ""))
+		} else {
+			fmt.Println(s)
+		}
+	}
+	fmt.Println("=========================================")
 }
 
 func (g *generator) decodeTopTemplate(name string, f *File) *Statement {

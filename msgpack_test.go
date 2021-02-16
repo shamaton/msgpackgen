@@ -66,7 +66,7 @@ func TestInt(t *testing.T) {
 		t.Error(err)
 	}
 	if v.Function() != v.Int*2 {
-		t.Errorf("value diffrent %d, %d", v.Function(), v.Int*2)
+		t.Errorf("value different %d, %d", v.Function(), v.Int*2)
 	}
 
 	{
@@ -528,26 +528,26 @@ func TestMap(t *testing.T) {
 
 func TestPointerValue(t *testing.T) {
 	{
-		_v := 123
-		v := testingValue{Pint: &_v}
+		vv := 123
+		v := testingValue{Pint: &vv}
 		if err := checkValue(v); err != nil {
 			t.Error(err)
 		}
 	}
 	{
-		_v := "this is pointer"
-		__v := &_v
-		v := testingValue{P2string: &__v}
+		vv := "this is pointer"
+		vvv := &vv
+		v := testingValue{P2string: &vvv}
 		if err := checkValue(v); err != nil {
 			t.Error(err)
 		}
 	}
 	{
-		_v := float32(1.234)
-		__v := &_v
-		___v := &__v
-		____v := &___v
-		v := testingValue{P3float32: ____v}
+		vv := float32(1.234)
+		vvv := &vv
+		vvvv := &vvv
+		vvvvv := &vvvv
+		v := testingValue{P3float32: vvvvv}
 		if err := checkValue(v); err != nil {
 			t.Error(err)
 		}
@@ -566,39 +566,39 @@ func TestPointerValue(t *testing.T) {
 	}
 	{
 
-		_v := float32(1.234)
-		__v := &_v
-		___v := &__v
-		____v := &___v
+		vv := float32(1.234)
+		vvv := &vv
+		vvvv := &vvv
+		vvvvv := &vvvv
 
-		__v = nil
-		v := testingValue{P3float32: ____v}
+		vvv = nil
+		v := testingValue{P3float32: vvvvv}
 		if err := check(v); err != nil {
 			t.Error(err)
 		}
-		___v = nil
-		v = testingValue{P3float32: ____v}
+		vvvv = nil
+		v = testingValue{P3float32: vvvvv}
 		if err := check(v); err != nil {
 			t.Error(err)
 		}
-		____v = nil
-		v = testingValue{P3float32: ____v}
+		vvvvv = nil
+		v = testingValue{P3float32: vvvvv}
 		if err := check(v); err != nil {
 			t.Error(err)
 		}
 	}
 	{
-		_v := make([]*int, 100)
-		for i := range _v {
+		vv := make([]*int, 100)
+		for i := range vv {
 			if i%2 == 0 {
-				__v := i
-				_v[i] = &__v
+				vvv := i
+				vv[i] = &vvv
 			} else {
-				_v[i] = nil
+				vv[i] = nil
 			}
 		}
 
-		v := testingValue{IntPointers: _v}
+		v := testingValue{IntPointers: vv}
 		if err := checkValue(v); err != nil {
 			t.Error(err)
 		}
@@ -608,14 +608,14 @@ func TestPointerValue(t *testing.T) {
 		var v1, v2 testingValue
 		f1 := func() (bool, interface{}, interface{}) {
 			mp := map[uint]string{}
-			for _k, _v := range v1.MapPointers {
-				__v := *_v
-				mp[*_k] = *__v
+			for kk, vv := range v1.MapPointers {
+				vvv := *vv
+				mp[*kk] = *vvv
 			}
-			for _k, _v := range v.MapPointers {
-				__v := *_v
-				if str, ok := mp[*_k]; !ok || str != *__v {
-					return false, str, *__v
+			for kk, vv := range v.MapPointers {
+				vvv := *vv
+				if str, ok := mp[*kk]; !ok || str != *vvv {
+					return false, str, *vvv
 				}
 			}
 			return true, nil, nil
@@ -623,14 +623,14 @@ func TestPointerValue(t *testing.T) {
 
 		f2 := func() (bool, interface{}, interface{}) {
 			mp := map[uint]string{}
-			for _k, _v := range v2.MapPointers {
-				__v := *_v
-				mp[*_k] = *__v
+			for kk, vv := range v2.MapPointers {
+				vvv := *vv
+				mp[*kk] = *vvv
 			}
-			for _k, _v := range v.MapPointers {
-				__v := *_v
-				if str, ok := mp[*_k]; !ok || str != *__v {
-					return false, str, *__v
+			for kk, vv := range v.MapPointers {
+				vvv := *vv
+				if str, ok := mp[*kk]; !ok || str != *vvv {
+					return false, str, *vvv
 				}
 			}
 			return true, nil, nil
@@ -639,15 +639,15 @@ func TestPointerValue(t *testing.T) {
 		return _checkValue(v, &v1, &v2, f1, f2)
 	}
 	{
-		_v := make(map[*uint]**string, 10)
+		vvv := make(map[*uint]**string, 10)
 		for i := 0; i < 10; i++ {
 			k := uint(i)
 			v := fmt.Sprint(i, i, i)
 			vv := &v
-			_v[&k] = &vv
+			vvv[&k] = &vv
 		}
 
-		v := testingValue{MapPointers: _v}
+		v := testingValue{MapPointers: vvv}
 		if err := check2(v); err != nil {
 			t.Error(err)
 		}
@@ -661,13 +661,13 @@ func TestTime(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		var _v testingTime
-		err = msgpack.Unmarshal(b, &_v)
+		var vv testingTime
+		err = msgpack.Unmarshal(b, &vv)
 		if err != nil {
 			t.Error(err)
 		}
-		if v.Time.UnixNano() != _v.Time.UnixNano() {
-			t.Errorf("time different %v, %v", v.Time, _v.Time)
+		if v.Time.UnixNano() != vv.Time.UnixNano() {
+			t.Errorf("time different %v, %v", v.Time, vv.Time)
 		}
 	}
 	{
@@ -676,13 +676,13 @@ func TestTime(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		var _vv testingTime
-		err = msgpack.UnmarshalAsArray(b, &_vv)
+		var vvv testingTime
+		err = msgpack.UnmarshalAsArray(b, &vvv)
 		if err != nil {
 			t.Error(err)
 		}
-		if vv.Time.UnixNano() != _vv.Time.UnixNano() {
-			t.Errorf("time different %v, %v", vv.Time, _vv.Time)
+		if vv.Time.UnixNano() != vvv.Time.UnixNano() {
+			t.Errorf("time different %v, %v", vv.Time, vvv.Time)
 		}
 	}
 	{
@@ -691,13 +691,13 @@ func TestTime(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		var _v define2.AA
-		err = msgpack.Unmarshal(b, &_v)
+		var vv define2.AA
+		err = msgpack.Unmarshal(b, &vv)
 		if err != nil {
 			t.Error(err)
 		}
-		if v.UnixNano() != _v.UnixNano() {
-			t.Errorf("time different %v, %v", v.Time, _v.Time)
+		if v.UnixNano() != vv.UnixNano() {
+			t.Errorf("time different %v, %v", v.Time, vv.Time)
 		}
 	}
 	{
@@ -775,13 +775,13 @@ func TestTimePointer(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	var _v testingTimePointer
-	err = msgpack.Unmarshal(b, &_v)
+	var r testingTimePointer
+	err = msgpack.Unmarshal(b, &r)
 	if err != nil {
 		t.Error(err)
 	}
-	if v.Time.UnixNano() != _v.Time.UnixNano() {
-		t.Errorf("time different %v, %v", v.Time, _v.Time)
+	if v.Time.UnixNano() != r.Time.UnixNano() {
+		t.Errorf("time different %v, %v", v.Time, r.Time)
 	}
 
 	vv := testingTimePointer{}
@@ -789,13 +789,13 @@ func TestTimePointer(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	var _vv testingTimePointer
-	err = msgpack.UnmarshalAsArray(b, &_vv)
+	var rr testingTimePointer
+	err = msgpack.UnmarshalAsArray(b, &rr)
 	if err != nil {
 		t.Error(err)
 	}
-	if vv.Time != nil || _vv.Time != nil {
-		t.Errorf("time different %v, %v", vv.Time, _vv.Time)
+	if vv.Time != nil || rr.Time != nil {
+		t.Errorf("time different %v, %v", vv.Time, rr.Time)
 	}
 }
 
@@ -970,11 +970,11 @@ func _checkValue(v interface{}, u1, u2 interface{}, eqs ...func() (bool, interfa
 			return fmt.Errorf("not equal u2 %v, %v", v, u2)
 		}
 	} else {
-		if b, _v1, _v2 := eqs[0](); !b {
-			return fmt.Errorf("not equal u1 %v, %v", _v1, _v2)
+		if b, v1, v2 := eqs[0](); !b {
+			return fmt.Errorf("not equal u1 %v, %v", v1, v2)
 		}
-		if b, _v1, _v2 := eqs[1](); !b {
-			return fmt.Errorf("not equal u2 %v, %v", _v1, _v2)
+		if b, v1, v2 := eqs[1](); !b {
+			return fmt.Errorf("not equal u2 %v, %v", v1, v2)
 		}
 	}
 	return nil
@@ -999,25 +999,25 @@ func TestStruct(t *testing.T) {
 	if v.Int != v1.Int || v.Int != v2.Int {
 		t.Error("value different", v.Int, v1.Int, v2.Int)
 	}
-	if v.Int == v1.inside.Int || v.Int == v2.Outside.Int {
-		t.Error("value something wrong", v.Int, v1.inside.Int, v2.Outside.Int)
+	if v.Int == v1.Inside.Int || v.Int == v2.Outside.Int {
+		t.Error("value something wrong", v.Int, v1.Inside.Int, v2.Outside.Int)
 	}
 
 	v = testingStruct{}
-	v.inside = inside{Int: rand.Int()}
+	v.Inside = inside{Int: rand.Int()}
 	v1, v2, err = check(v)
 	if err != nil {
 		t.Error(err)
 	}
-	if v.inside == v1.inside || v.inside == v2.inside {
-		t.Error("value equal", v.inside, v1.inside, v2.inside)
+	if !reflect.DeepEqual(v.Inside, v1.Inside) || !reflect.DeepEqual(v.Inside, v2.Inside) {
+		t.Error("value different", v.Inside, v1.Inside, v2.Inside)
 	}
-	if v.inside.Int == v1.Int || v.inside.Int == v2.Outside.Int {
-		t.Error("value something wrong", v.inside.Int, v1.Int, v2.Outside.Int)
+	if v.Inside.Int == v1.Int || v.Inside.Int == v2.Outside.Int {
+		t.Error("value something wrong", v.Inside.Int, v1.Int, v2.Outside.Int)
 	}
 
 	v = testingStruct{}
-	v.Outside = Outside{Int: rand.Int()}
+	v.Outside = outside{Int: rand.Int()}
 	v1, v2, err = check(v)
 	if err != nil {
 		t.Error(err)
@@ -1025,8 +1025,8 @@ func TestStruct(t *testing.T) {
 	if !reflect.DeepEqual(v.Outside, v1.Outside) || !reflect.DeepEqual(v.Outside, v2.Outside) {
 		t.Error("value different", v.Outside, v1.Outside, v2.Outside)
 	}
-	if v.Outside.Int == v1.Int || v.Outside.Int == v2.inside.Int {
-		t.Error("value something wrong", v.Outside.Int, v1.Int, v2.inside.Int)
+	if v.Outside.Int == v1.Int || v.Outside.Int == v2.Inside.Int {
+		t.Error("value something wrong", v.Outside.Int, v1.Int, v2.Inside.Int)
 	}
 
 	v = testingStruct{}
@@ -1172,8 +1172,8 @@ func TestPointer(t *testing.T) {
 	}
 
 	// decode triple pointer
-	_v3, _v4 := new(testingValue), new(testingValue)
-	v3, v4 := &_v3, &_v4
+	v3p, v4p := new(testingValue), new(testingValue)
+	v3, v4 := &v3p, &v4p
 	err1, err2 = unmarshal(b3, b4, &v3, &v4)
 	if err1 != nil {
 		t.Error(err1)
@@ -1188,11 +1188,11 @@ func TestPointer(t *testing.T) {
 	if !reflect.DeepEqual(v, *v2) {
 		t.Error("not equal v2", v, *v2)
 	}
-	if _v := *v3; !reflect.DeepEqual(v, *_v) {
-		t.Error("not equal v3", v, _v)
+	if v3v := *v3; !reflect.DeepEqual(v, *v3v) {
+		t.Error("not equal v3", v, v3v)
 	}
-	if _v := *v4; !reflect.DeepEqual(v, *_v) {
-		t.Error("not equal v4", v, _v)
+	if v4v := *v4; !reflect.DeepEqual(v, *v4v) {
+		t.Error("not equal v4", v, v4v)
 	}
 
 	//// NG
@@ -1212,9 +1212,9 @@ func TestPointer(t *testing.T) {
 	}
 
 	// decode quad pointer
-	__v5, __v6 := new(testingValue), new(testingValue)
-	_v5, _v6 := &__v5, &__v6
-	v5, v6 := &_v5, &_v6
+	v5pp, v6pp := new(testingValue), new(testingValue)
+	v5p, v6p := &v5pp, &v6pp
+	v5, v6 := &v5p, &v6p
 	err1, err2 = unmarshal(b5, b6, &v5, &v6)
 	if err1 != nil && !strings.Contains(err1.Error(), "strict") {
 		t.Error(err1)

@@ -1,5 +1,6 @@
 package main
 
+// S is a definition for test
 type S struct {
 	Int int
 }
