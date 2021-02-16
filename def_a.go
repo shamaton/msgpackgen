@@ -10,7 +10,7 @@ import (
 
 //go:generate go run github.com/shamaton/msgpackgen -output-file resolver_test.go -pointer 2 -strict -v
 
-type TestingValue struct {
+type testingValue struct {
 	Int        int
 	Int8       int8
 	Int16      int16
@@ -51,64 +51,64 @@ type TestingValue struct {
 	AbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghij int
 }
 
-func (v TestingValue) Function() int {
-	type NotGenerated9 struct {
+func (v testingValue) Function() int {
+	type notGenerated9 struct {
 		Int int
 	}
-	ng := NotGenerated9{}
+	ng := notGenerated9{}
 	return v.Int + v.Int + ng.Int
 }
 
-type TestingInt struct {
+type testingInt struct {
 	I int
 }
 
-type TestingUint struct {
+type testingUint struct {
 	U uint
 }
 
-type TestingFloat32 struct {
+type testingFloat32 struct {
 	F float32
 }
 
-type TestingFloat64 struct {
+type testingFloat64 struct {
 	F float64
 }
 
-type TestingString struct {
+type testingString struct {
 	S string
 }
 
-type TestingBool struct {
+type testingBool struct {
 	B bool
 }
 
-type TestingComplex64 struct {
+type testingComplex64 struct {
 	C complex64
 }
 
-type TestingComplex128 struct {
+type testingComplex128 struct {
 	C complex128
 }
 
-type TestingSlice struct {
+type testingSlice struct {
 	Slice []int8
 }
 
-type TestingMap struct {
+type testingMap struct {
 	Map map[string]int
 }
 
-type TestingTime struct {
+type testingTime struct {
 	Time time.Time
 }
 
-type TestingTimePointer struct {
+type testingTimePointer struct {
 	Time  *time.Time
 	Times []*time.Time
 }
 
-type TestingArrays struct {
+type testingArrays struct {
 	Array1 [8]float32
 	Array2 [31280]string
 	Array3 [1031280]bool
@@ -117,16 +117,16 @@ type TestingArrays struct {
 	Array6 [0x33]int
 }
 
-type TestingTag struct {
+type testingTag struct {
 	Tag    int `msgpack:"tag_tag_tag_tag_tag"`
 	Ignore int `msgpack:"ignore"`
 	Omit   int `msgpack:"-"`
 }
 
-type TestingStruct struct {
+type testingStruct struct {
 	Int int
 	// embedded
-	Inside
+	inside
 	Outside
 
 	// package name
@@ -137,74 +137,74 @@ type TestingStruct struct {
 	Time
 
 	// recursive
-	R *Recursive
+	R *recursive
 
-	TmpSlice   []Inside
-	TmpArray   [1]Inside
-	TmpMap     map[Inside]Inside
-	TmpPointer *Inside
+	TmpSlice   []inside
+	TmpArray   [1]inside
+	TmpMap     map[inside]inside
+	TmpPointer *inside
 }
 
-type Inside struct {
+type inside struct {
 	Int int
 }
 
-type Recursive struct {
+type recursive struct {
 	Int int
-	R   *Recursive
+	R   *recursive
 }
 
-type Private struct {
+type private struct {
 	i int
 }
 
-func (p *Private) SetInt() {
+func (p *private) SetInt() {
 	p.i = 1
 }
 
-type NotGenerated1 struct {
+type notGenerated1 struct {
 	Int       int
 	Interface interface{}
 }
 
-type NotGenerated2 struct {
+type notGenerated2 struct {
 	Int int
 	Ptr uintptr
 }
 
-type NotGenerated3 struct {
+type notGenerated3 struct {
 	Error error
 	Int   int
 }
 
-type NotGenerated4 struct {
+type notGenerated4 struct {
 	Chan chan int
 	Int  int
 }
 
-type NotGenerated5 struct {
+type notGenerated5 struct {
 	InnerStruct struct {
 		Int int
 	}
 	Int int
 }
 
-type NotGenerated6 struct {
+type notGenerated6 struct {
 	Func func() int
 	Int  int
 }
 
-type NotGenerated7 struct {
+type notGenerated7 struct {
 	Child define2.NotGeneratedChild
 	Int   int
 }
 
-type NotGenerated8 struct {
+type notGenerated8 struct {
 	Child bytes.Buffer
 	Int   int
 }
 
-type NotGeneratedInt int
-type NotGenerated10 struct {
-	Int NotGeneratedInt
+type notGeneratedInt int
+type notGenerated10 struct {
+	Int notGeneratedInt
 }

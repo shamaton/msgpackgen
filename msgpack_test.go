@@ -20,7 +20,7 @@ import (
 func TestSwitchDefaultBehaviour(t *testing.T) {
 	msgpack.SetStructAsArray(false)
 
-	v := Inside{Int: 1}
+	v := inside{Int: 1}
 	b1, err := msgpack.Marshal(v)
 	if err != nil {
 		t.Fatal(err)
@@ -41,23 +41,23 @@ func TestSwitchDefaultBehaviour(t *testing.T) {
 }
 
 func TestInt(t *testing.T) {
-	v := TestingValue{Int: -8, Int8: math.MinInt8, Int16: math.MinInt16}
+	v := testingValue{Int: -8, Int8: math.MinInt8, Int16: math.MinInt16}
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingValue{Int: -108, Int8: math.MaxInt8, Int16: math.MaxInt16}
+	v = testingValue{Int: -108, Int8: math.MaxInt8, Int16: math.MaxInt16}
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingValue{Int: -30108, Int32: math.MinInt32, Int64: math.MinInt64}
+	v = testingValue{Int: -30108, Int32: math.MinInt32, Int64: math.MinInt64}
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingValue{Int: -1030108, Int32: math.MaxInt32, Int64: math.MaxInt64}
+	v = testingValue{Int: -1030108, Int32: math.MaxInt32, Int64: math.MaxInt64}
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingValue{
+	v = testingValue{
 		Int:                  math.MinInt64 + 12345,
 		Abcdefghijabcdefghij: rand.Int(),
 		AbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghij: rand.Int(),
@@ -70,7 +70,7 @@ func TestInt(t *testing.T) {
 	}
 
 	{
-		var r TestingInt
+		var r testingInt
 		r.I = 1234
 		err := msgpack.UnmarshalAsArray([]byte{0x91, def.Nil}, &r)
 		if err != nil {
@@ -88,30 +88,30 @@ func TestInt(t *testing.T) {
 }
 
 func TestUint(t *testing.T) {
-	v := TestingValue{Uint: 8, Uint8: math.MaxUint8}
+	v := testingValue{Uint: 8, Uint8: math.MaxUint8}
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingValue{Uint: 130, Uint16: math.MaxUint16}
+	v = testingValue{Uint: 130, Uint16: math.MaxUint16}
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingValue{Uint: 30130, Uint32: math.MaxUint32}
+	v = testingValue{Uint: 30130, Uint32: math.MaxUint32}
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingValue{Uint: 1030130, Uint64: math.MaxUint64}
+	v = testingValue{Uint: 1030130, Uint64: math.MaxUint64}
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingValue{Uint: math.MaxUint64 - 12345}
+	v = testingValue{Uint: math.MaxUint64 - 12345}
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
 
 	{
-		vv := Inside{Int: -1}
-		var r TestingUint
+		vv := inside{Int: -1}
+		var r testingUint
 		b, err := msgpack.MarshalAsArray(vv)
 		if err != nil {
 			t.Error(err)
@@ -126,8 +126,8 @@ func TestUint(t *testing.T) {
 	}
 
 	{
-		vv := Inside{Int: math.MinInt8}
-		var r TestingUint
+		vv := inside{Int: math.MinInt8}
+		var r testingUint
 		b, err := msgpack.MarshalAsArray(vv)
 		if err != nil {
 			t.Error(err)
@@ -142,8 +142,8 @@ func TestUint(t *testing.T) {
 	}
 
 	{
-		vv := Inside{Int: math.MinInt16}
-		var r TestingUint
+		vv := inside{Int: math.MinInt16}
+		var r testingUint
 		b, err := msgpack.MarshalAsArray(vv)
 		if err != nil {
 			t.Error(err)
@@ -158,8 +158,8 @@ func TestUint(t *testing.T) {
 	}
 
 	{
-		vv := Inside{Int: math.MinInt32}
-		var r TestingUint
+		vv := inside{Int: math.MinInt32}
+		var r testingUint
 		b, err := msgpack.MarshalAsArray(vv)
 		if err != nil {
 			t.Error(err)
@@ -173,8 +173,8 @@ func TestUint(t *testing.T) {
 		}
 	}
 	{
-		vv := Inside{Int: math.MinInt32 - 1}
-		var r TestingUint
+		vv := inside{Int: math.MinInt32 - 1}
+		var r testingUint
 		b, err := msgpack.MarshalAsArray(vv)
 		if err != nil {
 			t.Error(err)
@@ -188,7 +188,7 @@ func TestUint(t *testing.T) {
 		}
 	}
 	{
-		var r TestingUint
+		var r testingUint
 		r.U = 1234
 		err := msgpack.UnmarshalAsArray([]byte{0x91, def.Nil}, &r)
 		if err != nil {
@@ -209,26 +209,26 @@ func TestUint(t *testing.T) {
 }
 
 func TestFloat(t *testing.T) {
-	v := TestingValue{Float32: 0, Float64: 0}
+	v := testingValue{Float32: 0, Float64: 0}
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingValue{Float32: -1, Float64: -1}
+	v = testingValue{Float32: -1, Float64: -1}
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingValue{Float32: math.SmallestNonzeroFloat32, Float64: math.SmallestNonzeroFloat64}
+	v = testingValue{Float32: math.SmallestNonzeroFloat32, Float64: math.SmallestNonzeroFloat64}
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingValue{Float32: math.MaxFloat32, Float64: math.MaxFloat64}
+	v = testingValue{Float32: math.MaxFloat32, Float64: math.MaxFloat64}
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
 
 	{
-		vv := Inside{Int: 1}
-		var r TestingFloat32
+		vv := inside{Int: 1}
+		var r testingFloat32
 		b, err := msgpack.MarshalAsArray(vv)
 		if err != nil {
 			t.Error(err)
@@ -242,8 +242,8 @@ func TestFloat(t *testing.T) {
 		}
 	}
 	{
-		vv := Inside{Int: -1}
-		var r TestingFloat32
+		vv := inside{Int: -1}
+		var r testingFloat32
 		b, err := msgpack.MarshalAsArray(vv)
 		if err != nil {
 			t.Error(err)
@@ -258,8 +258,8 @@ func TestFloat(t *testing.T) {
 	}
 
 	{
-		vv := Inside{Int: 1}
-		var r TestingFloat64
+		vv := inside{Int: 1}
+		var r testingFloat64
 		b, err := msgpack.MarshalAsArray(vv)
 		if err != nil {
 			t.Error(err)
@@ -273,8 +273,8 @@ func TestFloat(t *testing.T) {
 		}
 	}
 	{
-		vv := Inside{Int: -1}
-		var r TestingFloat64
+		vv := inside{Int: -1}
+		var r testingFloat64
 		b, err := msgpack.MarshalAsArray(vv)
 		if err != nil {
 			t.Error(err)
@@ -288,8 +288,8 @@ func TestFloat(t *testing.T) {
 		}
 	}
 	{
-		vv := TestingFloat32{F: 1.23}
-		var r TestingFloat64
+		vv := testingFloat32{F: 1.23}
+		var r testingFloat64
 		b, err := msgpack.MarshalAsArray(vv)
 		if err != nil {
 			t.Error(err)
@@ -303,7 +303,7 @@ func TestFloat(t *testing.T) {
 		}
 	}
 	{
-		var r TestingFloat32
+		var r testingFloat32
 		err := msgpack.UnmarshalAsArray([]byte{0x91, def.Nil}, &r)
 		if err != nil {
 			t.Error(err)
@@ -313,7 +313,7 @@ func TestFloat(t *testing.T) {
 		}
 	}
 	{
-		var r TestingFloat64
+		var r testingFloat64
 		err := msgpack.UnmarshalAsArray([]byte{0x91, def.Nil}, &r)
 		if err != nil {
 			t.Error(err)
@@ -323,7 +323,7 @@ func TestFloat(t *testing.T) {
 		}
 	}
 	{
-		var r TestingFloat32
+		var r testingFloat32
 		err := msgpack.UnmarshalAsArray([]byte{0x91, def.True}, &r)
 		if err == nil {
 			t.Errorf("error must occur")
@@ -333,7 +333,7 @@ func TestFloat(t *testing.T) {
 		}
 	}
 	{
-		var r TestingFloat64
+		var r testingFloat64
 		err := msgpack.UnmarshalAsArray([]byte{0x91, def.True}, &r)
 		if err == nil {
 			t.Errorf("error must occur")
@@ -346,29 +346,29 @@ func TestFloat(t *testing.T) {
 
 func TestString(t *testing.T) {
 	base := "abcdefghijklmnopqrstuvwxyz12345"
-	v := TestingValue{String: ""}
+	v := testingValue{String: ""}
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingValue{String: strings.Repeat(base, 1)}
+	v = testingValue{String: strings.Repeat(base, 1)}
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingValue{String: strings.Repeat(base, 8)}
+	v = testingValue{String: strings.Repeat(base, 8)}
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingValue{String: strings.Repeat(base, (math.MaxUint16/len(base))-1)}
+	v = testingValue{String: strings.Repeat(base, (math.MaxUint16/len(base))-1)}
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingValue{String: strings.Repeat(base, (math.MaxUint16/len(base))+1)}
+	v = testingValue{String: strings.Repeat(base, (math.MaxUint16/len(base))+1)}
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
 
 	{
-		var r TestingString
+		var r testingString
 		r.S = "setset"
 		err := msgpack.UnmarshalAsArray([]byte{0x91, def.Nil}, &r)
 		if err != nil {
@@ -386,11 +386,11 @@ func TestString(t *testing.T) {
 }
 
 func TestBool(t *testing.T) {
-	v := TestingValue{Bool: true}
+	v := testingValue{Bool: true}
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingValue{Bool: false}
+	v = testingValue{Bool: false}
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
@@ -398,13 +398,13 @@ func TestBool(t *testing.T) {
 }
 
 func TestByteRune(t *testing.T) {
-	v := TestingValue{Byte: 127, Rune: 'a'}
+	v := testingValue{Byte: 127, Rune: 'a'}
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
 
 	{
-		var r TestingBool
+		var r testingBool
 		r.B = true
 		err := msgpack.UnmarshalAsArray([]byte{0x91, def.Nil}, &r)
 		if err != nil {
@@ -424,11 +424,11 @@ func TestByteRune(t *testing.T) {
 }
 
 func TestComplex(t *testing.T) {
-	v := TestingValue{Complex64: complex(1, 2), Complex128: complex(3, 4)}
+	v := testingValue{Complex64: complex(1, 2), Complex128: complex(3, 4)}
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingValue{
+	v = testingValue{
 		Complex64:  complex(math.MaxFloat32, math.SmallestNonzeroFloat32),
 		Complex128: complex(math.MaxFloat64, math.SmallestNonzeroFloat64),
 	}
@@ -440,11 +440,11 @@ func TestComplex(t *testing.T) {
 		t.Error(err)
 	}
 
-	b64, err := msgpack.MarshalAsArray(TestingComplex64{})
+	b64, err := msgpack.MarshalAsArray(testingComplex64{})
 	if err != nil {
 		t.Error(err)
 	}
-	b128, err := msgpack.MarshalAsArray(TestingComplex128{})
+	b128, err := msgpack.MarshalAsArray(testingComplex128{})
 	if err != nil {
 		t.Error(err)
 	}
@@ -452,7 +452,7 @@ func TestComplex(t *testing.T) {
 	msgpack.SetComplexTypeCode(-122)
 
 	{
-		var r TestingComplex64
+		var r testingComplex64
 		err = msgpack.UnmarshalAsArray(b64, &r)
 		if err == nil || !strings.Contains(err.Error(), "fixext8") {
 			t.Error(err)
@@ -466,7 +466,7 @@ func TestComplex(t *testing.T) {
 		}
 	}
 	{
-		var r TestingComplex128
+		var r testingComplex128
 		err = msgpack.UnmarshalAsArray(b128, &r)
 		if err == nil || !strings.Contains(err.Error(), "fixext16") {
 			t.Error(err)
@@ -482,13 +482,13 @@ func TestComplex(t *testing.T) {
 }
 
 func TestMap(t *testing.T) {
-	v := TestingValue{
+	v := testingValue{
 		MapIntInt: map[string]int{"1": 2, "3": 4, "5": 6, "7": 8, "9": 10},
 	}
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingValue{
+	v = testingValue{
 		MapIntInt: map[string]int{},
 	}
 	for i := 0; i < 1000; i++ {
@@ -498,7 +498,7 @@ func TestMap(t *testing.T) {
 		t.Error(err)
 	}
 
-	v = TestingValue{
+	v = testingValue{
 		MapIntInt: map[string]int{},
 	}
 	for i := 0; i < math.MaxUint16+1; i++ {
@@ -507,7 +507,7 @@ func TestMap(t *testing.T) {
 	if err := checkValue(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingValue{
+	v = testingValue{
 		MapIntInt: nil,
 	}
 	if err := checkValue(v); err != nil {
@@ -515,7 +515,7 @@ func TestMap(t *testing.T) {
 	}
 
 	{
-		var r TestingMap
+		var r testingMap
 		err := msgpack.UnmarshalAsArray([]byte{0x91, def.True}, &r)
 		if err == nil {
 			t.Errorf("error must occur")
@@ -529,7 +529,7 @@ func TestMap(t *testing.T) {
 func TestPointerValue(t *testing.T) {
 	{
 		_v := 123
-		v := TestingValue{Pint: &_v}
+		v := testingValue{Pint: &_v}
 		if err := checkValue(v); err != nil {
 			t.Error(err)
 		}
@@ -537,7 +537,7 @@ func TestPointerValue(t *testing.T) {
 	{
 		_v := "this is pointer"
 		__v := &_v
-		v := TestingValue{P2string: &__v}
+		v := testingValue{P2string: &__v}
 		if err := checkValue(v); err != nil {
 			t.Error(err)
 		}
@@ -547,14 +547,14 @@ func TestPointerValue(t *testing.T) {
 		__v := &_v
 		___v := &__v
 		____v := &___v
-		v := TestingValue{P3float32: ____v}
+		v := testingValue{P3float32: ____v}
 		if err := checkValue(v); err != nil {
 			t.Error(err)
 		}
 	}
 
-	check := func(v TestingValue) error {
-		var v1, v2 TestingValue
+	check := func(v testingValue) error {
+		var v1, v2 testingValue
 		f1 := func() (bool, interface{}, interface{}) {
 			return v1.P3float32 == nil, v1.P3float32, nil
 		}
@@ -572,17 +572,17 @@ func TestPointerValue(t *testing.T) {
 		____v := &___v
 
 		__v = nil
-		v := TestingValue{P3float32: ____v}
+		v := testingValue{P3float32: ____v}
 		if err := check(v); err != nil {
 			t.Error(err)
 		}
 		___v = nil
-		v = TestingValue{P3float32: ____v}
+		v = testingValue{P3float32: ____v}
 		if err := check(v); err != nil {
 			t.Error(err)
 		}
 		____v = nil
-		v = TestingValue{P3float32: ____v}
+		v = testingValue{P3float32: ____v}
 		if err := check(v); err != nil {
 			t.Error(err)
 		}
@@ -598,14 +598,14 @@ func TestPointerValue(t *testing.T) {
 			}
 		}
 
-		v := TestingValue{IntPointers: _v}
+		v := testingValue{IntPointers: _v}
 		if err := checkValue(v); err != nil {
 			t.Error(err)
 		}
 	}
 
-	check2 := func(v TestingValue) error {
-		var v1, v2 TestingValue
+	check2 := func(v testingValue) error {
+		var v1, v2 testingValue
 		f1 := func() (bool, interface{}, interface{}) {
 			mp := map[uint]string{}
 			for _k, _v := range v1.MapPointers {
@@ -647,7 +647,7 @@ func TestPointerValue(t *testing.T) {
 			_v[&k] = &vv
 		}
 
-		v := TestingValue{MapPointers: _v}
+		v := testingValue{MapPointers: _v}
 		if err := check2(v); err != nil {
 			t.Error(err)
 		}
@@ -656,12 +656,12 @@ func TestPointerValue(t *testing.T) {
 
 func TestTime(t *testing.T) {
 	{
-		v := TestingTime{Time: time.Now()}
+		v := testingTime{Time: time.Now()}
 		b, err := msgpack.Marshal(v)
 		if err != nil {
 			t.Error(err)
 		}
-		var _v TestingTime
+		var _v testingTime
 		err = msgpack.Unmarshal(b, &_v)
 		if err != nil {
 			t.Error(err)
@@ -671,12 +671,12 @@ func TestTime(t *testing.T) {
 		}
 	}
 	{
-		vv := TestingTime{}
+		vv := testingTime{}
 		b, err := msgpack.MarshalAsArray(vv)
 		if err != nil {
 			t.Error(err)
 		}
-		var _vv TestingTime
+		var _vv testingTime
 		err = msgpack.UnmarshalAsArray(b, &_vv)
 		if err != nil {
 			t.Error(err)
@@ -705,7 +705,7 @@ func TestTime(t *testing.T) {
 		nowByte := make([]byte, 4)
 		binary.BigEndian.PutUint32(nowByte, uint32(now))
 
-		var r TestingTime
+		var r testingTime
 		c := def.TimeStamp
 		err := msgpack.UnmarshalAsArray(append([]byte{def.FixArray + 1, def.Fixext4, byte(c)}, nowByte...), &r)
 		if err != nil {
@@ -770,12 +770,12 @@ func TestTime(t *testing.T) {
 func TestTimePointer(t *testing.T) {
 	now := time.Now()
 	add := now.Add(1 * time.Minute)
-	v := TestingTimePointer{Time: &add}
+	v := testingTimePointer{Time: &add}
 	b, err := msgpack.Marshal(v)
 	if err != nil {
 		t.Error(err)
 	}
-	var _v TestingTimePointer
+	var _v testingTimePointer
 	err = msgpack.Unmarshal(b, &_v)
 	if err != nil {
 		t.Error(err)
@@ -784,12 +784,12 @@ func TestTimePointer(t *testing.T) {
 		t.Errorf("time different %v, %v", v.Time, _v.Time)
 	}
 
-	vv := TestingTimePointer{}
+	vv := testingTimePointer{}
 	b, err = msgpack.MarshalAsArray(vv)
 	if err != nil {
 		t.Error(err)
 	}
-	var _vv TestingTimePointer
+	var _vv testingTimePointer
 	err = msgpack.UnmarshalAsArray(b, &_vv)
 	if err != nil {
 		t.Error(err)
@@ -799,8 +799,8 @@ func TestTimePointer(t *testing.T) {
 	}
 }
 
-func checkValue(v TestingValue, eqs ...func() (bool, interface{}, interface{})) error {
-	var v1, v2 TestingValue
+func checkValue(v testingValue, eqs ...func() (bool, interface{}, interface{})) error {
+	var v1, v2 testingValue
 	return _checkValue(v, &v1, &v2, eqs...)
 }
 
@@ -814,29 +814,29 @@ func TestSlice(t *testing.T) {
 		return slice
 	}
 
-	check := func(v TestingValue) error {
-		var v1, v2 TestingValue
+	check := func(v testingValue) error {
+		var v1, v2 testingValue
 		return _checkValue(v, &v1, &v2)
 	}
 
-	v := TestingValue{Slice: f(15)}
+	v := testingValue{Slice: f(15)}
 	if err := check(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingValue{Slice: f(150)}
+	v = testingValue{Slice: f(150)}
 	if err := check(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingValue{Slice: f(math.MaxUint16 + 1)}
+	v = testingValue{Slice: f(math.MaxUint16 + 1)}
 	if err := check(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingValue{Slice: nil}
+	v = testingValue{Slice: nil}
 	if err := check(v); err != nil {
 		t.Error(err)
 	}
 
-	v = TestingValue{}
+	v = testingValue{}
 	v.Bytes = make([]byte, 100)
 	for i := range v.Bytes {
 		v.Bytes[i] = byte(rand.Intn(255))
@@ -845,7 +845,7 @@ func TestSlice(t *testing.T) {
 		t.Error(err)
 	}
 
-	v = TestingValue{}
+	v = testingValue{}
 	v.Bytes = make([]byte, math.MaxUint8+1)
 	for i := range v.Bytes {
 		v.Bytes[i] = byte(rand.Intn(255))
@@ -854,7 +854,7 @@ func TestSlice(t *testing.T) {
 		t.Error(err)
 	}
 
-	v = TestingValue{}
+	v = testingValue{}
 	v.Bytes = make([]byte, math.MaxUint16+1)
 	for i := range v.Bytes {
 		v.Bytes[i] = byte(rand.Intn(255))
@@ -863,7 +863,7 @@ func TestSlice(t *testing.T) {
 		t.Error(err)
 	}
 
-	v = TestingValue{}
+	v = testingValue{}
 	v.Bytes = make([]byte, math.MaxUint32+1)
 	_, err := msgpack.MarshalAsArray(v)
 	if err == nil || !strings.Contains(err.Error(), "not support this array length") {
@@ -872,7 +872,7 @@ func TestSlice(t *testing.T) {
 	runtime.GC()
 
 	{
-		var r TestingSlice
+		var r testingSlice
 		err = msgpack.UnmarshalAsArray([]byte{0x91, def.True}, &r)
 		if err == nil {
 			t.Errorf("error must occur")
@@ -882,7 +882,7 @@ func TestSlice(t *testing.T) {
 		}
 	}
 	//{ windows panic...
-	//	vv := TestingSlice{}
+	//	vv := testingSlice{}
 	//	vv.Slice = make([]int8, math.MaxUint32+1)
 	//	_, err := msgpack.MarshalAsArray(v)
 	//	if err == nil || !strings.Contains(err.Error(), "not support this array length") {
@@ -894,49 +894,49 @@ func TestSlice(t *testing.T) {
 }
 
 func TestArray(t *testing.T) {
-	check := func(v TestingArrays) error {
-		var v1, v2 TestingArrays
+	check := func(v testingArrays) error {
+		var v1, v2 testingArrays
 		return _checkValue(v, &v1, &v2)
 	}
 
-	var v TestingArrays
+	var v testingArrays
 
-	v = TestingArrays{}
+	v = testingArrays{}
 	for i := range v.Array1 {
 		v.Array1[i] = float32(rand.Intn(0xff))
 	}
 	if err := check(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingArrays{}
+	v = testingArrays{}
 	for i := range v.Array2 {
 		v.Array2[i] = "a"
 	}
 	if err := check(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingArrays{}
+	v = testingArrays{}
 	for i := range v.Array3 {
 		v.Array3[i] = rand.Intn(0xff) > 0x7f
 	}
 	if err := check(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingArrays{}
+	v = testingArrays{}
 	for i := range v.Array4 {
 		v.Array4[i] = rand.Intn(math.MaxInt32)
 	}
 	if err := check(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingArrays{}
+	v = testingArrays{}
 	for i := range v.Array5 {
 		v.Array5[i] = rand.Intn(math.MaxInt32)
 	}
 	if err := check(v); err != nil {
 		t.Error(err)
 	}
-	v = TestingArrays{}
+	v = testingArrays{}
 	for i := range v.Array6 {
 		v.Array6[i] = rand.Intn(math.MaxInt32)
 	}
@@ -981,16 +981,16 @@ func _checkValue(v interface{}, u1, u2 interface{}, eqs ...func() (bool, interfa
 }
 
 func TestStruct(t *testing.T) {
-	check := func(v TestingStruct) (TestingStruct, TestingStruct, error) {
+	check := func(v testingStruct) (testingStruct, testingStruct, error) {
 		f := func() (bool, interface{}, interface{}) {
 			return true, nil, nil
 		}
-		var r1, r2 TestingStruct
+		var r1, r2 testingStruct
 		err := _checkValue(v, &r1, &r2, f, f)
 		return r1, r2, err
 	}
 
-	v := TestingStruct{}
+	v := testingStruct{}
 	v.Int = rand.Int()
 	v1, v2, err := check(v)
 	if err != nil {
@@ -999,24 +999,24 @@ func TestStruct(t *testing.T) {
 	if v.Int != v1.Int || v.Int != v2.Int {
 		t.Error("value different", v.Int, v1.Int, v2.Int)
 	}
-	if v.Int == v1.Inside.Int || v.Int == v2.Outside.Int {
-		t.Error("value something wrong", v.Int, v1.Inside.Int, v2.Outside.Int)
+	if v.Int == v1.inside.Int || v.Int == v2.Outside.Int {
+		t.Error("value something wrong", v.Int, v1.inside.Int, v2.Outside.Int)
 	}
 
-	v = TestingStruct{}
-	v.Inside = Inside{Int: rand.Int()}
+	v = testingStruct{}
+	v.inside = inside{Int: rand.Int()}
 	v1, v2, err = check(v)
 	if err != nil {
 		t.Error(err)
 	}
-	if !reflect.DeepEqual(v.Inside, v1.Inside) || !reflect.DeepEqual(v.Inside, v2.Inside) {
-		t.Error("value different", v.Inside, v1.Inside, v2.Inside)
+	if v.inside == v1.inside || v.inside == v2.inside {
+		t.Error("value equal", v.inside, v1.inside, v2.inside)
 	}
-	if v.Inside.Int == v1.Int || v.Inside.Int == v2.Outside.Int {
-		t.Error("value something wrong", v.Inside.Int, v1.Int, v2.Outside.Int)
+	if v.inside.Int == v1.Int || v.inside.Int == v2.Outside.Int {
+		t.Error("value something wrong", v.inside.Int, v1.Int, v2.Outside.Int)
 	}
 
-	v = TestingStruct{}
+	v = testingStruct{}
 	v.Outside = Outside{Int: rand.Int()}
 	v1, v2, err = check(v)
 	if err != nil {
@@ -1025,11 +1025,11 @@ func TestStruct(t *testing.T) {
 	if !reflect.DeepEqual(v.Outside, v1.Outside) || !reflect.DeepEqual(v.Outside, v2.Outside) {
 		t.Error("value different", v.Outside, v1.Outside, v2.Outside)
 	}
-	if v.Outside.Int == v1.Int || v.Outside.Int == v2.Inside.Int {
-		t.Error("value something wrong", v.Outside.Int, v1.Int, v2.Inside.Int)
+	if v.Outside.Int == v1.Int || v.Outside.Int == v2.inside.Int {
+		t.Error("value something wrong", v.Outside.Int, v1.Int, v2.inside.Int)
 	}
 
-	v = TestingStruct{}
+	v = testingStruct{}
 	v.A = define2.A{Int: rand.Int(), B: define.B{Int: rand.Int()}}
 	v1, v2, err = check(v)
 	if err != nil {
@@ -1048,7 +1048,7 @@ func TestStruct(t *testing.T) {
 		t.Error("value something wrong", v.A.Int, v1.Int, v2.Int)
 	}
 
-	v = TestingStruct{}
+	v = testingStruct{}
 	v.BB = define.DotImport{Int: rand.Int()}
 	v1, v2, err = check(v)
 	if err != nil {
@@ -1061,7 +1061,7 @@ func TestStruct(t *testing.T) {
 		t.Error("value something wrong", v.BB.Int, v1.Int, v2.Int)
 	}
 
-	v = TestingStruct{}
+	v = testingStruct{}
 	v.Time = define.Time{Int: rand.Int()}
 	v1, v2, err = check(v)
 	if err != nil {
@@ -1074,9 +1074,9 @@ func TestStruct(t *testing.T) {
 		t.Error("value something wrong", v.Time.Int, v1.Int, v2.Int)
 	}
 
-	v = TestingStruct{}
-	v.R = &Recursive{Int: rand.Int()}
-	v.R.R = &Recursive{Int: rand.Int()}
+	v = testingStruct{}
+	v.R = &recursive{Int: rand.Int()}
+	v.R.R = &recursive{Int: rand.Int()}
 	v1, v2, err = check(v)
 	if err != nil {
 		t.Error(err)
@@ -1096,7 +1096,7 @@ func TestStruct(t *testing.T) {
 
 	{
 		b1 := []byte{def.Array32, 0x00, 0x00, 0x00, 0x02}
-		var r Inside
+		var r inside
 		err := msgpack.UnmarshalAsArray(b1, &r)
 		if err == nil || !strings.Contains(err.Error(), "data length wrong") {
 			t.Error("something wrong", err)
@@ -1110,7 +1110,7 @@ func TestStruct(t *testing.T) {
 }
 
 func TestTag(t *testing.T) {
-	v := TestingTag{Tag: 1, Ignore: rand.Int(), Omit: rand.Int()}
+	v := testingTag{Tag: 1, Ignore: rand.Int(), Omit: rand.Int()}
 	b1, b2, e1, e2 := marshal(v, v)
 	if e1 != nil || e2 != nil {
 		t.Error(e1, e2)
@@ -1122,7 +1122,7 @@ func TestTag(t *testing.T) {
 		t.Errorf("something wrong %v % x", v, b2)
 	}
 
-	var v1, v2 TestingTag
+	var v1, v2 testingTag
 	e1, e2 = unmarshal(b1, b2, &v1, &v2)
 	if e1 != nil || e2 != nil {
 		t.Error(e1, e2)
@@ -1140,7 +1140,7 @@ func TestTag(t *testing.T) {
 
 func TestPointer(t *testing.T) {
 
-	v := TestingValue{Int: -1, Uint: 1}
+	v := testingValue{Int: -1, Uint: 1}
 
 	//// OK
 	// encode single pointer
@@ -1153,7 +1153,7 @@ func TestPointer(t *testing.T) {
 	}
 
 	// decode double pointer
-	v1, v2 := new(TestingValue), new(TestingValue)
+	v1, v2 := new(testingValue), new(testingValue)
 	err1, err2 = unmarshal(b1, b2, &v1, &v2)
 	if err1 != nil {
 		t.Error(err1)
@@ -1172,7 +1172,7 @@ func TestPointer(t *testing.T) {
 	}
 
 	// decode triple pointer
-	_v3, _v4 := new(TestingValue), new(TestingValue)
+	_v3, _v4 := new(testingValue), new(testingValue)
 	v3, v4 := &_v3, &_v4
 	err1, err2 = unmarshal(b3, b4, &v3, &v4)
 	if err1 != nil {
@@ -1212,7 +1212,7 @@ func TestPointer(t *testing.T) {
 	}
 
 	// decode quad pointer
-	__v5, __v6 := new(TestingValue), new(TestingValue)
+	__v5, __v6 := new(testingValue), new(testingValue)
 	_v5, _v6 := &__v5, &__v6
 	v5, v6 := &_v5, &_v6
 	err1, err2 = unmarshal(b5, b6, &v5, &v6)
@@ -1231,30 +1231,30 @@ func TestPointer(t *testing.T) {
 }
 
 func TestNotGenerated(t *testing.T) {
-	err := checkUndefined(NotGenerated1{}, NotGenerated2{}, &NotGenerated1{}, &NotGenerated2{})
+	err := checkUndefined(notGenerated1{}, notGenerated2{}, &notGenerated1{}, &notGenerated2{})
 	if err != nil {
 		t.Error(err)
 	}
-	err = checkUndefined(NotGenerated3{}, NotGenerated4{}, &NotGenerated3{}, &NotGenerated4{})
+	err = checkUndefined(notGenerated3{}, notGenerated4{}, &notGenerated3{}, &notGenerated4{})
 	if err != nil {
 		t.Error(err)
 	}
-	err = checkUndefined(NotGenerated5{}, NotGenerated6{}, &NotGenerated5{}, &NotGenerated6{})
+	err = checkUndefined(notGenerated5{}, notGenerated6{}, &notGenerated5{}, &notGenerated6{})
 	if err != nil {
 		t.Error(err)
 	}
-	err = checkUndefined(NotGenerated7{}, NotGenerated8{}, &NotGenerated7{}, &NotGenerated8{})
+	err = checkUndefined(notGenerated7{}, notGenerated8{}, &notGenerated7{}, &notGenerated8{})
 	if err != nil {
 		t.Error(err)
 	}
-	err = checkUndefined(NotGenerated10{}, NotGenerated10{}, &NotGenerated10{}, &NotGenerated10{})
+	err = checkUndefined(notGenerated10{}, notGenerated10{}, &notGenerated10{}, &notGenerated10{})
 	if err != nil {
 		t.Error(err)
 	}
 }
 
 func TestPrivate(t *testing.T) {
-	v := Private{}
+	v := private{}
 	v.SetInt()
 	b1, b2, err1, err2 := marshal(v, v)
 	if err1 != nil || err2 != nil {
