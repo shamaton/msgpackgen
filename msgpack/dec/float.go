@@ -7,6 +7,7 @@ import (
 	"github.com/shamaton/msgpack/v2/def"
 )
 
+// AsFloat32 checks codes and returns the got bytes as float32
 func (d *Decoder) AsFloat32(offset int) (float32, int, error) {
 	code := d.data[offset]
 
@@ -32,6 +33,7 @@ func (d *Decoder) AsFloat32(offset int) (float32, int, error) {
 	return 0, 0, d.errorTemplate(code, "AsFloat32")
 }
 
+// AsFloat64 checks codes and returns the got bytes as float64
 func (d *Decoder) AsFloat64(offset int) (float64, int, error) {
 	code := d.data[offset]
 

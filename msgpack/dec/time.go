@@ -8,6 +8,7 @@ import (
 	"github.com/shamaton/msgpack/v2/def"
 )
 
+// AsDateTime checks codes and returns the got bytes as time.Time
 func (d *Decoder) AsDateTime(offset int) (time.Time, int, error) {
 	code, offset := d.readSize1(offset)
 

@@ -4,6 +4,7 @@ import (
 	"github.com/shamaton/msgpack/v2/def"
 )
 
+// AsBool checks codes and returns the got bytes as bool
 func (d *Decoder) AsBool(offset int) (bool, int, error) {
 	code := d.data[offset]
 	offset++

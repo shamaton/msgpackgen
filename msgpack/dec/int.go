@@ -12,21 +12,25 @@ func (d *Decoder) AsInt(offset int) (int, int, error) {
 	return int(v), offset, err
 }
 
+// AsInt8 checks codes and returns the got bytes as int8
 func (d *Decoder) AsInt8(offset int) (int8, int, error) {
 	v, offset, err := d.asInt(offset)
 	return int8(v), offset, err
 }
 
+// AsInt16 checks codes and returns the got bytes as int16
 func (d *Decoder) AsInt16(offset int) (int16, int, error) {
 	v, offset, err := d.asInt(offset)
 	return int16(v), offset, err
 }
 
+// AsInt32 checks codes and returns the got bytes as int32
 func (d *Decoder) AsInt32(offset int) (int32, int, error) {
 	v, offset, err := d.asInt(offset)
 	return int32(v), offset, err
 }
 
+// AsInt64 checks codes and returns the got bytes as int64
 func (d *Decoder) AsInt64(offset int) (int64, int, error) {
 	return d.asInt(offset)
 }

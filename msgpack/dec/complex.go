@@ -8,6 +8,7 @@ import (
 	"github.com/shamaton/msgpack/v2/def"
 )
 
+// AsComplex64 checks codes and returns the got bytes as complex64
 func (d *Decoder) AsComplex64(offset int) (complex64, int, error) {
 	code, offset := d.readSize1(offset)
 
@@ -27,6 +28,7 @@ func (d *Decoder) AsComplex64(offset int) (complex64, int, error) {
 	return 0, 0, d.errorTemplate(code, "AsComplex64")
 }
 
+// AsComplex128 checks codes and returns the got bytes as complex128
 func (d *Decoder) AsComplex128(offset int) (complex128, int, error) {
 	code, offset := d.readSize1(offset)
 

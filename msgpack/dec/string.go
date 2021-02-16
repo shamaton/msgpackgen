@@ -10,11 +10,17 @@ import (
 var emptyString = ""
 var emptyBytes = []byte{}
 
-func (d *Decoder) isFixString(v byte) bool {
-	return def.FixStr <= v && v <= def.FixStr+0x1f
+// AsString checks codes and returns the got bytes as string
+func (d *Decoder) AsString(offset int) (string, int, error) {
+	l, offset, err := d.stringByteLength(offset)
+	if err != nil {
+		return emptyString, 0, err
+	}
+	bs, offset := d.asStringByte(offset, l)
+	return *(*string)(unsafe.Pointer(&bs)), offset, nil
 }
 
-func (d *Decoder) StringByteLength(offset int) (int, int, error) {
+func (d *Decoder) stringByteLength(offset int) (int, int, error) {
 	code := d.data[offset]
 	offset++
 
@@ -36,13 +42,8 @@ func (d *Decoder) StringByteLength(offset int) (int, int, error) {
 	return 0, 0, d.errorTemplate(code, "StringByteLength")
 }
 
-func (d *Decoder) AsString(offset int) (string, int, error) {
-	l, offset, err := d.StringByteLength(offset)
-	if err != nil {
-		return emptyString, 0, err
-	}
-	bs, offset := d.asStringByte(offset, l)
-	return *(*string)(unsafe.Pointer(&bs)), offset, nil
+func (d *Decoder) isFixString(v byte) bool {
+	return def.FixStr <= v && v <= def.FixStr+0x1f
 }
 
 func (d *Decoder) asStringByte(offset int, l int) ([]byte, int) {

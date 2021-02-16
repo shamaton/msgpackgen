@@ -6,26 +6,31 @@ import (
 	"github.com/shamaton/msgpack/v2/def"
 )
 
+// AsUint checks codes and returns the got bytes as uint
 func (d *Decoder) AsUint(offset int) (uint, int, error) {
 	v, offset, err := d.asUint(offset)
 	return uint(v), offset, err
 }
 
+// AsUint8 checks codes and returns the got bytes as uint8
 func (d *Decoder) AsUint8(offset int) (uint8, int, error) {
 	v, offset, err := d.asUint(offset)
 	return uint8(v), offset, err
 }
 
+// AsUint16 checks codes and returns the got bytes as uint16
 func (d *Decoder) AsUint16(offset int) (uint16, int, error) {
 	v, offset, err := d.asUint(offset)
 	return uint16(v), offset, err
 }
 
+// AsUint32 checks codes and returns the got bytes as uint32
 func (d *Decoder) AsUint32(offset int) (uint32, int, error) {
 	v, offset, err := d.asUint(offset)
 	return uint32(v), offset, err
 }
 
+// AsUint64 checks codes and returns the got bytes as uint64
 func (d *Decoder) AsUint64(offset int) (uint64, int, error) {
 	return d.asUint(offset)
 }

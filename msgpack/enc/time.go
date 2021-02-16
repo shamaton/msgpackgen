@@ -6,6 +6,7 @@ import (
 	"github.com/shamaton/msgpack/v2/def"
 )
 
+// CalcTime check value and returns data size that need.
 func (e *Encoder) CalcTime(t time.Time) int {
 	secs := uint64(t.Unix())
 	if secs>>34 == 0 {
@@ -19,6 +20,7 @@ func (e *Encoder) CalcTime(t time.Time) int {
 	return def.Byte1 + def.Byte1 + def.Byte1 + def.Byte4 + def.Byte8
 }
 
+// WriteTime sets the contents of t to the buffer.
 func (e *Encoder) WriteTime(t time.Time, offset int) int {
 	secs := uint64(t.Unix())
 	if secs>>34 == 0 {

@@ -19,18 +19,22 @@ func (e *Encoder) CalcInt(v int) int {
 	return e.calcInt(int64(v))
 }
 
+// CalcInt8 checks value and returns data size that need.
 func (e *Encoder) CalcInt8(v int8) int {
 	return e.calcInt(int64(v))
 }
 
+// CalcInt16 checks value and returns data size that need.
 func (e *Encoder) CalcInt16(v int16) int {
 	return e.calcInt(int64(v))
 }
 
+// CalcInt32 checks value and returns data size that need.
 func (e *Encoder) CalcInt32(v int32) int {
 	return e.calcInt(int64(v))
 }
 
+// CalcInt64 checks value and returns data size that need.
 func (e *Encoder) CalcInt64(v int64) int {
 	return e.calcInt(v)
 }
@@ -51,19 +55,27 @@ func (e *Encoder) calcInt(v int64) int {
 	return def.Byte1 + def.Byte8
 }
 
+// WriteInt sets the contents of v to the buffer.
 func (e *Encoder) WriteInt(v int, offset int) int {
 	return e.writeInt(int64(v), offset)
 }
 
+// WriteInt8 sets the contents of v to the buffer.
 func (e *Encoder) WriteInt8(v int8, offset int) int {
 	return e.writeInt(int64(v), offset)
 }
+
+// WriteInt16 sets the contents of v to the buffer.
 func (e *Encoder) WriteInt16(v int16, offset int) int {
 	return e.writeInt(int64(v), offset)
 }
+
+// WriteInt32 sets the contents of v to the buffer.
 func (e *Encoder) WriteInt32(v int32, offset int) int {
 	return e.writeInt(int64(v), offset)
 }
+
+// WriteInt64 sets the contents of v to the buffer.
 func (e *Encoder) WriteInt64(v int64, offset int) int {
 	return e.writeInt(v, offset)
 }

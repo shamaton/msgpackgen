@@ -33,10 +33,12 @@ func (e *Encoder) writeByteSliceLength(l int, offset int) int {
 	return offset
 }
 
+// CalcByte returns data size that need.
 func (e *Encoder) CalcByte(b byte) int {
 	return def.Byte1
 }
 
+// WriteByte sets the contents of v to the buffer.
 func (e *Encoder) WriteByte(b byte, offset int) int {
 	return e.setByte(b, offset)
 }
