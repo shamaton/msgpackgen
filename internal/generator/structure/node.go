@@ -16,6 +16,7 @@ const (
 	fieldTypePointer
 )
 
+// Node is a collection of field information.
 type Node struct {
 	fieldType int
 
@@ -40,7 +41,7 @@ type Node struct {
 // Elm gets the child node, if field-type is slice, array or pointer.
 func (n Node) Elm() *Node { return n.Key }
 
-// Elm gets child nodes, if field-type is map.
+// KeyValue gets child nodes, if field-type is map.
 func (n Node) KeyValue() (*Node, *Node) { return n.Key, n.Value }
 
 // IsIdentical returns true, if field-type is ident.
@@ -70,7 +71,7 @@ func (n Node) IsParentPointer() bool { return n.HasParent() && n.Parent.IsPointe
 // SetKeyNode sets node to key field.
 func (n *Node) SetKeyNode(key *Node) { n.Key = key }
 
-// SetKeyNode sets node to value field.
+// SetValueNode sets node to value field.
 func (n *Node) SetValueNode(value *Node) { n.Value = value }
 
 // GetPointerInfo gets some pointer information to create codes.
@@ -195,7 +196,7 @@ func CreateIdentNode(ident *ast.Ident, parent *Node) *Node {
 	}
 }
 
-// CreateIdentNode creates a node of struct type.
+// CreateStructNode creates a node of struct type.
 func CreateStructNode(importPath, packageName, structName string, parent *Node) *Node {
 	return &Node{
 		fieldType:   fieldTypeStruct,
