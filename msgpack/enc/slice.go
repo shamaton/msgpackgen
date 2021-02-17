@@ -7,6 +7,7 @@ import (
 	"github.com/shamaton/msgpack/v2/def"
 )
 
+// CalcSliceLength checks values and returns data size that need.
 func (e *Encoder) CalcSliceLength(l int, isChildTypeByte bool) (int, error) {
 
 	if isChildTypeByte {
@@ -24,6 +25,7 @@ func (e *Encoder) CalcSliceLength(l int, isChildTypeByte bool) (int, error) {
 	return 0, fmt.Errorf("not support this array length : %d", l)
 }
 
+// WriteSliceLength sets the contents of l to the buffer.
 func (e *Encoder) WriteSliceLength(l int, offset int, isChildTypeByte bool) int {
 	if isChildTypeByte {
 		return e.writeByteSliceLength(l, offset)

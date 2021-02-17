@@ -1,7 +1,9 @@
 package msgpack
 
 type (
+	// EncResolver is a definition to resolve serialization.
 	EncResolver func(i interface{}) ([]byte, error)
+	// DecResolver is a definition to resolve de-serialization.
 	DecResolver func(data []byte, i interface{}) (bool, error)
 )
 
@@ -17,6 +19,7 @@ var (
 	decAsArrayResolver = decAsMapResolver
 )
 
+// SetResolver sets generated resolvers to bridge variables.
 func SetResolver(encAsMap, encAsArray EncResolver, decAsMap, decAsArray DecResolver) {
 	encAsMapResolver = encAsMap
 	encAsArrayResolver = encAsArray

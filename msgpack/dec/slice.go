@@ -10,6 +10,7 @@ func (d *Decoder) isFixSlice(v byte) bool {
 	return def.FixArray <= v && v <= def.FixArray+0x0f
 }
 
+// SliceLength reads the need bytes and convert to length value.
 func (d *Decoder) SliceLength(offset int) (int, int, error) {
 	code, offset := d.readSize1(offset)
 

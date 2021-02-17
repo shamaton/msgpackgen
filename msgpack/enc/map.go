@@ -7,6 +7,7 @@ import (
 	"github.com/shamaton/msgpack/v2/def"
 )
 
+// CalcMapLength checks value and returns data size that need.
 func (e *Encoder) CalcMapLength(l int) (int, error) {
 	ret := def.Byte1
 
@@ -23,6 +24,7 @@ func (e *Encoder) CalcMapLength(l int) (int, error) {
 	return ret, nil
 }
 
+// WriteMapLength sets the contents of l to the buffer.
 func (e *Encoder) WriteMapLength(l int, offset int) int {
 
 	// format

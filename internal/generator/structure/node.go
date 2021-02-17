@@ -37,22 +37,43 @@ type Node struct {
 	Parent *Node
 }
 
-func (n Node) Elm() *Node               { return n.Key }
+// Elm gets the child node, if field-type is slice, array or pointer.
+func (n Node) Elm() *Node { return n.Key }
+
+// Elm gets child nodes, if field-type is map.
 func (n Node) KeyValue() (*Node, *Node) { return n.Key, n.Value }
 
+// IsIdentical returns true, if field-type is ident.
 func (n Node) IsIdentical() bool { return n.fieldType == fieldTypeIdent }
-func (n Node) IsSlice() bool     { return n.fieldType == fieldTypeSlice }
-func (n Node) IsArray() bool     { return n.fieldType == fieldTypeArray }
-func (n Node) IsStruct() bool    { return n.fieldType == fieldTypeStruct }
-func (n Node) IsMap() bool       { return n.fieldType == fieldTypeMap }
-func (n Node) IsPointer() bool   { return n.fieldType == fieldTypePointer }
 
-func (n Node) HasParent() bool       { return n.Parent != nil }
+// IsSlice returns true, if field-type is slice.
+func (n Node) IsSlice() bool { return n.fieldType == fieldTypeSlice }
+
+// IsArray returns true, if field-type is array.
+func (n Node) IsArray() bool { return n.fieldType == fieldTypeArray }
+
+// IsStruct returns true, if field-type is struct.
+func (n Node) IsStruct() bool { return n.fieldType == fieldTypeStruct }
+
+// IsMap returns true, if field-type is map.
+func (n Node) IsMap() bool { return n.fieldType == fieldTypeMap }
+
+// IsPointer returns true, if field-type is pointer.
+func (n Node) IsPointer() bool { return n.fieldType == fieldTypePointer }
+
+// HasParent returns true, if parent node exists.
+func (n Node) HasParent() bool { return n.Parent != nil }
+
+// IsParentPointer returns true, if HasParent is true and parent node is pointer.
 func (n Node) IsParentPointer() bool { return n.HasParent() && n.Parent.IsPointer() }
 
-func (n *Node) SetKeyNode(key *Node)     { n.Key = key }
+// SetKeyNode sets node to key field.
+func (n *Node) SetKeyNode(key *Node) { n.Key = key }
+
+// SetKeyNode sets node to value field.
 func (n *Node) SetValueNode(value *Node) { n.Value = value }
 
+// GetPointerInfo gets some pointer information to create codes.
 func (n *Node) GetPointerInfo() (ptrCount int, isParentTypeArrayOrMap bool) {
 	node := n
 	for node.HasParent() {
@@ -69,6 +90,7 @@ func (n *Node) GetPointerInfo() (ptrCount int, isParentTypeArrayOrMap bool) {
 	return
 }
 
+// CanGenerate return true, if it satisfied conditions by this node.
 func (n Node) CanGenerate(structures []*Structure) (bool, []string) {
 	messages := make([]string, 0)
 	switch {
@@ -106,6 +128,7 @@ func (n Node) CanGenerate(structures []*Structure) (bool, []string) {
 	return false, append(messages, "unreachable code")
 }
 
+// TypeJenChain is a helper method to create code.
 func (n Node) TypeJenChain(structures []*Structure, statements ...*Statement) *Statement {
 	var str *Statement
 	if len(statements) > 0 {
@@ -163,6 +186,7 @@ func (n Node) TypeJenChain(structures []*Structure, statements ...*Statement) *S
 	return str
 }
 
+// CreateIdentNode creates a node of ident type.
 func CreateIdentNode(ident *ast.Ident, parent *Node) *Node {
 	return &Node{
 		fieldType:     fieldTypeIdent,
@@ -171,6 +195,7 @@ func CreateIdentNode(ident *ast.Ident, parent *Node) *Node {
 	}
 }
 
+// CreateIdentNode creates a node of struct type.
 func CreateStructNode(importPath, packageName, structName string, parent *Node) *Node {
 	return &Node{
 		fieldType:   fieldTypeStruct,
@@ -181,6 +206,7 @@ func CreateStructNode(importPath, packageName, structName string, parent *Node) 
 	}
 }
 
+// CreateSliceNode creates a node of slice type.
 func CreateSliceNode(parent *Node) *Node {
 	return &Node{
 		fieldType: fieldTypeSlice,
@@ -188,6 +214,7 @@ func CreateSliceNode(parent *Node) *Node {
 	}
 }
 
+// CreateArrayNode creates a node of array type.
 func CreateArrayNode(len uint64, parent *Node) *Node {
 	return &Node{
 		fieldType: fieldTypeArray,
@@ -196,6 +223,7 @@ func CreateArrayNode(len uint64, parent *Node) *Node {
 	}
 }
 
+// CreateMapNode creates a node of map type.
 func CreateMapNode(parent *Node) *Node {
 	return &Node{
 		fieldType: fieldTypeMap,
@@ -203,6 +231,7 @@ func CreateMapNode(parent *Node) *Node {
 	}
 }
 
+// CreatePointerNode creates a node of pointer type.
 func CreatePointerNode(parent *Node) *Node {
 	return &Node{
 		fieldType: fieldTypePointer,
@@ -210,6 +239,7 @@ func CreatePointerNode(parent *Node) *Node {
 	}
 }
 
+// IsPrimitive returns true, if name matches any case.
 func IsPrimitive(name string) bool {
 	switch name {
 	case "int", "int8", "int16", "int32", "int64":

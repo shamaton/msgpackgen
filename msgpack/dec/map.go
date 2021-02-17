@@ -10,6 +10,7 @@ func (d *Decoder) isFixMap(v byte) bool {
 	return def.FixMap <= v && v <= def.FixMap+0x0f
 }
 
+// MapLength reads the need bytes and convert to length value.
 func (d *Decoder) MapLength(offset int) (int, int, error) {
 	code, offset := d.readSize1(offset)
 
