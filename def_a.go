@@ -46,7 +46,7 @@ type testingValue struct {
 	P2MapStringInt **map[string]int
 	P2IntArray     **[1]int
 
-	Abcdefghijabcdefghij int
+	Abcdefghijabcdefghijabcdefghijabcdefghij int
 
 	AbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghij int
 }

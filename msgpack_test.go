@@ -58,8 +58,8 @@ func TestInt(t *testing.T) {
 		t.Error(err)
 	}
 	v = testingValue{
-		Int:                  math.MinInt64 + 12345,
-		Abcdefghijabcdefghij: rand.Int(),
+		Int:                                      math.MinInt64 + 12345,
+		Abcdefghijabcdefghijabcdefghijabcdefghij: rand.Int(),
 		AbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghijAbcdefghij: rand.Int(),
 	}
 	if err := checkValue(v); err != nil {
