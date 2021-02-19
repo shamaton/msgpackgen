@@ -115,9 +115,6 @@ func getImportPath(path string) (string, error) {
 			continue
 		}
 		paths := strings.SplitN(filepath.ToSlash(path), filepath.ToSlash(goPath)+"/src/", 2)
-		if len(paths) != 2 {
-			return "", fmt.Errorf("%s get import path failed", path)
-		}
 		return paths[1], nil
 	}
 	return "", fmt.Errorf("path %s is outside gopath", path)
