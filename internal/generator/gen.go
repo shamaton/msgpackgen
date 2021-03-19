@@ -110,11 +110,13 @@ func getImportPath(path string) (string, error) {
 	}
 	goPaths := strings.Split(goPathAll, sep)
 
+	p := filepath.ToSlash(path)
 	for _, goPath := range goPaths {
-		if !strings.HasPrefix(path, goPath) {
+		gp := filepath.ToSlash(goPath) + "/src/"
+		if !strings.HasPrefix(p, gp) {
 			continue
 		}
-		paths := strings.SplitN(filepath.ToSlash(path), filepath.ToSlash(goPath)+"/src/", 2)
+		paths := strings.SplitN(p, gp, 2)
 		return paths[1], nil
 	}
 	return "", fmt.Errorf("path %s is outside gopath", path)
