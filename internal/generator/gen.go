@@ -212,7 +212,6 @@ func (g *generator) searchGoModFile(input string, isInputDir bool) (string, erro
 		if path == upper {
 			return goModFilePath, fmt.Errorf("not found go.mod")
 		}
-		fmt.Println(path, upper)
 		return g.searchGoModFile(upper, true)
 	}
 	return goModFilePath, nil
@@ -296,7 +295,6 @@ func (g *generator) setOutputInfo(out string) error {
 func (g *generator) getImportPath(path string) (string, error) {
 	if !g.useGopath {
 		rep := strings.Replace(path, filepath.Dir(g.goModFilePath), g.goModModuleName, 1)
-		fmt.Println(rep, filepath.ToSlash(rep))
 		return filepath.ToSlash(rep), nil
 	}
 
