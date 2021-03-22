@@ -171,7 +171,7 @@ func (g *generator) searchGoModFile(input string, isInputDir bool) (string, erro
 		sep := string(filepath.Separator)
 		upper := filepath.Join(path, fmt.Sprintf("%s..%s", sep, sep))
 		fmt.Println(path, upper)
-		return g.searchGoModFile(upper, false)
+		return g.searchGoModFile(upper, true)
 	}
 	return goModFilePath, nil
 }
