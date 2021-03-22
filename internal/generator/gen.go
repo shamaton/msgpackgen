@@ -108,29 +108,70 @@ func Run(inputDir, inputFile, outDir, fileName string, pointer int, useGopath, d
 	return g.run(input, outDir, fileName, isInputDir, dryRun, w)
 }
 
-func (g *generator) getImportPath(path string) (string, error) {
+func (g *generator) run(input, out, fileName string, isInputDir, dryRun bool, w io.Writer) error {
+	g.fileSet = token.NewFileSet()
+
 	if !g.useGopath {
-		return strings.Replace(path, filepath.Dir(g.goModFilePath), g.goModModuleName, 1), nil
-	}
-
-	// use GOPATH option
-	goPathAll := os.Getenv("GOPATH")
-	sep := ":"
-	if runtime.GOOS == "windows" {
-		sep = ";"
-	}
-	goPaths := strings.Split(goPathAll, sep)
-
-	p := filepath.ToSlash(path)
-	for _, goPath := range goPaths {
-		gp := filepath.ToSlash(goPath) + "/src/"
-		if !strings.HasPrefix(p, gp) {
-			continue
+		modFilePath, err := g.searchGoModFile(input, isInputDir)
+		if err != nil {
+			return err
 		}
-		paths := strings.SplitN(p, gp, 2)
-		return paths[1], nil
+		g.goModFilePath = modFilePath
+
+		err = g.setModuleName()
+		if err != nil {
+			return err
+		}
 	}
-	return "", fmt.Errorf("path %s is outside gopath", path)
+
+	err := g.setOutputInfo(out)
+	if err != nil {
+		return err
+	}
+
+	var filePaths []string
+	if isInputDir {
+		filePaths, err = g.getTargetFiles(input, true)
+		if err != nil {
+			return err
+		}
+		if len(filePaths) < 1 {
+			return fmt.Errorf("not found go File")
+		}
+	} else {
+		filePaths, err = g.getAbsolutePaths([]string{input})
+		if err != nil {
+			return err
+		}
+	}
+
+	err = g.getPackages(filePaths)
+	if err != nil {
+		return err
+	}
+
+	err = g.analyze()
+	if err != nil {
+		return err
+	}
+
+	var reasons []string
+	analyzedStructs, reasons = g.filter(analyzedStructs, reasons)
+
+	g.printAnalyzedResult(reasons)
+
+	g.setOthers()
+	f := g.generateCode()
+
+	if dryRun {
+		fmt.Fprintf(w, "%#v", f)
+		return nil
+	}
+	err = g.output(f, fileName)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (g *generator) searchGoModFile(input string, isInputDir bool) (string, error) {
@@ -251,70 +292,29 @@ func (g *generator) setOutputInfo(out string) error {
 	return nil
 }
 
-func (g *generator) run(input, out, fileName string, isInputDir, dryRun bool, w io.Writer) error {
-	g.fileSet = token.NewFileSet()
-
+func (g *generator) getImportPath(path string) (string, error) {
 	if !g.useGopath {
-		modFilePath, err := g.searchGoModFile(input, isInputDir)
-		if err != nil {
-			return err
+		return strings.Replace(path, filepath.Dir(g.goModFilePath), g.goModModuleName, 1), nil
+	}
+
+	// use GOPATH option
+	goPathAll := os.Getenv("GOPATH")
+	sep := ":"
+	if runtime.GOOS == "windows" {
+		sep = ";"
+	}
+	goPaths := strings.Split(goPathAll, sep)
+
+	p := filepath.ToSlash(path)
+	for _, goPath := range goPaths {
+		gp := filepath.ToSlash(goPath) + "/src/"
+		if !strings.HasPrefix(p, gp) {
+			continue
 		}
-		g.goModFilePath = modFilePath
-
-		err = g.setModuleName()
-		if err != nil {
-			return err
-		}
+		paths := strings.SplitN(p, gp, 2)
+		return paths[1], nil
 	}
-
-	err := g.setOutputInfo(out)
-	if err != nil {
-		return err
-	}
-
-	var filePaths []string
-	if isInputDir {
-		filePaths, err = g.getTargetFiles(input, true)
-		if err != nil {
-			return err
-		}
-		if len(filePaths) < 1 {
-			return fmt.Errorf("not found go File")
-		}
-	} else {
-		filePaths, err = g.getAbsolutePaths([]string{input})
-		if err != nil {
-			return err
-		}
-	}
-
-	err = g.getPackages(filePaths)
-	if err != nil {
-		return err
-	}
-
-	err = g.analyze()
-	if err != nil {
-		return err
-	}
-
-	var reasons []string
-	analyzedStructs, reasons = g.filter(analyzedStructs, reasons)
-
-	g.printAnalyzedResult(reasons)
-
-	g.setOthers()
-	f := g.generateCode()
-
-	if dryRun {
-		fmt.Fprintf(w, "%#v", f)
-		return nil
-	}
-	err = g.output(f, fileName)
-	if err != nil {
-		return err
-	}
-	return nil
+	return "", fmt.Errorf("path %s is outside gopath", path)
 }
 
 func (g *generator) getTargetFiles(dir string, recursive bool) ([]string, error) {
