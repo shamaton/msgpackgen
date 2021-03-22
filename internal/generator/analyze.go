@@ -50,7 +50,7 @@ func (g *generator) getPackages(files []string) error {
 func (g *generator) getImportPathAndParseFile(file string) (string, string, *ast.File, error) {
 
 	dir := filepath.Dir(file)
-	importPath, err := getImportPath(dir)
+	importPath, err := g.getImportPath(dir)
 	if err != nil {
 		return "", "", nil, err
 	}

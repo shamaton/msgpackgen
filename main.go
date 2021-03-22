@@ -15,6 +15,7 @@ var (
 	outputDir = flag.String("output-dir", ".", "output directory")
 	filename  = flag.String("output-file", defaultFileName, "name of generated file")
 	pointer   = flag.Int("pointer", defaultPointerLevel, "pointer level to consider")
+	useGopath = flag.Bool("use-gopath", false, "use GOPATH instead of go.mod")
 	dryRun    = flag.Bool("dry-run", false, "dry run mode")
 	strict    = flag.Bool("strict", false, "strict mode")
 	verbose   = flag.Bool("v", false, "verbose diagnostics")
@@ -33,6 +34,7 @@ func main() {
 		*outputDir,
 		*filename,
 		*pointer,
+		*useGopath,
 		*dryRun,
 		*strict,
 		*verbose,
@@ -43,6 +45,6 @@ func main() {
 	}
 }
 
-func generate(iDir, iFile, oDir, oFile string, p int, dry, s, v bool, w io.Writer) error {
-	return generator.Run(iDir, iFile, oDir, oFile, p, dry, s, v, w)
+func generate(iDir, iFile, oDir, oFile string, p int, ugo, dry, s, v bool, w io.Writer) error {
+	return generator.Run(iDir, iFile, oDir, oFile, p, ugo, dry, s, v, w)
 }
