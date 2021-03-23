@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -15,7 +16,12 @@ func TestSearchGoMod(t *testing.T) {
 	if err == nil {
 		t.Fatal("error should occur")
 	}
-	if err != nil && !strings.Contains(err.Error(), "no such file or directory") {
+
+	sub := "no such file or directory"
+	if runtime.GOOS == "windows" {
+		sub = "The system cannot find"
+	}
+	if !strings.Contains(err.Error(), sub) {
 		t.Fatal("something wrong", err)
 	}
 
@@ -25,7 +31,8 @@ func TestSearchGoMod(t *testing.T) {
 	if err == nil {
 		t.Fatal("error should occur")
 	}
-	if err != nil && !strings.Contains(err.Error(), "not found go.mod") {
+
+	if !strings.Contains(err.Error(), "not found go.mod") {
 		t.Fatal("something wrong", err)
 	}
 
@@ -43,7 +50,12 @@ func TestSetModuleName(t *testing.T) {
 	if err == nil {
 		t.Fatal("error should occur")
 	}
-	if err != nil && !strings.Contains(err.Error(), "no such file or directory") {
+
+	sub := "no such file or directory"
+	if runtime.GOOS == "windows" {
+		sub = "The system cannot find"
+	}
+	if !strings.Contains(err.Error(), sub) {
 		t.Fatal("something wrong", err)
 	}
 
@@ -52,7 +64,7 @@ func TestSetModuleName(t *testing.T) {
 	if err == nil {
 		t.Fatal("error should occur")
 	}
-	if err != nil && !strings.Contains(err.Error(), "not found module name in go.mod") {
+	if !strings.Contains(err.Error(), "not found module name in go.mod") {
 		t.Fatal("something wrong", err)
 	}
 }
@@ -64,7 +76,12 @@ func TestOutput(t *testing.T) {
 	if err == nil {
 		t.Fatal("error should occur")
 	}
-	if err != nil && !strings.Contains(err.Error(), "no such file or directory") {
+
+	sub := "no such file or directory"
+	if runtime.GOOS == "windows" {
+		sub = "The system cannot find"
+	}
+	if !strings.Contains(err.Error(), sub) {
 		t.Fatal("something wrong", err)
 	}
 
