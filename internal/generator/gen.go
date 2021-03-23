@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"bufio"
 	"fmt"
 	"go/ast"
 	"go/token"
@@ -37,13 +38,17 @@ type generator struct {
 	outputImportPath  string
 	outputJenFilePath string
 
-	pointer int
-	verbose bool
-	strict  bool
+	goModFilePath   string
+	goModModuleName string
+
+	pointer   int
+	useGopath bool
+	verbose   bool
+	strict    bool
 }
 
 // Run runs code analyzing and generation.
-func Run(inputDir, inputFile, outDir, fileName string, pointer int, dryRun, strict, verbose bool, w io.Writer) error {
+func Run(inputDir, inputFile, outDir, fileName string, pointer int, useGopath, dryRun, strict, verbose bool, w io.Writer) error {
 
 	// can not input at same time
 	if len(inputFile) > 0 && inputDir != "." {
@@ -86,6 +91,7 @@ func Run(inputDir, inputFile, outDir, fileName string, pointer int, dryRun, stri
 	analyzedStructs = make([]*structure.Structure, 0)
 	structsInBrace = make([]string, 0)
 	g := generator{
+		useGopath:             useGopath,
 		pointer:               pointer,
 		strict:                strict,
 		verbose:               verbose,
@@ -102,68 +108,21 @@ func Run(inputDir, inputFile, outDir, fileName string, pointer int, dryRun, stri
 	return g.run(input, outDir, fileName, isInputDir, dryRun, w)
 }
 
-func getImportPath(path string) (string, error) {
-	goPathAll := os.Getenv("GOPATH")
-	sep := ":"
-	if runtime.GOOS == "windows" {
-		sep = ";"
-	}
-	goPaths := strings.Split(goPathAll, sep)
-
-	p := filepath.ToSlash(path)
-	for _, goPath := range goPaths {
-		gp := filepath.ToSlash(goPath) + "/src/"
-		if !strings.HasPrefix(p, gp) {
-			continue
-		}
-		paths := strings.SplitN(p, gp, 2)
-		return paths[1], nil
-	}
-	return "", fmt.Errorf("path %s is outside gopath", path)
-}
-
-func (g *generator) setOutputInfo(out string) error {
-
-	outAbs, err := filepath.Abs(out)
-	if err != nil {
-		return err
-	}
-	g.outputDir = outAbs
-
-	importPath, err := getImportPath(g.outputDir)
-	if err != nil {
-		return err
-	}
-	g.outputImportPath = importPath
-	g.outputJenFilePath = fmt.Sprintf("%s/%s", filepath.Dir(importPath), filepath.Base(importPath))
-
-	// if exist go file
-	fi, err := os.Stat(outAbs)
-	if err != nil {
-		// end proc.
-		return nil
-	}
-	if !fi.IsDir() {
-		return fmt.Errorf("this(%s) path is not directory", out)
-	}
-
-	files, err := g.getTargetFiles(outAbs, false)
-	if err != nil {
-		return err
-	}
-	if len(files) < 1 {
-		return nil
-	}
-	_, packageName, _, err := g.getImportPathAndParseFile(files[0])
-	if err != nil {
-		return err
-	}
-	g.outputJenFilePath = fmt.Sprintf("%s/%s", filepath.Dir(importPath), packageName)
-	return nil
-}
-
 func (g *generator) run(input, out, fileName string, isInputDir, dryRun bool, w io.Writer) error {
 	g.fileSet = token.NewFileSet()
+
+	if !g.useGopath {
+		modFilePath, err := g.searchGoModFile(input, isInputDir)
+		if err != nil {
+			return err
+		}
+		g.goModFilePath = modFilePath
+
+		err = g.setModuleName()
+		if err != nil {
+			return err
+		}
+	}
 
 	err := g.setOutputInfo(out)
 	if err != nil {
@@ -213,6 +172,149 @@ func (g *generator) run(input, out, fileName string, isInputDir, dryRun bool, w 
 		return err
 	}
 	return nil
+}
+
+func (g *generator) searchGoModFile(input string, isInputDir bool) (string, error) {
+	goModFilePath := ""
+
+	dir := input
+	if !isInputDir {
+		dir = filepath.Dir(input)
+	}
+
+	path, err := filepath.Abs(dir)
+	if err != nil {
+		return goModFilePath, err
+	}
+
+	files, err := ioutil.ReadDir(path)
+	if err != nil {
+		return goModFilePath, err
+	}
+
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+
+		if file.Name() == "go.mod" {
+			goModFilePath = filepath.Join(path, file.Name())
+		}
+	}
+
+	// recursive upper
+	if goModFilePath == "" {
+		// upper path
+		sep := string(filepath.Separator)
+		upper := filepath.Join(path, fmt.Sprintf("%s..%s", sep, sep))
+
+		// reached root
+		if path == upper {
+			return goModFilePath, fmt.Errorf("not found go.mod")
+		}
+		return g.searchGoModFile(upper, true)
+	}
+	return goModFilePath, nil
+}
+
+func (g *generator) setModuleName() error {
+
+	file, err := os.Open(g.goModFilePath)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			fmt.Println("File close error", err)
+		}
+	}()
+
+	scanner := bufio.NewScanner(file)
+
+	if scanner.Scan() {
+		text := scanner.Text()
+		if !strings.HasPrefix(text, "module") {
+			return fmt.Errorf("not found module name in go.mod")
+		}
+
+		results := strings.Split(text, " ")
+		if len(results) != 2 {
+			return fmt.Errorf("something wrong in go.mod \n %s", text)
+		}
+		g.goModModuleName = results[1]
+	}
+
+	if err = scanner.Err(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (g *generator) setOutputInfo(out string) error {
+
+	outAbs, err := filepath.Abs(out)
+	if err != nil {
+		return err
+	}
+	g.outputDir = outAbs
+
+	importPath, err := g.getImportPath(g.outputDir)
+	if err != nil {
+		return err
+	}
+	g.outputImportPath = importPath
+	g.outputJenFilePath = fmt.Sprintf("%s/%s", filepath.Dir(importPath), filepath.Base(importPath))
+
+	// if exist go file
+	fi, err := os.Stat(outAbs)
+	if err != nil {
+		// end proc.
+		return nil
+	}
+	if !fi.IsDir() {
+		return fmt.Errorf("this(%s) path is not directory", out)
+	}
+
+	files, err := g.getTargetFiles(outAbs, false)
+	if err != nil {
+		return err
+	}
+	if len(files) < 1 {
+		return nil
+	}
+	_, packageName, _, err := g.getImportPathAndParseFile(files[0])
+	if err != nil {
+		return err
+	}
+	g.outputJenFilePath = fmt.Sprintf("%s/%s", filepath.Dir(importPath), packageName)
+	return nil
+}
+
+func (g *generator) getImportPath(path string) (string, error) {
+	if !g.useGopath {
+		rep := strings.Replace(path, filepath.Dir(g.goModFilePath), g.goModModuleName, 1)
+		return filepath.ToSlash(rep), nil
+	}
+
+	// use GOPATH option
+	goPathAll := os.Getenv("GOPATH")
+	sep := ":"
+	if runtime.GOOS == "windows" {
+		sep = ";"
+	}
+	goPaths := strings.Split(goPathAll, sep)
+
+	p := filepath.ToSlash(path)
+	for _, goPath := range goPaths {
+		gp := filepath.ToSlash(goPath) + "/src/"
+		if !strings.HasPrefix(p, gp) {
+			continue
+		}
+		paths := strings.SplitN(p, gp, 2)
+		return paths[1], nil
+	}
+	return "", fmt.Errorf("path %s is outside gopath", path)
 }
 
 func (g *generator) getTargetFiles(dir string, recursive bool) ([]string, error) {

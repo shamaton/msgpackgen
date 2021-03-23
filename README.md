@@ -10,6 +10,13 @@ msgpackgen provides a code generation tool and serialization library for [Messag
 A notable feature is that it is **easy to maintain** and runs **extremely fast**.
 
 ## Quickstart
+Create go.mod file, if you still have not created.
+
+```shell
+# example
+go mod init github.com/user/awesome
+```
+
 In a source file(ex. main.go), include the following directive:
 
 ```go
@@ -165,6 +172,8 @@ Usage of msgpackgen:
         pointer level to consider (default 1)
   -strict
         strict mode
+  -use-gopath
+        use GOPATH instead of go.mod
   -v    verbose diagnostics
 ```
 
