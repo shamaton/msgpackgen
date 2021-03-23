@@ -228,4 +228,10 @@ func TestGenerateCodeOK(t *testing.T) {
 
 	// diff resolver_test.go main.go | wc -l
 	main()
+
+	// gopath
+	err = generate(iDir, iFile, oDir, oFile, ptr, true, true, false, false, ioutil.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
 }

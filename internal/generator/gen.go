@@ -234,7 +234,6 @@ func (g *generator) setModuleName() error {
 
 	if scanner.Scan() {
 		text := scanner.Text()
-		fmt.Println(text)
 		if !strings.HasPrefix(text, "module") {
 			return fmt.Errorf("not found module name in go.mod")
 		}
