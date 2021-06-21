@@ -85,6 +85,41 @@ func TestInt(t *testing.T) {
 			t.Error("something wrong", err)
 		}
 	}
+	{
+		var r testingInt
+		f32 := testingFloat32{F: 2.345}
+		b, err := msgpack.MarshalAsArray(f32)
+		if err != nil {
+			t.Error(err)
+		}
+
+		err = msgpack.UnmarshalAsArray(b, &r)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if r.I != 2 {
+			t.Error("different value", r.I)
+		}
+	}
+
+	{
+		var r testingInt
+		f64 := testingFloat64{F: 6.789}
+		b, err := msgpack.MarshalAsArray(f64)
+		if err != nil {
+			t.Error(err)
+		}
+
+		err = msgpack.UnmarshalAsArray(b, &r)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if r.I != 6 {
+			t.Error("different value", r.I)
+		}
+	}
 }
 
 func TestUint(t *testing.T) {
