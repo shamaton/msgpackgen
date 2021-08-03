@@ -10,7 +10,7 @@ type sliceCodeGen struct {
 
 func (st *Structure) createSliceCode(node *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code) {
 
-	encodeChildName, decodeChildName := encodeFieldName+"v", decodeFieldName+""
+	encodeChildName, decodeChildName := encodeFieldName+"v", decodeFieldName+"v"
 	if isRootField(encodeFieldName) {
 		encodeChildName = "vv"
 	}
@@ -19,6 +19,10 @@ func (st *Structure) createSliceCode(node *Node, encodeFieldName, decodeFieldNam
 	}
 
 	ca, cm, ea, em, da, dm := st.createFieldCode(node.Elm(), encodeChildName, decodeChildName)
+	// double or more ...
+	if isRecursiveChildArraySliceMap(node) {
+		_, _, _, _, da, dm = st.createFieldCode(node.Elm(), encodeChildName, decodeChildName+"v")
+	}
 	isChildByte := node.Elm().IsIdentical() && node.Elm().IdenticalName == "byte"
 
 	g := sliceCodeGen{}

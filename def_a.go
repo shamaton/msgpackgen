@@ -33,6 +33,11 @@ type testingValue struct {
 	Slice []int8
 	Bytes []byte
 
+	DoubleSlice [][]int16
+	DoubleArray [3][4]int16
+
+	TripleBytes [][][]byte
+
 	MapIntInt map[string]int
 
 	Pint      *int
@@ -45,6 +50,9 @@ type testingValue struct {
 	P2IntSlice     **[]int
 	P2MapStringInt **map[string]int
 	P2IntArray     **[1]int
+
+	DoubleSlicePointerMap    [][]**map[string]int
+	MapDoubleSlicePointerInt map[string][][]**int
 
 	Abcdefghijabcdefghijabcdefghijabcdefghij int
 
@@ -139,7 +147,7 @@ type testingStruct struct {
 	// recursive
 	R *recursive
 
-	TmpSlice   []inside
+	TmpSlice   [][]inside
 	TmpArray   [1]inside
 	TmpMap     map[inside]inside
 	TmpPointer *inside

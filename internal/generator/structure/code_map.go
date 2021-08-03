@@ -27,6 +27,11 @@ func (st *Structure) createMapCode(node *Node, encodeFieldName, decodeFieldName 
 	caKey, cmKey, eaKey, emKey, daKey, dmKey := st.createFieldCode(key, encodeChildKey, decodeChildKey)
 	caValue, cmValue, eaValue, emValue, daValue, dmValue := st.createFieldCode(value, encodeChildValue, decodeChildValue)
 
+	// double or more ...
+	if isRecursiveChildArraySliceMap(node) {
+		_, _, _, _, daValue, dmValue = st.createFieldCode(value, encodeChildValue, decodeChildValue+"v")
+	}
+
 	g := mapCodeGen{}
 	cArray = g.createCalcCode(encodeFieldName, encodeChildKey, encodeChildValue, caKey, caValue)
 	cMap = g.createCalcCode(encodeFieldName, encodeChildKey, encodeChildValue, cmKey, cmValue)

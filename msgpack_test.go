@@ -899,6 +899,77 @@ func TestSlice(t *testing.T) {
 	}
 
 	v = testingValue{}
+	v.DoubleSlice = make([][]int16, 3)
+	for i := range v.DoubleSlice {
+		v.DoubleSlice[i] = make([]int16, i+1)
+		for j := range v.DoubleSlice[i] {
+			v.DoubleSlice[i][j] = int16(i*2 + j)
+		}
+	}
+	if err := check(v); err != nil {
+		t.Error(err)
+	}
+
+	v = testingValue{}
+	for i := range v.DoubleArray {
+		for j := range v.DoubleArray[i] {
+			v.DoubleArray[i][j] = int16(i*4 + j)
+		}
+	}
+	if err := check(v); err != nil {
+		t.Error(err)
+	}
+
+	v = testingValue{}
+	v.TripleBytes = make([][][]byte, 5)
+	for i := range v.TripleBytes {
+		v.TripleBytes[i] = make([][]byte, i+1)
+		for j := range v.TripleBytes[i] {
+			v.TripleBytes[i][j] = make([]byte, j+1)
+			for k := range v.TripleBytes[i][j] {
+				v.TripleBytes[i][j][k] = byte(i*2 + j*1 + k)
+			}
+		}
+	}
+	if err := check(v); err != nil {
+		t.Error(err)
+	}
+
+	v = testingValue{}
+	v.DoubleSlicePointerMap = make([][]**map[string]int, 2)
+	for i := range v.DoubleSlicePointerMap {
+		v.DoubleSlicePointerMap[i] = make([]**map[string]int, 4)
+		for j := range v.DoubleSlicePointerMap[i] {
+			m := map[string]int{fmt.Sprint(i*100 + j): i*50 + j}
+			mp := &m
+			mpp := &mp
+			v.DoubleSlicePointerMap[i][j] = mpp
+		}
+	}
+	if err := check(v); err != nil {
+		t.Error(err)
+	}
+
+	v = testingValue{}
+	v.MapDoubleSlicePointerInt = make(map[string][][]**int, 0)
+	for i := 0; i < 3; i++ {
+		key := fmt.Sprint(i)
+		v.MapDoubleSlicePointerInt[key] = make([][]**int, i+3)
+		for j := range v.MapDoubleSlicePointerInt[key] {
+			v.MapDoubleSlicePointerInt[key][j] = make([]**int, j+2)
+			for k := range v.MapDoubleSlicePointerInt[key][j] {
+				a := rand.Int()
+				ap := &a
+				app := &ap
+				v.MapDoubleSlicePointerInt[key][j][k] = app
+			}
+		}
+	}
+	if err := check(v); err != nil {
+		t.Error(err)
+	}
+
+	v = testingValue{}
 	v.Bytes = make([]byte, math.MaxUint32+1)
 	_, err := msgpack.MarshalAsArray(v)
 	if err == nil || !strings.Contains(err.Error(), "not support this array length") {
