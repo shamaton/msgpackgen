@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -234,7 +235,8 @@ func TestGenerateCodeOK(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	os.Setenv("GOPATH", strings.SplitN(wd, "/src", 2)[0])
+	goPath := strings.SplitN(filepath.ToSlash(wd), "/src", 2)[0]
+	os.Setenv("GOPATH", filepath.FromSlash(goPath))
 	err = generate(iDir, iFile, oDir, oFile, ptr, true, true, false, false, ioutil.Discard)
 	if err != nil {
 		t.Fatal(err)
