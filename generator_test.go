@@ -230,6 +230,11 @@ func TestGenerateCodeOK(t *testing.T) {
 	main()
 
 	// gopath
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Setenv("GOPATH", strings.SplitN(wd, "/src", 2)[0])
 	err = generate(iDir, iFile, oDir, oFile, ptr, true, true, false, false, ioutil.Discard)
 	if err != nil {
 		t.Fatal(err)
