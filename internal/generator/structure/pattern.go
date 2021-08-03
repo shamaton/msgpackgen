@@ -13,6 +13,24 @@ func isRootField(name string) bool {
 	return strings.Contains(name, ".")
 }
 
+func isRecursiveChildArraySliceMap(node *Node) bool {
+	n := node.Elm()
+	if node.IsMap() {
+		_, n = node.KeyValue()
+	}
+
+	for n != nil {
+		if n.IsIdentical() || n.IsStruct() {
+			return false
+		} else if n.IsPointer() {
+			n = n.Elm()
+		} else {
+			return true
+		}
+	}
+	panic("unreachable code")
+}
+
 func createFuncName(prefix, name, importPath string) string {
 	suffix := fmt.Sprintf("%x", sha256.Sum256([]byte(importPath)))
 	return ptn.PrivateFuncName(fmt.Sprintf("%s%s_%s", prefix, name, suffix))
