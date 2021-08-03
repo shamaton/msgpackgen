@@ -951,7 +951,7 @@ func TestSlice(t *testing.T) {
 	}
 
 	v = testingValue{}
-	v.MapDoubleSlicePointerInt = make(map[string][][]**int, 0)
+	v.MapDoubleSlicePointerInt = make(map[string][][]**int)
 	for i := 0; i < 3; i++ {
 		key := fmt.Sprint(i)
 		v.MapDoubleSlicePointerInt[key] = make([][]**int, i+3)
