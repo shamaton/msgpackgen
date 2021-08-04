@@ -2,7 +2,6 @@ package dec
 
 import (
 	"encoding/binary"
-	"unsafe"
 
 	"github.com/shamaton/msgpack/v2/def"
 )
@@ -12,12 +11,20 @@ var emptyBytes = []byte{}
 
 // AsString checks codes and returns the got bytes as string
 func (d *Decoder) AsString(offset int) (string, int, error) {
-	l, offset, err := d.stringByteLength(offset)
+	bs, offset, err := d.AsStringBytes(offset)
 	if err != nil {
 		return emptyString, 0, err
 	}
+	return string(bs), offset, nil
+}
+
+func (d *Decoder) AsStringBytes(offset int) ([]byte, int, error) {
+	l, offset, err := d.stringByteLength(offset)
+	if err != nil {
+		return emptyBytes, 0, err
+	}
 	bs, offset := d.asStringByte(offset, l)
-	return *(*string)(unsafe.Pointer(&bs)), offset, nil
+	return bs, offset, nil
 }
 
 func (d *Decoder) stringByteLength(offset int) (int, int, error) {
