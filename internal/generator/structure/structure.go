@@ -94,8 +94,9 @@ func (st *Structure) CreateCode(f *File) {
 	))
 
 	decMapCodeSwitchCases := make([]Code, 0)
+	decKeySliceVar := make([]Code, 0)
 
-	for _, field := range st.Fields {
+	for i, field := range st.Fields {
 		fieldName := "v." + field.Name
 
 		calcKeyStringCode, writeKeyStringCode := st.createKeyStringCode(field.Tag)
@@ -112,7 +113,14 @@ func (st *Structure) CreateCode(f *File) {
 
 		decArrayCodes = append(decArrayCodes, dArray...)
 
-		decMapCodeSwitchCases = append(decMapCodeSwitchCases, Case(Lit(field.Tag)).Block(
+		tagBytes := []byte(field.Tag)
+		lits := make([]Code, len(tagBytes))
+		for i := range tagBytes {
+			lits = append(lits, Lit(tagBytes[i]))
+		}
+		decKeySliceVar = append(decKeySliceVar, Values(lits...).Id(",").Commentf("%s", field.Tag))
+
+		decMapCodeSwitchCases = append(decMapCodeSwitchCases, Case(Lit(i)).Block(
 			append(dMap, Id("count").Op("++"))...,
 		// dMap...,
 		),
@@ -125,11 +133,14 @@ func (st *Structure) CreateCode(f *File) {
 	//	),
 	//)
 	decMapCodeSwitchCases = append(decMapCodeSwitchCases, Default().Block(
-		Return(Lit(0), Qual("fmt", "Errorf").Call(Lit("unknown key[%s] found"), Id("s"))),
+		Return(Lit(0), Qual("fmt", "Errorf").Call(Lit("unknown key[%s] found"), String().Id("(dataKey)"))),
 	),
 	)
 
 	decMapCodes := make([]Code, 0)
+
+	decMapCodes = append(decMapCodes, Id("keys").Op(":=").Index().Index().Byte().Block(decKeySliceVar...))
+
 	decMapCodes = append(decMapCodes, List(Id("offset"), Err()).Op(":=").Id(ptn.IdDecoder).Dot("CheckStructHeader").Call(Lit(len(st.Fields)), Id("offset")))
 	decMapCodes = append(decMapCodes, If(Err().Op("!=").Nil()).Block(
 		Return(Lit(0), Err()),
@@ -138,12 +149,31 @@ func (st *Structure) CreateCode(f *File) {
 	//decMapCodes = append(decMapCodes, For(Id("count").Op("<").Id("dataLen").Block(
 	decMapCodes = append(decMapCodes, Id("count").Op(":=").Lit(0))
 	decMapCodes = append(decMapCodes, For(Id("count").Op("<").Lit(len(st.Fields)).Block(
-		Var().Id("s").String(),
-		List(Id("s"), Id("offset"), Err()).Op("=").Id(ptn.IdDecoder).Dot("AsString").Call(Id("offset")),
+		Var().Id("dataKey").Index().Byte(),
+		List(Id("dataKey"), Id("offset"), Err()).Op("=").Id(ptn.IdDecoder).Dot("AsStringBytes").Call(Id("offset")),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Lit(0), Err()),
 		),
-		Switch(Id("s")).Block(
+
+		Id("fieldIndex").Op(":=").Lit(-1),
+		For(List(Id("i"), Id("key"))).Op(":=").Range().Id("keys").Block(
+			If(Len(Id("dataKey")).Op("!=").Len(Id("key"))).Block(
+				Continue(),
+			),
+
+			Id("fieldIndex").Op("=").Id("i"),
+			For(Id("dataKeyIndex")).Op(":=").Range().Id("dataKey").Block(
+				If(Id("dataKey").Index(Id("dataKeyIndex")).Op("!=").Id("key").Index(Id("dataKeyIndex"))).Block(
+					Id("fieldIndex").Op("=").Lit(-1),
+					Break(),
+				),
+			),
+			If(Id("fieldIndex").Op(">=").Lit(0)).Block(
+				Break(),
+			),
+		),
+
+		Switch(Id("fieldIndex")).Block(
 			decMapCodeSwitchCases...,
 		),
 	)))
