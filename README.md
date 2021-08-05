@@ -182,8 +182,8 @@ Usage of msgpackgen:
 
 ## Benchmarks
 
-These results are recorded by [msgpack_bench](https://github.com/shamaton/msgpack_bench) at 2021/02.  
+These results are recorded by [msgpack_bench](https://github.com/shamaton/msgpack_bench) at 2021/08.  
 The result of this package is that the suffix has `ShamatonGen`.
-![msgpack_bench](https://user-images.githubusercontent.com/4637556/107843994-23439e00-6e13-11eb-9303-296be7c24282.png)
+![msgpack_bench](https://user-images.githubusercontent.com/4637556/128298988-0e3c96fd-6014-42a0-9050-36e2b58316b1.png)
 The result of [go_serialization_benchmarks](https://github.com/alecthomas/go_serialization_benchmarks) is here.
-![go_serialization_benchmarks](https://user-images.githubusercontent.com/4637556/107852893-830f6880-6e56-11eb-8eb1-0e2d3e16d18f.png)
+![go_serialization_benchmarks](https://user-images.githubusercontent.com/4637556/128299037-06b3a645-2726-4205-848a-cccebb9a3d7f.png)
