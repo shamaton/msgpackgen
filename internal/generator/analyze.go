@@ -7,8 +7,8 @@ import (
 	"go/parser"
 	"go/token"
 	"go/types"
-	"io/ioutil"
 	"math/big"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -55,7 +55,7 @@ func (g *generator) getImportPathAndParseFile(file string) (string, string, *ast
 		return "", "", nil, err
 	}
 
-	source, err := ioutil.ReadFile(file)
+	source, err := os.ReadFile(file)
 	if err != nil {
 		return "", "", nil, err
 	}
