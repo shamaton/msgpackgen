@@ -85,8 +85,13 @@ func TestOutput(t *testing.T) {
 		t.Fatal("something wrong", err)
 	}
 
+	err = os.MkdirAll("tmp/resolver.go", 0777)
+	if err != nil {
+		t.Fatal("unexpected error", err)
+	}
+
 	g.outputDir = "tmp"
-	err = g.output(nil, "")
+	err = g.output(nil, "resolver.go")
 	if err == nil {
 		t.Error("error should occur")
 	}
@@ -94,7 +99,7 @@ func TestOutput(t *testing.T) {
 		t.Error("something wrong", err)
 	}
 
-	err = os.Remove("tmp")
+	err = os.RemoveAll("tmp/resolver.go")
 	if err != nil {
 		t.Fatal(err)
 	}
