@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -79,7 +79,7 @@ func TestGenerateCodeErrorInput(t *testing.T) {
 	{
 		d := "./noname"
 
-		err := generate(d, iFile, oDir, oFile, ptr, false, true, false, false, ioutil.Discard)
+		err := generate(d, iFile, oDir, oFile, ptr, false, true, false, false, io.Discard)
 		if err == nil {
 			t.Fatal("error has to return")
 		}
@@ -91,7 +91,7 @@ func TestGenerateCodeErrorInput(t *testing.T) {
 		d := "./noname"
 		f := "foo.go"
 
-		err := generate(d, f, oDir, oFile, ptr, false, true, false, false, ioutil.Discard)
+		err := generate(d, f, oDir, oFile, ptr, false, true, false, false, io.Discard)
 		if err == nil {
 			t.Fatal("error has to return")
 		}
@@ -102,7 +102,7 @@ func TestGenerateCodeErrorInput(t *testing.T) {
 	{
 		d := "main.go"
 
-		err := generate(d, iFile, oDir, oFile, ptr, false, true, false, false, ioutil.Discard)
+		err := generate(d, iFile, oDir, oFile, ptr, false, true, false, false, io.Discard)
 		if err == nil {
 			t.Fatal("error has to return")
 		}
@@ -113,7 +113,7 @@ func TestGenerateCodeErrorInput(t *testing.T) {
 	{
 		f := "foo.go"
 
-		err := generate(iDir, f, oDir, oFile, ptr, false, true, false, false, ioutil.Discard)
+		err := generate(iDir, f, oDir, oFile, ptr, false, true, false, false, io.Discard)
 		if err == nil {
 			t.Fatal("error has to return")
 		}
@@ -124,7 +124,7 @@ func TestGenerateCodeErrorInput(t *testing.T) {
 	{
 		f := "internal"
 
-		err := generate(iDir, f, oDir, oFile, ptr, false, true, false, false, ioutil.Discard)
+		err := generate(iDir, f, oDir, oFile, ptr, false, true, false, false, io.Discard)
 		if err == nil {
 			t.Fatal("error has to return")
 		}
@@ -135,7 +135,7 @@ func TestGenerateCodeErrorInput(t *testing.T) {
 	{
 		f := "./testdata/test.sh"
 
-		err := generate(iDir, f, oDir, oFile, ptr, false, true, false, false, ioutil.Discard)
+		err := generate(iDir, f, oDir, oFile, ptr, false, true, false, false, io.Discard)
 		if err == nil {
 			t.Fatal("error has to return")
 		}
@@ -146,7 +146,7 @@ func TestGenerateCodeErrorInput(t *testing.T) {
 	{
 		d := "./noname"
 
-		err := generate(iDir, iFile, d, oFile, ptr, false, true, false, false, ioutil.Discard)
+		err := generate(iDir, iFile, d, oFile, ptr, false, true, false, false, io.Discard)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -154,7 +154,7 @@ func TestGenerateCodeErrorInput(t *testing.T) {
 	{
 		d := "./main.go"
 
-		err := generate(iDir, iFile, d, oFile, ptr, false, true, false, false, ioutil.Discard)
+		err := generate(iDir, iFile, d, oFile, ptr, false, true, false, false, io.Discard)
 		if err == nil {
 			t.Fatal("error has to return")
 		}
@@ -173,7 +173,7 @@ func TestGenerateCodeGoPathOutside(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = generate(iDir, iFile, oDir, oFile, ptr, true, true, false, false, ioutil.Discard)
+	err = generate(iDir, iFile, oDir, oFile, ptr, true, true, false, false, io.Discard)
 	if err == nil {
 		t.Fatal("error has to return")
 	}
@@ -191,7 +191,7 @@ func TestGenerateCodeDuplicateTag(t *testing.T) {
 
 	f := "./testdata/def.go"
 
-	err := generate(iDir, f, oDir, oFile, ptr, false, true, false, false, ioutil.Discard)
+	err := generate(iDir, f, oDir, oFile, ptr, false, true, false, false, io.Discard)
 	if err == nil {
 		t.Fatal("error has to return")
 	}
@@ -202,7 +202,7 @@ func TestGenerateCodeDuplicateTag(t *testing.T) {
 
 func TestGenerateCodeDryRun(t *testing.T) {
 
-	err := generate(iDir, iFile, "", oFile, -1, false, true, false, false, ioutil.Discard)
+	err := generate(iDir, iFile, "", oFile, -1, false, true, false, false, io.Discard)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -236,8 +236,11 @@ func TestGenerateCodeOK(t *testing.T) {
 		t.Fatal(err)
 	}
 	goPath := strings.SplitN(filepath.ToSlash(wd), "/src", 2)[0]
-	os.Setenv("GOPATH", filepath.FromSlash(goPath))
-	err = generate(iDir, iFile, oDir, oFile, ptr, true, true, false, false, ioutil.Discard)
+	err = os.Setenv("GOPATH", filepath.FromSlash(goPath))
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = generate(iDir, iFile, oDir, oFile, ptr, true, true, false, false, io.Discard)
 	if err != nil {
 		t.Fatal(err)
 	}
