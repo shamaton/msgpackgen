@@ -1144,7 +1144,7 @@ func TestStruct(t *testing.T) {
 	if !reflect.DeepEqual(v.A, v1.A) || !reflect.DeepEqual(v.A, v2.A) {
 		t.Error("value different", v.A, v1.A, v2.A)
 	}
-	if v.A.B.Int != v1.B.Int || v.B.Int != v2.A.B.Int {
+	if v.A.B.Int != v1.B.Int || v.B.Int != v2.A.B.Int { //nolint:staticcheck // keeping "A" explicit for clarity
 		t.Error("value something wrong", v.A.Int, v1.Int, v2.Int)
 	}
 	if v.A.Int == v1.Int || v.A.Int == v2.Int {
