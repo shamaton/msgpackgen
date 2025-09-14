@@ -6,7 +6,6 @@ import (
 	"go/ast"
 	"go/token"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -164,8 +163,8 @@ func (g *generator) run(input, out, fileName string, isInputDir, dryRun bool, w 
 	f := g.generateCode()
 
 	if dryRun {
-		fmt.Fprintf(w, "%#v", f)
-		return nil
+		_, err = fmt.Fprintf(w, "%#v", f)
+		return err
 	}
 	err = g.output(f, fileName)
 	if err != nil {
@@ -187,7 +186,7 @@ func (g *generator) searchGoModFile(input string, isInputDir bool) (string, erro
 		return goModFilePath, err
 	}
 
-	files, err := ioutil.ReadDir(path)
+	files, err := os.ReadDir(path)
 	if err != nil {
 		return goModFilePath, err
 	}
@@ -318,7 +317,7 @@ func (g *generator) getImportPath(path string) (string, error) {
 }
 
 func (g *generator) getTargetFiles(dir string, recursive bool) ([]string, error) {
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
 	}

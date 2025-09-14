@@ -2,6 +2,7 @@ package structure
 
 import (
 	"strings"
+	"unicode"
 
 	. "github.com/dave/jennifer/jen"
 	"github.com/shamaton/msgpackgen/internal/generator/ptn"
@@ -12,9 +13,9 @@ type identCodeGen struct {
 
 func (st *Structure) createIdentCode(node *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code) {
 
-	funcSuffix := strings.Title(node.IdenticalName)
-
 	g := identCodeGen{}
+
+	funcSuffix := g.toPascalCase(node.IdenticalName)
 
 	cArray = g.createCalcCode("Calc"+funcSuffix, Id(encodeFieldName))
 	cMap = g.createCalcCode("Calc"+funcSuffix, Id(encodeFieldName))
@@ -66,4 +67,26 @@ func (g identCodeGen) createDecCode(node *Node, structures []*Structure, fieldNa
 	}
 
 	return []Code{Block(codes...)}
+}
+
+func (g identCodeGen) toPascalCase(s string) string {
+	parts := strings.FieldsFunc(s, func(r rune) bool {
+		// character that is not a letter or digit
+		return !unicode.IsLetter(r) && !unicode.IsDigit(r)
+	})
+
+	if len(parts) == 0 {
+		return ""
+	}
+
+	result := ""
+	for _, p := range parts {
+		if p == "" {
+			continue
+		}
+		// Convert first character to uppercase and the rest to lowercase
+		result += strings.ToUpper(string(p[0])) + strings.ToLower(p[1:])
+	}
+
+	return result
 }
