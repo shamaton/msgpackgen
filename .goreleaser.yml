@@ -1,6 +1,7 @@
+version: 2
+
 project_name: msgpackgen
-env:
-  - GO111MODULE=on
+
 before:
   hooks:
     - go mod tidy
@@ -18,15 +19,15 @@ builds:
       - linux
       - windows
 archives:
-  - name_template: '{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
-    replacements:
-      darwin: darwin
-      linux: linux
-      windows: windows
-      386: i386
-      amd64: x86_64
+  - name_template: >-
+      {{ .ProjectName }}_{{ tolower .Os }}_
+      {{- if eq .Arch "amd64" -}}x86_64
+      {{- else if eq .Arch "386" -}}i386
+      {{- else -}}{{ .Arch }}{{- end -}}
+      {{- if .Arm -}}v{{ .Arm }}{{- end -}}
+
     format_overrides:
       - goos: windows
-        format: zip
+        formats: [zip]
 release:
   prerelease: auto
