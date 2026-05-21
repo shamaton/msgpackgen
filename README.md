@@ -62,6 +62,18 @@ func main() {
     }
 ```
 
+`MarshalTo`, `MarshalAsMapTo`, and `MarshalAsArrayTo` append encoded bytes to
+the `buf` passed by the caller and return the resulting slice.
+
+```go
+buf := make([]byte, 0, 1024)
+buf, err := msgpack.MarshalTo(v, buf)
+```
+
+Call `RegisterGeneratedResolver` during init or startup before concurrent
+`Marshal` / `Unmarshal` use. Resolver registration is not synchronized with
+encoding or decoding calls.
+
 ## Serializer
 ### Supported Types
 primitive types:  

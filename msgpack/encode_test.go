@@ -2,6 +2,7 @@ package msgpack
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	rawmsgpack "github.com/shamaton/msgpack/v3"
@@ -128,6 +129,130 @@ func TestMarshalToResolverStates(t *testing.T) {
 	}
 	if string(got) != string([]byte{0x01, 0xaa}) {
 		t.Fatalf("unhandled MarshalAsMapTo = %x, want 01aa", got)
+	}
+}
+
+func TestMarshalToFallbackIgnoresUnhandledResolverBuffer(t *testing.T) {
+	preserveResolvers(t)
+	SetResolver(noOpEncResolver, noOpEncResolver, noOpDecResolver, noOpDecResolver)
+	SetToResolver(
+		func(any, []byte) ([]byte, bool, error) {
+			return []byte{0xee, 0xee}, false, nil
+		},
+		func(any, []byte) ([]byte, bool, error) {
+			return []byte{0xdd, 0xdd}, false, nil
+		},
+	)
+
+	mapPrefix := []byte{0x01}
+	got, err := MarshalAsMapTo(map[string]int{"a": 1}, mapPrefix)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantEncoded, err := rawmsgpack.MarshalAsMap(map[string]int{"a": 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := append([]byte{0x01}, wantEncoded...)
+	if string(got) != string(want) {
+		t.Fatalf("MarshalAsMapTo fallback = %x, want %x", got, want)
+	}
+
+	arrayPrefix := []byte{0x02}
+	got, err = MarshalAsArrayTo([]int{3, 4}, arrayPrefix)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantEncoded, err = rawmsgpack.MarshalAsArray([]int{3, 4})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want = append([]byte{0x02}, wantEncoded...)
+	if string(got) != string(want) {
+		t.Fatalf("MarshalAsArrayTo fallback = %x, want %x", got, want)
+	}
+}
+
+func TestLegacyResolverWorksWithMarshalAndMarshalTo(t *testing.T) {
+	preserveResolvers(t)
+	SetResolver(
+		func(any) ([]byte, error) { return []byte{0x81}, nil },
+		func(any) ([]byte, error) { return []byte{0x91}, nil },
+		noOpDecResolver,
+		noOpDecResolver,
+	)
+
+	SetStructAsArray(false)
+	got, err := Marshal(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string([]byte{0x81}) {
+		t.Fatalf("Marshal legacy map resolver = %x, want 81", got)
+	}
+	got, err = MarshalTo(1, []byte{0x01})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string([]byte{0x01, 0x81}) {
+		t.Fatalf("MarshalTo legacy map resolver = %x, want 0181", got)
+	}
+
+	SetStructAsArray(true)
+	got, err = Marshal(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string([]byte{0x91}) {
+		t.Fatalf("Marshal legacy array resolver = %x, want 91", got)
+	}
+	got, err = MarshalTo(1, []byte{0x02})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string([]byte{0x02, 0x91}) {
+		t.Fatalf("MarshalTo legacy array resolver = %x, want 0291", got)
+	}
+}
+
+func TestMarshalToStrictLegacyResolverDoesNotFallback(t *testing.T) {
+	preserveResolvers(t)
+	strictErr := errors.New("use strict option : undefined type")
+	SetResolver(
+		func(any) ([]byte, error) { return nil, strictErr },
+		func(any) ([]byte, error) { return nil, strictErr },
+		noOpDecResolver,
+		noOpDecResolver,
+	)
+
+	for _, tt := range []struct {
+		name string
+		fn   func() ([]byte, error)
+	}{
+		{
+			name: "MarshalAsMap",
+			fn:   func() ([]byte, error) { return MarshalAsMap(map[string]int{"a": 1}) },
+		},
+		{
+			name: "MarshalAsArray",
+			fn:   func() ([]byte, error) { return MarshalAsArray([]int{1}) },
+		},
+		{
+			name: "MarshalAsMapTo",
+			fn:   func() ([]byte, error) { return MarshalAsMapTo(map[string]int{"a": 1}, []byte{0x01}) },
+		},
+		{
+			name: "MarshalAsArrayTo",
+			fn:   func() ([]byte, error) { return MarshalAsArrayTo([]int{1}, []byte{0x02}) },
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			if b, err := tt.fn(); err == nil {
+				t.Fatalf("error = nil, bytes = %x", b)
+			} else if !strings.Contains(err.Error(), "use strict option") {
+				t.Fatalf("error = %v, want strict option", err)
+			}
+		})
 	}
 }
 

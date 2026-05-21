@@ -34,6 +34,10 @@ var (
 )
 
 // SetResolver sets generated resolvers to bridge variables.
+//
+// Resolver registration is intended for init/startup time. Concurrent calls to
+// SetResolver or SetToResolver while Marshal/Unmarshal is running are not
+// synchronized.
 func SetResolver(encAsMap, encAsArray EncResolver, decAsMap, decAsArray DecResolver) {
 	encAsMapResolver = encAsMap
 	encAsArrayResolver = encAsArray
@@ -44,6 +48,11 @@ func SetResolver(encAsMap, encAsArray EncResolver, decAsMap, decAsArray DecResol
 }
 
 // SetToResolver sets generated resolvers that append encoded bytes to the caller's buffer.
+//
+// Resolver registration is intended for init/startup time. Concurrent calls to
+// SetResolver or SetToResolver while Marshal/Unmarshal is running are not
+// synchronized.
+// A resolver that returns handled=false must leave buf unchanged.
 // Passing nil for either resolver resets that side to the default no-op resolver.
 func SetToResolver(encAsMap, encAsArray EncToResolver) {
 	if encAsMap == nil {
