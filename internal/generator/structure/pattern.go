@@ -51,6 +51,20 @@ func createAddSizeErrCheckCode(funcName string, params ...Code) []Code {
 
 }
 
+func createDecodeNilCheckedCode(nonNilCodes []Code) Code {
+	return Block(
+		List(Id("isNil"), Err()).Op(":=").Id(ptn.IdDecoder).Dot("IsCodeNilChecked").Call(Id("offset")),
+		If(Err().Op("!=").Nil()).Block(
+			Return(Lit(0), Err()),
+		),
+		If(Op("!").Id("isNil")).Block(
+			nonNilCodes...,
+		).Else().Block(
+			Id("offset").Op("++"),
+		),
+	)
+}
+
 func createDecodeDefineVarCode(node *Node, structures []*Structure, varName string) ([]Code, string) {
 
 	ptrCount, isParentTypeArrayOrMap := node.GetPointerInfo()

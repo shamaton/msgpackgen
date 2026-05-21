@@ -244,4 +244,14 @@ func TestGenerateCodeOK(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	generated, err := os.ReadFile("resolver_test.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(generated), ".IsCodeNilChecked(") {
+		t.Fatal("generated resolver must use IsCodeNilChecked")
+	}
+	if strings.Contains(string(generated), ".IsCodeNil(") {
+		t.Fatal("generated resolver must not use legacy IsCodeNil")
+	}
 }

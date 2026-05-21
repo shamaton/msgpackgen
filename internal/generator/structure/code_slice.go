@@ -111,11 +111,7 @@ func (g sliceCodeGen) createDecCode(node *Node, structures []*Structure, fieldNa
 	if node.HasParent() && node.Parent.IsPointer() {
 		codes = blockCodes
 	} else {
-		codes = append(codes, If(Op("!").Id(ptn.IdDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
-			blockCodes...,
-		).Else().Block(
-			Id("offset").Op("++"),
-		))
+		codes = []Code{createDecodeNilCheckedCode(blockCodes)}
 	}
 	return codes
 }

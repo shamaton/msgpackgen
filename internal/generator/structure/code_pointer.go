@@ -59,12 +59,7 @@ func (g pointerCodeGen) createPointerDecCode(node *Node, elmCodes []Code) []Code
 	if node.IsParentPointer() {
 		codes = elmCodes
 	} else {
-		codes = make([]Code, 0)
-		codes = append(codes, If(Op("!").Id(ptn.IdDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
-			elmCodes...,
-		).Else().Block(
-			Id("offset").Op("++"),
-		))
+		codes = []Code{createDecodeNilCheckedCode(elmCodes)}
 	}
 	return codes
 }

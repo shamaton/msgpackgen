@@ -908,6 +908,30 @@ func TestGeneratedDecodeReturnsErrorForMalformedInput(t *testing.T) {
 			},
 		},
 		{
+			name: "array pointer missing value",
+			data: []byte{def.FixArray + 2},
+			fn: func(data []byte) error {
+				var r testingTimePointer
+				return msgpack.UnmarshalAsArray(data, &r)
+			},
+		},
+		{
+			name: "array slice missing value",
+			data: []byte{def.FixArray + 1},
+			fn: func(data []byte) error {
+				var r testingSlice
+				return msgpack.UnmarshalAsArray(data, &r)
+			},
+		},
+		{
+			name: "map slice missing value",
+			data: []byte{def.FixMap + 1, def.FixStr + 5, 'S', 'l', 'i', 'c', 'e'},
+			fn: func(data []byte) error {
+				var r testingSlice
+				return msgpack.UnmarshalAsMap(data, &r)
+			},
+		},
+		{
 			name: "array complex64 truncated fixext8",
 			data: []byte{def.FixArray + 1, def.Fixext8, byte(def.ComplexTypeCode()), 0},
 			fn: func(data []byte) error {

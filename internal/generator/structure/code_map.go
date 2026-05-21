@@ -125,12 +125,7 @@ func (g mapCodeGen) createDecCode(
 	if ast.HasParent() && ast.Parent.IsPointer() {
 		codes = decCodes
 	} else {
-
-		codes = append(codes, If(Op("!").Id(ptn.IdDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
-			decCodes...,
-		).Else().Block(
-			Id("offset").Op("++"),
-		))
+		codes = []Code{createDecodeNilCheckedCode(decCodes)}
 	}
 	return codes
 }
