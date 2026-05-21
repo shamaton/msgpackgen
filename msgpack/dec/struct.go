@@ -9,31 +9,53 @@ import (
 
 // CheckStructHeader checks if fieldNum matches the number of fields on the data.
 func (d *Decoder) CheckStructHeader(fieldNum, offset int) (int, error) {
-	code, offset := d.readSize1(offset)
+	code, offset, err := d.readSize1Checked(offset)
+	if err != nil {
+		return 0, err
+	}
 	var l int
+	ok := true
 	switch {
 	case d.isFixSlice(code):
 		l = int(code - def.FixArray)
 
 	case code == def.Array16:
-		bs, o := d.readSize2(offset)
+		bs, o, err := d.readSize2Checked(offset)
+		if err != nil {
+			return 0, err
+		}
 		l = int(binary.BigEndian.Uint16(bs))
 		offset = o
 	case code == def.Array32:
-		bs, o := d.readSize4(offset)
+		bs, o, err := d.readSize4Checked(offset)
+		if err != nil {
+			return 0, err
+		}
 		l = int(binary.BigEndian.Uint32(bs))
 		offset = o
 
 	case d.isFixMap(code):
 		l = int(code - def.FixMap)
 	case code == def.Map16:
-		bs, o := d.readSize2(offset)
+		bs, o, err := d.readSize2Checked(offset)
+		if err != nil {
+			return 0, err
+		}
 		l = int(binary.BigEndian.Uint16(bs))
 		offset = o
 	case code == def.Map32:
-		bs, o := d.readSize4(offset)
+		bs, o, err := d.readSize4Checked(offset)
+		if err != nil {
+			return 0, err
+		}
 		l = int(binary.BigEndian.Uint32(bs))
 		offset = o
+	default:
+		ok = false
+	}
+
+	if !ok {
+		return 0, d.errorTemplate(code, "CheckStructHeader")
 	}
 
 	if fieldNum != l {

@@ -6,8 +6,10 @@ import (
 
 // AsBool checks codes and returns the got bytes as bool
 func (d *Decoder) AsBool(offset int) (bool, int, error) {
-	code := d.data[offset]
-	offset++
+	code, offset, err := d.readSize1Checked(offset)
+	if err != nil {
+		return false, 0, err
+	}
 
 	switch code {
 	case def.True:

@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"math"
 	"math/rand"
@@ -844,6 +845,27 @@ func TestTimeDecodeDefaultsToUTC(t *testing.T) {
 		if r.UnixNano() != localTime.UTC().UnixNano() {
 			t.Fatalf("fallback time instant = %v, want %v", r, localTime.UTC())
 		}
+	}
+}
+
+func TestGeneratedTimeDecodeReturnsErrorForTruncatedInput(t *testing.T) {
+	tests := []struct {
+		name string
+		data []byte
+	}{
+		{name: "fixext4", data: []byte{def.FixArray + 1, def.Fixext4, 0xff}},
+		{name: "fixext8", data: []byte{def.FixArray + 1, def.Fixext8, 0xff, 0}},
+		{name: "ext8", data: []byte{def.FixArray + 1, def.Ext8, 12, 0xff, 0}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var r testingTime
+			err := msgpack.UnmarshalAsArray(tt.data, &r)
+			if !errors.Is(err, def.ErrTooShortBytes) {
+				t.Fatalf("error = %v, want %v", err, def.ErrTooShortBytes)
+			}
+		})
 	}
 }
 
