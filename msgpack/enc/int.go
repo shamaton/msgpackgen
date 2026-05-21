@@ -3,7 +3,7 @@ package enc
 import (
 	"math"
 
-	"github.com/shamaton/msgpack/v2/def"
+	"github.com/shamaton/msgpack/v3/def"
 )
 
 //func (e *Encoder) isPositiveFixInt64(v int64) bool {

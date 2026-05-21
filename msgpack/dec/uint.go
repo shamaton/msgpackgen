@@ -3,7 +3,7 @@ package dec
 import (
 	"encoding/binary"
 
-	"github.com/shamaton/msgpack/v2/def"
+	"github.com/shamaton/msgpack/v3/def"
 )
 
 // AsUint checks codes and returns the got bytes as uint

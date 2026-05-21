@@ -1,6 +1,6 @@
 package enc
 
-import "github.com/shamaton/msgpack/v2/def"
+import "github.com/shamaton/msgpack/v3/def"
 
 // CalcNil returns data size that need.
 func (e *Encoder) CalcNil() int {

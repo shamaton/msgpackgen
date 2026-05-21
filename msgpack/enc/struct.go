@@ -1,7 +1,7 @@
 package enc
 
 import (
-	"github.com/shamaton/msgpack/v2/def"
+	"github.com/shamaton/msgpack/v3/def"
 )
 
 // CalcStructHeaderFix returns data size that need.

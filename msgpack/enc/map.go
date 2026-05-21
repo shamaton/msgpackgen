@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/shamaton/msgpack/v2/def"
+	"github.com/shamaton/msgpack/v3/def"
 )
 
 // CalcMapLength checks value and returns data size that need.

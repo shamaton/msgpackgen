@@ -3,7 +3,7 @@ package enc
 import (
 	"time"
 
-	"github.com/shamaton/msgpack/v2/def"
+	"github.com/shamaton/msgpack/v3/def"
 )
 
 // CalcTime check value and returns data size that need.

@@ -1,7 +1,7 @@
 package msgpack
 
 import (
-	"github.com/shamaton/msgpack/v2"
+	"github.com/shamaton/msgpack/v3"
 )
 
 // Marshal returns the MessagePack-encoded byte array of v.

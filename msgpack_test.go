@@ -11,7 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/shamaton/msgpack/v2/def"
+	rawmsgpack "github.com/shamaton/msgpack/v3"
+	"github.com/shamaton/msgpack/v3/def"
 	define2 "github.com/shamaton/msgpackgen/internal/fortest/define"
 	"github.com/shamaton/msgpackgen/internal/fortest/define/define"
 	"github.com/shamaton/msgpackgen/msgpack"
@@ -798,6 +799,50 @@ func TestTime(t *testing.T) {
 		err = msgpack.UnmarshalAsArray([]byte{def.FixArray + 1, def.Fixext1}, &r)
 		if err == nil || !strings.Contains(err.Error(), "AsDateTime") {
 			t.Error("something wrong", err)
+		}
+	}
+}
+
+func TestTimeDecodeDefaultsToUTC(t *testing.T) {
+	originalLocal := time.Local
+	time.Local = time.FixedZone("UTC-8", -8*60*60)
+	defer func() {
+		time.Local = originalLocal
+	}()
+
+	localTime := time.Date(2026, 5, 21, 8, 30, 45, 123456789, time.Local)
+
+	{
+		b, err := msgpack.MarshalAsArray(testingTime{Time: localTime})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var r testingTime
+		if err := msgpack.UnmarshalAsArray(b, &r); err != nil {
+			t.Fatal(err)
+		}
+		if r.Time.Location() != time.UTC {
+			t.Fatalf("generated time location = %v, want UTC", r.Time.Location())
+		}
+		if r.Time.UnixNano() != localTime.UTC().UnixNano() {
+			t.Fatalf("generated time instant = %v, want %v", r.Time, localTime.UTC())
+		}
+	}
+
+	{
+		b, err := rawmsgpack.MarshalAsArray(localTime)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var r time.Time
+		if err := rawmsgpack.UnmarshalAsArray(b, &r); err != nil {
+			t.Fatal(err)
+		}
+		if r.Location() != time.UTC {
+			t.Fatalf("fallback time location = %v, want UTC", r.Location())
+		}
+		if r.UnixNano() != localTime.UTC().UnixNano() {
+			t.Fatalf("fallback time instant = %v, want %v", r, localTime.UTC())
 		}
 	}
 }

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/shamaton/msgpack/v2/def"
+	"github.com/shamaton/msgpack/v3/def"
 )
 
 // AsComplex64 checks codes and returns the got bytes as complex64

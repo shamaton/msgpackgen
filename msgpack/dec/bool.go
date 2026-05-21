@@ -1,7 +1,7 @@
 package dec
 
 import (
-	"github.com/shamaton/msgpack/v2/def"
+	"github.com/shamaton/msgpack/v3/def"
 )
 
 // AsBool checks codes and returns the got bytes as bool

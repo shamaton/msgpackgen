@@ -3,7 +3,7 @@ package enc
 import (
 	"math"
 
-	"github.com/shamaton/msgpack/v2/def"
+	"github.com/shamaton/msgpack/v3/def"
 )
 
 // CalcComplex64 returns data size that need.

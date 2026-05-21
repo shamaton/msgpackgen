@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/shamaton/msgpack/v2/def"
+	"github.com/shamaton/msgpack/v3/def"
 )
 
 func (e *Encoder) calcByteSlice(l int) (int, error) {
@@ -39,6 +39,7 @@ func (e *Encoder) CalcByte(b byte) int {
 }
 
 // WriteByte sets the contents of v to the buffer.
+//
 //nolint:govet // custom WriteByte signature is intentional (used only by generated code)
 func (e *Encoder) WriteByte(b byte, offset int) int {
 	return e.setByte(b, offset)

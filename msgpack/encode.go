@@ -1,6 +1,6 @@
 package msgpack
 
-import "github.com/shamaton/msgpack/v2"
+import "github.com/shamaton/msgpack/v3"
 
 // MarshalAsMap encodes data as map format.
 // This is the same thing that StructAsArray sets false.

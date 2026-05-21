@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/shamaton/msgpack/v2/def"
+	"github.com/shamaton/msgpack/v3/def"
 )
 
 // CalcSliceLength checks values and returns data size that need.
