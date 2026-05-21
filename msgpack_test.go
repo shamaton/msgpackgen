@@ -869,6 +869,80 @@ func TestGeneratedTimeDecodeReturnsErrorForTruncatedInput(t *testing.T) {
 	}
 }
 
+func TestGeneratedDecodeReturnsErrorForMalformedInput(t *testing.T) {
+	tests := []struct {
+		name string
+		data []byte
+		fn   func([]byte) error
+	}{
+		{
+			name: "array int truncated uint16",
+			data: []byte{def.FixArray + 1, def.Uint16},
+			fn: func(data []byte) error {
+				var r testingInt
+				return msgpack.UnmarshalAsArray(data, &r)
+			},
+		},
+		{
+			name: "array string truncated payload",
+			data: []byte{def.FixArray + 1, def.Str8, 2, 'a'},
+			fn: func(data []byte) error {
+				var r testingString
+				return msgpack.UnmarshalAsArray(data, &r)
+			},
+		},
+		{
+			name: "array slice truncated header",
+			data: []byte{def.FixArray + 1, def.Array16, 0},
+			fn: func(data []byte) error {
+				var r testingSlice
+				return msgpack.UnmarshalAsArray(data, &r)
+			},
+		},
+		{
+			name: "array map truncated header",
+			data: []byte{def.FixArray + 1, def.Map16, 0},
+			fn: func(data []byte) error {
+				var r testingMap
+				return msgpack.UnmarshalAsArray(data, &r)
+			},
+		},
+		{
+			name: "array complex64 truncated fixext8",
+			data: []byte{def.FixArray + 1, def.Fixext8, byte(def.ComplexTypeCode()), 0},
+			fn: func(data []byte) error {
+				var r testingComplex64
+				return msgpack.UnmarshalAsArray(data, &r)
+			},
+		},
+		{
+			name: "map int truncated value",
+			data: []byte{def.FixMap + 1, def.FixStr + 1, 'I', def.Uint16},
+			fn: func(data []byte) error {
+				var r testingInt
+				return msgpack.UnmarshalAsMap(data, &r)
+			},
+		},
+		{
+			name: "map truncated header",
+			data: []byte{def.Map16, 0},
+			fn: func(data []byte) error {
+				var r testingInt
+				return msgpack.UnmarshalAsMap(data, &r)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.fn(tt.data)
+			if !errors.Is(err, def.ErrTooShortBytes) {
+				t.Fatalf("error = %v, want %v", err, def.ErrTooShortBytes)
+			}
+		})
+	}
+}
+
 func TestTimePointer(t *testing.T) {
 	now := time.Now()
 	add := now.Add(1 * time.Minute)
