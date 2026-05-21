@@ -2,24 +2,24 @@ package msgpack
 
 type (
 	// EncResolver is a definition to resolve serialization.
-	EncResolver func(i interface{}) ([]byte, error)
+	EncResolver func(i any) ([]byte, error)
 	// EncToResolver resolves serialization by appending to buf.
 	// If err is non-nil, Marshal*To returns it without fallback. If handled is false,
 	// Marshal*To falls back using the original input buf. If handled is true,
 	// Marshal*To returns the resolver's buf.
-	EncToResolver func(i interface{}, buf []byte) ([]byte, bool, error)
+	EncToResolver func(i any, buf []byte) ([]byte, bool, error)
 	// DecResolver is a definition to resolve de-serialization.
-	DecResolver func(data []byte, i interface{}) (bool, error)
+	DecResolver func(data []byte, i any) (bool, error)
 )
 
 var (
-	noOpEncResolver EncResolver = func(i interface{}) ([]byte, error) {
+	noOpEncResolver EncResolver = func(i any) ([]byte, error) {
 		return nil, nil
 	}
-	noOpEncToResolver EncToResolver = func(i interface{}, buf []byte) ([]byte, bool, error) {
+	noOpEncToResolver EncToResolver = func(i any, buf []byte) ([]byte, bool, error) {
 		return buf, false, nil
 	}
-	noOpDecResolver DecResolver = func(data []byte, i interface{}) (bool, error) {
+	noOpDecResolver DecResolver = func(data []byte, i any) (bool, error) {
 		return false, nil
 	}
 

@@ -67,13 +67,13 @@ func TestMarshalToResolverStates(t *testing.T) {
 	oldErr := errors.New("old resolver must not be called")
 	toErr := errors.New("to resolver error")
 	SetResolver(
-		func(interface{}) ([]byte, error) { return nil, oldErr },
+		func(any) ([]byte, error) { return nil, oldErr },
 		noOpEncResolver,
 		noOpDecResolver,
 		noOpDecResolver,
 	)
 	SetToResolver(
-		func(interface{}, []byte) ([]byte, bool, error) {
+		func(any, []byte) ([]byte, bool, error) {
 			return nil, false, toErr
 		},
 		noOpEncToResolver,
@@ -82,10 +82,10 @@ func TestMarshalToResolverStates(t *testing.T) {
 		t.Fatalf("MarshalAsMapTo error = %v, want %v", err, toErr)
 	}
 	SetToResolver(
-		func(interface{}, []byte) ([]byte, bool, error) {
+		func(any, []byte) ([]byte, bool, error) {
 			return []byte{0xbb}, true, toErr
 		},
-		func(interface{}, []byte) ([]byte, bool, error) {
+		func(any, []byte) ([]byte, bool, error) {
 			return []byte{0xcc}, true, toErr
 		},
 	)
@@ -97,13 +97,13 @@ func TestMarshalToResolverStates(t *testing.T) {
 	}
 
 	SetResolver(
-		func(interface{}) ([]byte, error) { return []byte{0xaa}, nil },
+		func(any) ([]byte, error) { return []byte{0xaa}, nil },
 		noOpEncResolver,
 		noOpDecResolver,
 		noOpDecResolver,
 	)
 	SetToResolver(
-		func(interface{}, []byte) ([]byte, bool, error) {
+		func(any, []byte) ([]byte, bool, error) {
 			return []byte{0xbb}, true, nil
 		},
 		noOpEncToResolver,
@@ -117,7 +117,7 @@ func TestMarshalToResolverStates(t *testing.T) {
 	}
 
 	SetToResolver(
-		func(interface{}, []byte) ([]byte, bool, error) {
+		func(any, []byte) ([]byte, bool, error) {
 			return []byte{0xcc}, false, nil
 		},
 		noOpEncToResolver,
@@ -134,12 +134,12 @@ func TestMarshalToResolverStates(t *testing.T) {
 func TestSetResolverResetsToResolver(t *testing.T) {
 	preserveResolvers(t)
 	SetToResolver(
-		func(interface{}, []byte) ([]byte, bool, error) { return []byte{0xbb}, true, nil },
-		func(interface{}, []byte) ([]byte, bool, error) { return []byte{0xcc}, true, nil },
+		func(any, []byte) ([]byte, bool, error) { return []byte{0xbb}, true, nil },
+		func(any, []byte) ([]byte, bool, error) { return []byte{0xcc}, true, nil },
 	)
 	SetResolver(
-		func(interface{}) ([]byte, error) { return []byte{0x11}, nil },
-		func(interface{}) ([]byte, error) { return []byte{0x22}, nil },
+		func(any) ([]byte, error) { return []byte{0x11}, nil },
+		func(any) ([]byte, error) { return []byte{0x22}, nil },
 		noOpDecResolver,
 		noOpDecResolver,
 	)
@@ -164,8 +164,8 @@ func TestMarshalToUsesStructAsArray(t *testing.T) {
 	preserveResolvers(t)
 	SetResolver(noOpEncResolver, noOpEncResolver, noOpDecResolver, noOpDecResolver)
 	SetToResolver(
-		func(interface{}, []byte) ([]byte, bool, error) { return []byte{0x81}, true, nil },
-		func(interface{}, []byte) ([]byte, bool, error) { return []byte{0x91}, true, nil },
+		func(any, []byte) ([]byte, bool, error) { return []byte{0x81}, true, nil },
+		func(any, []byte) ([]byte, bool, error) { return []byte{0x91}, true, nil },
 	)
 
 	SetStructAsArray(false)
@@ -190,8 +190,8 @@ func TestMarshalToUsesStructAsArray(t *testing.T) {
 func TestSetToResolverAcceptsNil(t *testing.T) {
 	preserveResolvers(t)
 	SetResolver(
-		func(interface{}) ([]byte, error) { return []byte{0x11}, nil },
-		func(interface{}) ([]byte, error) { return []byte{0x22}, nil },
+		func(any) ([]byte, error) { return []byte{0x11}, nil },
+		func(any) ([]byte, error) { return []byte{0x22}, nil },
 		noOpDecResolver,
 		noOpDecResolver,
 	)

@@ -4,13 +4,13 @@ import "github.com/shamaton/msgpack/v3"
 
 // MarshalAsMap encodes data as map format.
 // This is the same thing that StructAsArray sets false.
-func MarshalAsMap(v interface{}) ([]byte, error) {
+func MarshalAsMap(v any) ([]byte, error) {
 	return MarshalAsMapTo(v, nil)
 }
 
 // MarshalAsMapTo encodes data as map format by appending to buf.
 // This is the same thing that StructAsArray sets false.
-func MarshalAsMapTo(v interface{}, buf []byte) ([]byte, error) {
+func MarshalAsMapTo(v any, buf []byte) ([]byte, error) {
 	base := buf
 	if b, handled, err := encAsMapToResolver(v, buf); err != nil {
 		return nil, err
@@ -32,13 +32,13 @@ func MarshalAsMapTo(v interface{}, buf []byte) ([]byte, error) {
 
 // MarshalAsArray encodes data as array format.
 // This is the same thing that StructAsArray sets true.
-func MarshalAsArray(v interface{}) ([]byte, error) {
+func MarshalAsArray(v any) ([]byte, error) {
 	return MarshalAsArrayTo(v, nil)
 }
 
 // MarshalAsArrayTo encodes data as array format by appending to buf.
 // This is the same thing that StructAsArray sets true.
-func MarshalAsArrayTo(v interface{}, buf []byte) ([]byte, error) {
+func MarshalAsArrayTo(v any, buf []byte) ([]byte, error) {
 	base := buf
 	if b, handled, err := encAsArrayToResolver(v, buf); err != nil {
 		return nil, err

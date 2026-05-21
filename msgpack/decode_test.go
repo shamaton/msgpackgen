@@ -12,13 +12,13 @@ func TestFallbackDecodeReturnsErrorForTruncatedInput(t *testing.T) {
 	tests := []struct {
 		name   string
 		data   []byte
-		target func() interface{}
-		fn     func([]byte, interface{}) error
+		target func() any
+		fn     func([]byte, any) error
 	}{
 		{
 			name: "array time truncated fixext4",
 			data: []byte{def.Fixext4, 0xff},
-			target: func() interface{} {
+			target: func() any {
 				var v time.Time
 				return &v
 			},
@@ -27,7 +27,7 @@ func TestFallbackDecodeReturnsErrorForTruncatedInput(t *testing.T) {
 		{
 			name: "array string truncated payload",
 			data: []byte{def.Str8, 2, 'a'},
-			target: func() interface{} {
+			target: func() any {
 				var v string
 				return &v
 			},
@@ -36,7 +36,7 @@ func TestFallbackDecodeReturnsErrorForTruncatedInput(t *testing.T) {
 		{
 			name: "array slice truncated header",
 			data: []byte{def.Array16, 0},
-			target: func() interface{} {
+			target: func() any {
 				var v []int
 				return &v
 			},
@@ -45,7 +45,7 @@ func TestFallbackDecodeReturnsErrorForTruncatedInput(t *testing.T) {
 		{
 			name: "map truncated header",
 			data: []byte{def.Map16, 0},
-			target: func() interface{} {
+			target: func() any {
 				var v map[string]int
 				return &v
 			},

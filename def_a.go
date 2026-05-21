@@ -172,7 +172,7 @@ func (p *private) SetInt() {
 
 type notGenerated1 struct {
 	Int       int
-	Interface interface{}
+	Interface any
 }
 
 type notGenerated2 struct {

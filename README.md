@@ -124,7 +124,7 @@ Not generated in the following cases:
 // ex. a/example.go
 type Example struct {
 	// unsupported types
-	Interface interface{}
+	Interface any
 	Uintptr uintptr
 	Error error
 	Chan chan
@@ -147,7 +147,7 @@ func (e Example) F() {
 
 // ex a/b/example.go
 type Example struct {
-	Interface interface{}
+	Interface any
 }
 ```
 If you serialize a struct that wasn't code generated, it will be processed by [shamaton/msgpack](https://github.com/shamaton/msgpack).

@@ -592,10 +592,10 @@ func TestPointerValue(t *testing.T) {
 
 	check := func(v testingValue) error {
 		var v1, v2 testingValue
-		f1 := func() (bool, interface{}, interface{}) {
+		f1 := func() (bool, any, any) {
 			return v1.P3float32 == nil, v1.P3float32, nil
 		}
-		f2 := func() (bool, interface{}, interface{}) {
+		f2 := func() (bool, any, any) {
 			return v2.P3float32 == nil, v1.P3float32, nil
 		}
 
@@ -643,7 +643,7 @@ func TestPointerValue(t *testing.T) {
 
 	check2 := func(v testingValue) error {
 		var v1, v2 testingValue
-		f1 := func() (bool, interface{}, interface{}) {
+		f1 := func() (bool, any, any) {
 			mp := map[uint]string{}
 			for kk, vv := range v1.MapPointers {
 				vvv := *vv
@@ -658,7 +658,7 @@ func TestPointerValue(t *testing.T) {
 			return true, nil, nil
 		}
 
-		f2 := func() (bool, interface{}, interface{}) {
+		f2 := func() (bool, any, any) {
 			mp := map[uint]string{}
 			for kk, vv := range v2.MapPointers {
 				vvv := *vv
@@ -999,7 +999,7 @@ func TestTimePointer(t *testing.T) {
 	}
 }
 
-func checkValue(v testingValue, eqs ...func() (bool, interface{}, interface{})) error {
+func checkValue(v testingValue, eqs ...func() (bool, any, any)) error {
 	var v1, v2 testingValue
 	return _checkValue(v, &v1, &v2, eqs...)
 }
@@ -1216,7 +1216,7 @@ func TestArray(t *testing.T) {
 	}
 }
 
-func _checkValue(v interface{}, u1, u2 interface{}, eqs ...func() (bool, interface{}, interface{})) error {
+func _checkValue(v any, u1, u2 any, eqs ...func() (bool, any, any)) error {
 	b1, b2, err1, err2 := marshal(v, v)
 	if err1 != nil {
 		return fmt.Errorf("marshal to b1 failed %v", err1)
@@ -1253,7 +1253,7 @@ func _checkValue(v interface{}, u1, u2 interface{}, eqs ...func() (bool, interfa
 
 func TestStruct(t *testing.T) {
 	check := func(v testingStruct) (testingStruct, testingStruct, error) {
-		f := func() (bool, interface{}, interface{}) {
+		f := func() (bool, any, any) {
 			return true, nil, nil
 		}
 		var r1, r2 testingStruct
@@ -1548,7 +1548,7 @@ func TestPrivate(t *testing.T) {
 	}
 }
 
-func forCoverage(v1, v2, v3, v4 interface{}) error {
+func forCoverage(v1, v2, v3, v4 any) error {
 
 	// encode single pointer
 	b1, b2, err1, err2 := marshal(v1, v1)
@@ -1595,7 +1595,7 @@ func forCoverage(v1, v2, v3, v4 interface{}) error {
 	return nil
 }
 
-func checkUndefined(m1, m2, u1, u2 interface{}) error {
+func checkUndefined(m1, m2, u1, u2 any) error {
 	b1, b2, err1, err2 := marshal(m1, m2)
 	if err1 != nil && !strings.Contains(err1.Error(), "use strict option") {
 		return fmt.Errorf("check undefined: marshal to b1 error %v", err1)
@@ -1626,12 +1626,12 @@ func checkUndefined(m1, m2, u1, u2 interface{}) error {
 	return nil
 }
 
-func marshal(v1, v2 interface{}) ([]byte, []byte, error, error) {
+func marshal(v1, v2 any) ([]byte, []byte, error, error) {
 	b1, e1 := msgpack.Marshal(v1)
 	b2, e2 := msgpack.MarshalAsArray(v2)
 	return b1, b2, e1, e2
 }
 
-func unmarshal(b1, b2 []byte, v1, v2 interface{}) (error, error) {
+func unmarshal(b1, b2 []byte, v1, v2 any) (error, error) {
 	return msgpack.Unmarshal(b1, v1), msgpack.UnmarshalAsArray(b2, v2)
 }

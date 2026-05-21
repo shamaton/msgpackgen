@@ -5,7 +5,7 @@ import (
 )
 
 // Marshal returns the MessagePack-encoded byte array of v.
-func Marshal(v interface{}) ([]byte, error) {
+func Marshal(v any) ([]byte, error) {
 	if StructAsArray() {
 		return MarshalAsArray(v)
 	}
@@ -13,7 +13,7 @@ func Marshal(v interface{}) ([]byte, error) {
 }
 
 // MarshalTo returns the MessagePack-encoded byte array of v by appending to buf.
-func MarshalTo(v interface{}, buf []byte) ([]byte, error) {
+func MarshalTo(v any, buf []byte) ([]byte, error) {
 	if StructAsArray() {
 		return MarshalAsArrayTo(v, buf)
 	}
@@ -22,7 +22,7 @@ func MarshalTo(v interface{}, buf []byte) ([]byte, error) {
 
 // Unmarshal analyzes the MessagePack-encoded data and stores
 // the result into the pointer of v.
-func Unmarshal(data []byte, v interface{}) error {
+func Unmarshal(data []byte, v any) error {
 	if StructAsArray() {
 		return UnmarshalAsArray(data, v)
 	}
