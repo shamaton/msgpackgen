@@ -12,6 +12,14 @@ func Marshal(v interface{}) ([]byte, error) {
 	return MarshalAsMap(v)
 }
 
+// MarshalTo returns the MessagePack-encoded byte array of v by appending to buf.
+func MarshalTo(v interface{}, buf []byte) ([]byte, error) {
+	if StructAsArray() {
+		return MarshalAsArrayTo(v, buf)
+	}
+	return MarshalAsMapTo(v, buf)
+}
+
 // Unmarshal analyzes the MessagePack-encoded data and stores
 // the result into the pointer of v.
 func Unmarshal(data []byte, v interface{}) error {

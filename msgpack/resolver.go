@@ -3,26 +3,55 @@ package msgpack
 type (
 	// EncResolver is a definition to resolve serialization.
 	EncResolver func(i interface{}) ([]byte, error)
+	// EncToResolver resolves serialization by appending to buf.
+	// If err is non-nil, Marshal*To returns it without fallback. If handled is false,
+	// Marshal*To falls back using the original input buf. If handled is true,
+	// Marshal*To returns the resolver's buf.
+	EncToResolver func(i interface{}, buf []byte) ([]byte, bool, error)
 	// DecResolver is a definition to resolve de-serialization.
 	DecResolver func(data []byte, i interface{}) (bool, error)
 )
 
 var (
-	encAsMapResolver EncResolver = func(i interface{}) ([]byte, error) {
+	noOpEncResolver EncResolver = func(i interface{}) ([]byte, error) {
 		return nil, nil
 	}
-	encAsArrayResolver = encAsMapResolver
-
-	decAsMapResolver DecResolver = func(data []byte, i interface{}) (bool, error) {
+	noOpEncToResolver EncToResolver = func(i interface{}, buf []byte) ([]byte, bool, error) {
+		return buf, false, nil
+	}
+	noOpDecResolver DecResolver = func(data []byte, i interface{}) (bool, error) {
 		return false, nil
 	}
-	decAsArrayResolver = decAsMapResolver
+
+	encAsMapResolver   = noOpEncResolver
+	encAsArrayResolver = noOpEncResolver
+
+	encAsMapToResolver   = noOpEncToResolver
+	encAsArrayToResolver = noOpEncToResolver
+
+	decAsMapResolver   = noOpDecResolver
+	decAsArrayResolver = noOpDecResolver
 )
 
 // SetResolver sets generated resolvers to bridge variables.
 func SetResolver(encAsMap, encAsArray EncResolver, decAsMap, decAsArray DecResolver) {
 	encAsMapResolver = encAsMap
 	encAsArrayResolver = encAsArray
+	encAsMapToResolver = noOpEncToResolver
+	encAsArrayToResolver = noOpEncToResolver
 	decAsMapResolver = decAsMap
 	decAsArrayResolver = decAsArray
+}
+
+// SetToResolver sets generated resolvers that append encoded bytes to the caller's buffer.
+// Passing nil for either resolver resets that side to the default no-op resolver.
+func SetToResolver(encAsMap, encAsArray EncToResolver) {
+	if encAsMap == nil {
+		encAsMap = noOpEncToResolver
+	}
+	if encAsArray == nil {
+		encAsArray = noOpEncToResolver
+	}
+	encAsMapToResolver = encAsMap
+	encAsArrayToResolver = encAsArray
 }
