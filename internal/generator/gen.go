@@ -428,6 +428,10 @@ func (g *generator) generateCode() *File {
 			Id(ptn.PrivateFuncName("decodeAsMap")),
 			Id(ptn.PrivateFuncName("decodeAsArray")),
 		),
+		Qual(ptn.PkTop, "SetToResolver").Call(
+			Id(ptn.PrivateFuncName("encodeAsMapTo")),
+			Id(ptn.PrivateFuncName("encodeAsArrayTo")),
+		),
 	)
 
 	encReturn := Return(Nil(), Nil())
@@ -478,6 +482,8 @@ func (g *generator) generateCode() *File {
 
 	g.encodeTopTemplate("encodeAsArray", f).Block(encodeAsArrayCode...)
 	g.encodeTopTemplate("encodeAsMap", f).Block(encodeAsMapCode...)
+	g.encodeToTopTemplate("encodeAsArrayTo", f).Block(g.encodeToAdapterCode("encodeAsArray")...)
+	g.encodeToTopTemplate("encodeAsMapTo", f).Block(g.encodeToAdapterCode("encodeAsMap")...)
 
 	g.decodeTopTemplate("decode", f).Block(
 		If(Qual(ptn.PkTop, "StructAsArray").Call()).Block(
@@ -562,12 +568,30 @@ func (g *generator) printAnalyzedResult(reasons []string) {
 
 func (g *generator) decodeTopTemplate(name string, f *File) *Statement {
 	return f.Comment(fmt.Sprintf("// %s\n", name)).
-		Func().Id(ptn.PrivateFuncName(name)).Params(Id("data").Index().Byte(), Id("i").Interface()).Params(Bool(), Error())
+		Func().Id(ptn.PrivateFuncName(name)).Params(Id("data").Index().Byte(), Id("i").Any()).Params(Bool(), Error())
 }
 
 func (g *generator) encodeTopTemplate(name string, f *File) *Statement {
 	return f.Comment(fmt.Sprintf("// %s\n", name)).
-		Func().Id(ptn.PrivateFuncName(name)).Params(Id("i").Interface()).Params(Index().Byte(), Error())
+		Func().Id(ptn.PrivateFuncName(name)).Params(Id("i").Any()).Params(Index().Byte(), Error())
+}
+
+func (g *generator) encodeToTopTemplate(name string, f *File) *Statement {
+	return f.Comment(fmt.Sprintf("// %s\n", name)).
+		Func().Id(ptn.PrivateFuncName(name)).Params(Id("i").Any(), Id("buf").Index().Byte()).Params(Index().Byte(), Bool(), Error())
+}
+
+func (g *generator) encodeToAdapterCode(name string) []Code {
+	return []Code{
+		List(Id("b"), Err()).Op(":=").Id(ptn.PrivateFuncName(name)).Call(Id("i")),
+		If(Err().Op("!=").Nil()).Block(
+			Return(Nil(), False(), Err()),
+		),
+		If(Id("b").Op("==").Nil()).Block(
+			Return(Id("buf"), False(), Nil()),
+		),
+		Return(Append(Id("buf"), Id("b").Op("...")), True(), Nil()),
+	}
 }
 
 func (g *generator) encodeAsArrayCases() []Code {

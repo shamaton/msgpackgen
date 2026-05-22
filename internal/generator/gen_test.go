@@ -104,3 +104,26 @@ func TestOutput(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestGenerateCodeRegistersToResolver(t *testing.T) {
+	oldAnalyzedStructs := analyzedStructs
+	analyzedStructs = nil
+	t.Cleanup(func() {
+		analyzedStructs = oldAnalyzedStructs
+	})
+
+	g := generator{outputJenFilePath: "resolver_test"}
+	got := fmt.Sprintf("%#v", g.generateCode())
+
+	for _, want := range []string{
+		"msgpack.SetResolver(___encodeAsMap, ___encodeAsArray, ___decodeAsMap, ___decodeAsArray)",
+		"msgpack.SetToResolver(___encodeAsMapTo, ___encodeAsArrayTo)",
+		"func ___encodeAsMapTo(i any, buf []byte) ([]byte, bool, error)",
+		"func ___encodeAsArrayTo(i any, buf []byte) ([]byte, bool, error)",
+		"return append(buf, b...), true, nil",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("generated code does not contain %q:\n%s", want, got)
+		}
+	}
+}

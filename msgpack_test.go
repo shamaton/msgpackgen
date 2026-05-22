@@ -42,6 +42,53 @@ func TestSwitchDefaultBehaviour(t *testing.T) {
 
 }
 
+func TestGeneratedMarshalToAppendsBuffer(t *testing.T) {
+	structAsArray := msgpack.StructAsArray()
+	t.Cleanup(func() {
+		msgpack.SetStructAsArray(structAsArray)
+	})
+
+	v := inside{Int: 1}
+	prefix := []byte{0xaa}
+
+	msgpack.SetStructAsArray(false)
+	mapBody, err := msgpack.Marshal(v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mapGot, err := msgpack.MarshalTo(v, append([]byte(nil), prefix...))
+	if err != nil {
+		t.Fatal(err)
+	}
+	mapWant := append(append([]byte(nil), prefix...), mapBody...)
+	if string(mapGot) != string(mapWant) {
+		t.Fatalf("MarshalTo map = %x, want %x", mapGot, mapWant)
+	}
+
+	msgpack.SetStructAsArray(true)
+	arrayBody, err := msgpack.Marshal(v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	arrayGot, err := msgpack.MarshalTo(v, append([]byte(nil), prefix...))
+	if err != nil {
+		t.Fatal(err)
+	}
+	arrayWant := append(append([]byte(nil), prefix...), arrayBody...)
+	if string(arrayGot) != string(arrayWant) {
+		t.Fatalf("MarshalTo array = %x, want %x", arrayGot, arrayWant)
+	}
+}
+
+func TestGeneratedMarshalToStrictDoesNotFallback(t *testing.T) {
+	if _, err := msgpack.MarshalAsMapTo(notGenerated1{}, []byte{0xaa}); err == nil || !strings.Contains(err.Error(), "use strict option") {
+		t.Fatalf("MarshalAsMapTo error = %v, want strict option", err)
+	}
+	if _, err := msgpack.MarshalAsArrayTo(notGenerated1{}, []byte{0xbb}); err == nil || !strings.Contains(err.Error(), "use strict option") {
+		t.Fatalf("MarshalAsArrayTo error = %v, want strict option", err)
+	}
+}
+
 func TestInt(t *testing.T) {
 	v := testingValue{Int: -8, Int8: math.MinInt8, Int16: math.MinInt16}
 	if err := checkValue(v); err != nil {
