@@ -145,6 +145,11 @@ func TestGenerateCodeUsesStatelessStructEncoder(t *testing.T) {
 					Tag:  "Value",
 					Node: structure.CreateIdentNode(ast.NewIdent("int"), nil),
 				},
+				{
+					Name: "At",
+					Tag:  "At",
+					Node: structure.CreateStructNode("time", "time", "Time", nil),
+				},
 			},
 		},
 	}
@@ -162,6 +167,8 @@ func TestGenerateCodeUsesStatelessStructEncoder(t *testing.T) {
 		"v generatedFixture, buf []byte, offset int",
 		"enc.CalcInt(v.Value)",
 		"enc.WriteIntTo(buf, v.Value, offset)",
+		"enc.CalcTime(v.At)",
+		"enc.WriteTimeTo(buf, v.At, offset)",
 		"enc.RequireAt(buf, start, size)",
 	} {
 		if !strings.Contains(got, want) {

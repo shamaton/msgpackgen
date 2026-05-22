@@ -921,21 +921,43 @@ func TestTimeDecodeDefaultsToUTC(t *testing.T) {
 
 	localTime := time.Date(2026, 5, 21, 8, 30, 45, 123456789, time.Local)
 
-	{
-		b, err := msgpack.MarshalAsArray(testingTime{Time: localTime})
-		if err != nil {
-			t.Fatal(err)
-		}
-		var r testingTime
-		if err := msgpack.UnmarshalAsArray(b, &r); err != nil {
-			t.Fatal(err)
-		}
-		if r.Time.Location() != time.UTC {
-			t.Fatalf("generated time location = %v, want UTC", r.Time.Location())
-		}
-		if r.Time.UnixNano() != localTime.UTC().UnixNano() {
-			t.Fatalf("generated time instant = %v, want %v", r.Time, localTime.UTC())
-		}
+	for _, tt := range []struct {
+		name      string
+		marshal   func(testingTime) ([]byte, error)
+		unmarshal func([]byte, *testingTime) error
+	}{
+		{
+			name:      "generated array",
+			marshal:   func(v testingTime) ([]byte, error) { return msgpack.MarshalAsArray(v) },
+			unmarshal: func(b []byte, v *testingTime) error { return msgpack.UnmarshalAsArray(b, v) },
+		},
+		{
+			name:      "generated array to",
+			marshal:   func(v testingTime) ([]byte, error) { return msgpack.MarshalAsArrayTo(v, nil) },
+			unmarshal: func(b []byte, v *testingTime) error { return msgpack.UnmarshalAsArray(b, v) },
+		},
+		{
+			name:      "generated map to",
+			marshal:   func(v testingTime) ([]byte, error) { return msgpack.MarshalAsMapTo(v, nil) },
+			unmarshal: func(b []byte, v *testingTime) error { return msgpack.UnmarshalAsMap(b, v) },
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			b, err := tt.marshal(testingTime{Time: localTime})
+			if err != nil {
+				t.Fatal(err)
+			}
+			var r testingTime
+			if err := tt.unmarshal(b, &r); err != nil {
+				t.Fatal(err)
+			}
+			if r.Time.Location() != time.UTC {
+				t.Fatalf("generated time location = %v, want UTC", r.Time.Location())
+			}
+			if r.Time.UnixNano() != localTime.UTC().UnixNano() {
+				t.Fatalf("generated time instant = %v, want %v", r.Time, localTime.UTC())
+			}
+		})
 	}
 
 	{

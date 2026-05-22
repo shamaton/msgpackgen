@@ -495,6 +495,43 @@ func TestStatelessLengthErrorsMatchLegacyEncoder(t *testing.T) {
 	}
 }
 
+func TestTimeEncodingDefaultsToUTC(t *testing.T) {
+	local := time.FixedZone("JST", 9*60*60)
+	localTime := time.Date(2026, 5, 22, 18, 45, 30, 987654321, local)
+	utcTime := localTime.UTC()
+
+	if CalcTime(localTime) != CalcTime(utcTime) {
+		t.Fatalf("CalcTime(local) = %d, want %d", CalcTime(localTime), CalcTime(utcTime))
+	}
+
+	size := CalcTime(localTime)
+	localLegacy := NewEncoder()
+	localLegacy.MakeBytes(size)
+	localLegacyOffset := localLegacy.WriteTime(localTime, 0)
+
+	utcLegacy := NewEncoder()
+	utcLegacy.MakeBytes(size)
+	utcLegacyOffset := utcLegacy.WriteTime(utcTime, 0)
+
+	localStateless := RequireAt(nil, 0, size)
+	localStatelessOffset := WriteTimeTo(localStateless, localTime, 0)
+	utcStateless := RequireAt(nil, 0, size)
+	utcStatelessOffset := WriteTimeTo(utcStateless, utcTime, 0)
+
+	if localLegacyOffset != utcLegacyOffset || localLegacyOffset != localStatelessOffset || localStatelessOffset != utcStatelessOffset {
+		t.Fatalf("offsets = legacy local:%d legacy utc:%d stateless local:%d stateless utc:%d", localLegacyOffset, utcLegacyOffset, localStatelessOffset, utcStatelessOffset)
+	}
+	if !bytes.Equal(localLegacy.d[:localLegacyOffset], utcLegacy.d[:utcLegacyOffset]) {
+		t.Fatalf("legacy local bytes = %x, want utc %x", localLegacy.d[:localLegacyOffset], utcLegacy.d[:utcLegacyOffset])
+	}
+	if !bytes.Equal(localStateless[:localStatelessOffset], utcStateless[:utcStatelessOffset]) {
+		t.Fatalf("stateless local bytes = %x, want utc %x", localStateless[:localStatelessOffset], utcStateless[:utcStatelessOffset])
+	}
+	if !bytes.Equal(localLegacy.d[:localLegacyOffset], localStateless[:localStatelessOffset]) {
+		t.Fatalf("legacy bytes = %x, want stateless %x", localLegacy.d[:localLegacyOffset], localStateless[:localStatelessOffset])
+	}
+}
+
 func stringsOfLen(n int) string {
 	return string(bytes.Repeat([]byte{'a'}, n))
 }

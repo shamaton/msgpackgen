@@ -199,6 +199,7 @@ func CalcStructHeader32(fieldNum int) int {
 
 // CalcTime checks value and returns data size that need.
 func CalcTime(t time.Time) int {
+	t = t.UTC()
 	var e Encoder
 	return e.CalcTime(t)
 }
@@ -420,6 +421,7 @@ func WriteStructHeader32AsMapTo(buf []byte, fieldNum, offset int) int {
 
 // WriteTimeTo sets the contents of t to buf at offset.
 func WriteTimeTo(buf []byte, t time.Time, offset int) int {
+	t = t.UTC()
 	secs := uint64(t.Unix())
 	if secs>>34 == 0 {
 		data := uint64(t.Nanosecond())<<34 | secs
