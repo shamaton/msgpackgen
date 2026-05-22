@@ -173,6 +173,63 @@ func TestMarshalToFallbackIgnoresUnhandledResolverBuffer(t *testing.T) {
 	}
 }
 
+func TestMarshalToFallbackUsesOriginalBufferLength(t *testing.T) {
+	preserveResolvers(t)
+	SetResolver(noOpEncResolver, noOpEncResolver, noOpDecResolver, noOpDecResolver)
+	SetToResolver(
+		func(_ any, buf []byte) ([]byte, bool, error) {
+			b := buf[:cap(buf)]
+			for i := len(buf); i < len(b); i++ {
+				b[i] = 0xee
+			}
+			return b, false, nil
+		},
+		func(_ any, buf []byte) ([]byte, bool, error) {
+			b := buf[:cap(buf)]
+			for i := len(buf); i < len(b); i++ {
+				b[i] = 0xdd
+			}
+			return b, false, nil
+		},
+	)
+
+	mapPrefix := make([]byte, 2, 64)
+	mapPrefix[0], mapPrefix[1] = 0x01, 0x02
+	got, err := MarshalAsMapTo(map[string]int{"a": 1}, mapPrefix)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantEncoded, err := rawmsgpack.MarshalAsMap(map[string]int{"a": 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := append([]byte{0x01, 0x02}, wantEncoded...)
+	if string(got) != string(want) {
+		t.Fatalf("MarshalAsMapTo fallback = %x, want %x", got, want)
+	}
+	if string(got[:2]) != string([]byte{0x01, 0x02}) {
+		t.Fatalf("MarshalAsMapTo prefix = %x, want 0102", got[:2])
+	}
+
+	arrayPrefix := make([]byte, 2, 64)
+	arrayPrefix[0], arrayPrefix[1] = 0x03, 0x04
+	got, err = MarshalAsArrayTo([]int{3, 4}, arrayPrefix)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantEncoded, err = rawmsgpack.MarshalAsArray([]int{3, 4})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want = append([]byte{0x03, 0x04}, wantEncoded...)
+	if string(got) != string(want) {
+		t.Fatalf("MarshalAsArrayTo fallback = %x, want %x", got, want)
+	}
+	if string(got[:2]) != string([]byte{0x03, 0x04}) {
+		t.Fatalf("MarshalAsArrayTo prefix = %x, want 0304", got[:2])
+	}
+}
+
 func TestLegacyResolverWorksWithMarshalAndMarshalTo(t *testing.T) {
 	preserveResolvers(t)
 	SetResolver(
