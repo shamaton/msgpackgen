@@ -6,6 +6,7 @@ import (
 	"math"
 
 	. "github.com/dave/jennifer/jen"
+	"github.com/shamaton/msgpack/v3/def"
 	"github.com/shamaton/msgpackgen/internal/generator/ptn"
 )
 
@@ -236,20 +237,25 @@ func (st *Structure) createStructCode(fieldNum int) (Code, Code, Code) {
 }
 
 func (st *Structure) createKeyStringCode(v string) (Code, Code) {
-	l := len(v)
-	suffix := ""
-	if l < 32 {
-		suffix = "Fix"
-	} else if l <= math.MaxUint8 {
-		suffix = "8"
-	} else if l <= math.MaxUint16 {
-		suffix = "16"
-	} else {
-		suffix = "32"
-	}
+	keyBytes := encodedStringBytes(v)
 
-	return Id("size").Op("+=").Qual(ptn.PkEnc, "CalcString"+suffix).Call(Lit(l)),
-		Id("offset").Op("=").Qual(ptn.PkEnc, "WriteString"+suffix+"To").Call(Id("buf"), Lit(v), Lit(l), Id("offset"))
+	return Id("size").Op("+=").Lit(len(keyBytes)),
+		Id("offset").Op("+=").Id("copy").Call(Id("buf").Index(Id("offset").Op(":")), Lit(string(keyBytes)))
+}
+
+func encodedStringBytes(v string) []byte {
+	l := len(v)
+	b := make([]byte, 0, def.Byte1+def.Byte4+l)
+	if l < 32 {
+		b = append(b, byte(def.FixStr+l))
+	} else if l <= math.MaxUint8 {
+		b = append(b, byte(def.Str8), byte(l))
+	} else if l <= math.MaxUint16 {
+		b = append(b, byte(def.Str16), byte(l>>8), byte(l))
+	} else {
+		b = append(b, byte(def.Str32), byte(l>>24), byte(l>>16), byte(l>>8), byte(l))
+	}
+	return append(b, v...)
 }
 
 func (st *Structure) createFieldCode(node *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code) {

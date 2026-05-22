@@ -169,6 +169,8 @@ func TestGenerateCodeUsesStatelessStructEncoder(t *testing.T) {
 		"enc.WriteIntTo(buf, v.Value, offset)",
 		"enc.CalcTime(v.At)",
 		"enc.WriteTimeTo(buf, v.At, offset)",
+		"offset += copy(buf[offset:], \"\\xa5Value\")",
+		"offset += copy(buf[offset:], \"\\xa2At\")",
 		"enc.RequireAt(buf, start, size)",
 	} {
 		if !strings.Contains(got, want) {
@@ -180,6 +182,8 @@ func TestGenerateCodeUsesStatelessStructEncoder(t *testing.T) {
 		"enc.NewEncoder()",
 		"MakeBytes",
 		"EncodedBytes",
+		"enc.WriteStringFixTo(buf, \"Value\"",
+		"enc.WriteStringFixTo(buf, \"At\"",
 	} {
 		if strings.Contains(got, unwanted) {
 			t.Fatalf("generated code unexpectedly contains %q:\n%s", unwanted, got)
