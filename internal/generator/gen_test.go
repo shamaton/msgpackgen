@@ -120,7 +120,8 @@ func TestGenerateCodeRegistersToResolver(t *testing.T) {
 		"msgpack.SetToResolver(___encodeAsMapTo, ___encodeAsArrayTo)",
 		"func ___encodeAsMapTo(i any, buf []byte) ([]byte, bool, error)",
 		"func ___encodeAsArrayTo(i any, buf []byte) ([]byte, bool, error)",
-		"return append(buf, b...), true, nil",
+		"b, handled, err := ___encodeAsMapTo(i, nil)",
+		"return buf, false, nil",
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("generated code does not contain %q:\n%s", want, got)

@@ -434,29 +434,29 @@ func (g *generator) generateCode() *File {
 		),
 	)
 
-	encReturn := Return(Nil(), Nil())
+	encToReturn := Return(Id("buf"), False(), Nil())
 	decReturn := Return(False(), Nil())
 	if g.strict {
-		encReturn = Return(Nil(), Qual("fmt", "Errorf").Call(Lit("use strict option : undefined type")))
+		encToReturn = Return(Nil(), False(), Qual("fmt", "Errorf").Call(Lit("use strict option : undefined type")))
 		decReturn = Return(False(), Qual("fmt", "Errorf").Call(Lit("use strict option : undefined type")))
 	}
 
-	encodeAsArrayCode := []Code{encReturn}
-	encodeAsMapCode := []Code{encReturn}
+	encodeAsArrayToCode := []Code{encToReturn}
+	encodeAsMapToCode := []Code{encToReturn}
 	decodeAsArrayCode := []Code{decReturn}
 	decodeAsMapCode := []Code{decReturn}
 	if len(analyzedStructs) > 0 {
-		encodeAsArrayCode = append([]Code{
+		encodeAsArrayToCode = append([]Code{
 			Switch(Id("v").Op(":=").Id("i").Assert(Type())).Block(
-				g.encodeAsArrayCases()...,
+				g.encodeAsArrayToCases()...,
 			)},
-			encodeAsArrayCode...,
+			encodeAsArrayToCode...,
 		)
-		encodeAsMapCode = append([]Code{
+		encodeAsMapToCode = append([]Code{
 			Switch(Id("v").Op(":=").Id("i").Assert(Type())).Block(
-				g.encodeAsMapCases()...,
+				g.encodeAsMapToCases()...,
 			)},
-			encodeAsMapCode...,
+			encodeAsMapToCode...,
 		)
 		decodeAsArrayCode = append([]Code{
 			Switch(Id("v").Op(":=").Id("i").Assert(Type())).Block(
@@ -480,10 +480,10 @@ func (g *generator) generateCode() *File {
 		),
 	)
 
-	g.encodeTopTemplate("encodeAsArray", f).Block(encodeAsArrayCode...)
-	g.encodeTopTemplate("encodeAsMap", f).Block(encodeAsMapCode...)
-	g.encodeToTopTemplate("encodeAsArrayTo", f).Block(g.encodeToAdapterCode("encodeAsArray")...)
-	g.encodeToTopTemplate("encodeAsMapTo", f).Block(g.encodeToAdapterCode("encodeAsMap")...)
+	g.encodeTopTemplate("encodeAsArray", f).Block(g.encodeAdapterCode("encodeAsArrayTo")...)
+	g.encodeTopTemplate("encodeAsMap", f).Block(g.encodeAdapterCode("encodeAsMapTo")...)
+	g.encodeToTopTemplate("encodeAsArrayTo", f).Block(encodeAsArrayToCode...)
+	g.encodeToTopTemplate("encodeAsMapTo", f).Block(encodeAsMapToCode...)
 
 	g.decodeTopTemplate("decode", f).Block(
 		If(Qual(ptn.PkTop, "StructAsArray").Call()).Block(
@@ -581,40 +581,40 @@ func (g *generator) encodeToTopTemplate(name string, f *File) *Statement {
 		Func().Id(ptn.PrivateFuncName(name)).Params(Id("i").Any(), Id("buf").Index().Byte()).Params(Index().Byte(), Bool(), Error())
 }
 
-func (g *generator) encodeToAdapterCode(name string) []Code {
+func (g *generator) encodeAdapterCode(name string) []Code {
 	return []Code{
-		List(Id("b"), Err()).Op(":=").Id(ptn.PrivateFuncName(name)).Call(Id("i")),
+		List(Id("b"), Id("handled"), Err()).Op(":=").Id(ptn.PrivateFuncName(name)).Call(Id("i"), Nil()),
 		If(Err().Op("!=").Nil()).Block(
-			Return(Nil(), False(), Err()),
+			Return(Nil(), Err()),
 		),
-		If(Id("b").Op("==").Nil()).Block(
-			Return(Id("buf"), False(), Nil()),
+		If(Op("!").Id("handled")).Block(
+			Return(Nil(), Nil()),
 		),
-		Return(Append(Id("buf"), Id("b").Op("...")), True(), Nil()),
+		Return(Id("b"), Nil()),
 	}
 }
 
-func (g *generator) encodeAsArrayCases() []Code {
+func (g *generator) encodeAsArrayToCases() []Code {
 	var states, pointers []Code
 	for _, v := range analyzedStructs {
-		s, p := g.encodeCaseCode(v, true)
+		s, p := g.encodeToCaseCode(v, true)
 		states = append(states, s...)
 		pointers = append(pointers, p...)
 	}
 	return append(states, pointers...)
 }
 
-func (g *generator) encodeAsMapCases() []Code {
+func (g *generator) encodeAsMapToCases() []Code {
 	var states, pointers []Code
 	for _, v := range analyzedStructs {
-		s, p := g.encodeCaseCode(v, false)
+		s, p := g.encodeToCaseCode(v, false)
 		states = append(states, s...)
 		pointers = append(pointers, p...)
 	}
 	return append(states, pointers...)
 }
 
-func (g *generator) encodeCaseCode(v *structure.Structure, asArray bool) (states []Code, pointers []Code) {
+func (g *generator) encodeToCaseCode(v *structure.Structure, asArray bool) (states []Code, pointers []Code) {
 
 	var caseStatement func(string) *Statement
 	var errID *Statement
@@ -630,29 +630,32 @@ func (g *generator) encodeCaseCode(v *structure.Structure, asArray bool) (states
 	if asArray {
 		calcFuncName = v.CalcArraySizeFuncName()
 		encodeFuncName = v.EncodeArrayFuncName()
-		pointerFuncName = "encodeAsArray"
+		pointerFuncName = "encodeAsArrayTo"
 	} else {
 		calcFuncName = v.CalcMapSizeFuncName()
 		encodeFuncName = v.EncodeMapFuncName()
-		pointerFuncName = "encodeAsMap"
+		pointerFuncName = "encodeAsMapTo"
 	}
 
 	f := func(ptr string) *Statement {
 		return Case(caseStatement(ptr)).Block(
+			Id("start").Op(":=").Len(Id("buf")),
 			Id(ptn.IdEncoder).Op(":=").Qual(ptn.PkEnc, "NewEncoder").Call(),
 			List(Id("size"), Err()).Op(":=").Id(calcFuncName).Call(Id(ptr+"v"), Id(ptn.IdEncoder)),
 			If(Err().Op("!=").Nil()).Block(
-				Return(Nil(), Err()),
+				Return(Nil(), False(), Err()),
 			),
 			Id(ptn.IdEncoder).Dot("MakeBytes").Call(Id("size")),
 			List(Id("b"), Id("offset"), Err()).Op(":=").Id(encodeFuncName).Call(Id(ptr+"v"), Id(ptn.IdEncoder), Lit(0)),
 			If(Err().Op("!=").Nil()).Block(
-				Return(Nil(), Err()),
+				Return(Nil(), False(), Err()),
 			),
 			If(Id("size").Op("!=").Id("offset")).Block(
-				Return(Nil(), Qual("fmt", "Errorf").Call(Lit("%s size / offset different %d : %d"), errID, Id("size"), Id("offset"))),
+				Return(Nil(), False(), Qual("fmt", "Errorf").Call(Lit("%s size / offset different %d : %d"), errID, Id("size"), Id("offset"))),
 			),
-			Return(Id("b"), Err()),
+			Id("buf").Op("=").Qual(ptn.PkEnc, "RequireAt").Call(Id("buf"), Id("start"), Id("size")),
+			Copy(Id("buf").Index(Id("start").Op(":")), Id("b")),
+			Return(Id("buf").Index(Op(":").Id("start").Op("+").Id("offset")), True(), Nil()),
 		)
 	}
 
@@ -665,7 +668,7 @@ func (g *generator) encodeCaseCode(v *structure.Structure, asArray bool) (states
 	for i := 0; i < g.pointer-1; i++ {
 		ptr := strings.Repeat("*", i+2)
 		pointers = append(pointers, Case(caseStatement(ptr)).Block(
-			Return(Id(ptn.PrivateFuncName(pointerFuncName)).Call(Id("*v"))),
+			Return(Id(ptn.PrivateFuncName(pointerFuncName)).Call(Id("*v"), Id("buf"))),
 		))
 	}
 	return
