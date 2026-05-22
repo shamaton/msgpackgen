@@ -30,7 +30,7 @@ func (g timeCodeGen) createCalcCode(funcName string, params ...Code) []Code {
 func (g timeCodeGen) createEncCode(funcName string, params ...Code) []Code {
 
 	return []Code{
-		Id("offset").Op("=").Id(ptn.IdEncoder).Dot(funcName).Call(params...),
+		createWriteToCode(funcName, params[:len(params)-1]...),
 	}
 }
 

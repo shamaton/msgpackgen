@@ -37,18 +37,24 @@ func createFuncName(prefix, name, importPath string) string {
 }
 
 func createAddSizeCode(funcName string, params ...Code) Code {
-	return Id("size").Op("+=").Id(ptn.IdEncoder).Dot(funcName).Call(params...)
+	return Id("size").Op("+=").Qual(ptn.PkEnc, funcName).Call(params...)
 }
 
 func createAddSizeErrCheckCode(funcName string, params ...Code) []Code {
 	return []Code{
-		List(Id("s"), Err()).Op(":=").Id(ptn.IdEncoder).Dot(funcName).Call(params...),
+		List(Id("s"), Err()).Op(":=").Qual(ptn.PkEnc, funcName).Call(params...),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Lit(0), Err()),
 		),
 		Id("size").Op("+=").Id("s"),
 	}
 
+}
+
+func createWriteToCode(funcName string, params ...Code) Code {
+	args := append([]Code{Id("buf")}, params...)
+	args = append(args, Id("offset"))
+	return Id("offset").Op("=").Qual(ptn.PkEnc, funcName+"To").Call(args...)
 }
 
 func createDecodeNilCheckedCode(nonNilCodes []Code) Code {

@@ -188,23 +188,23 @@ func (st *Structure) CreateCode(f *File) {
 	}
 
 	f.Comment(fmt.Sprintf("// calculate size from %s.%s\n", st.ImportPath, st.Name)).
-		Func().Id(st.CalcArraySizeFuncName()).Params(firstEncParam, Id(ptn.IdEncoder).Op("*").Qual(ptn.PkEnc, "Encoder")).Params(Int(), Error()).Block(
+		Func().Id(st.CalcArraySizeFuncName()).Params(firstEncParam).Params(Int(), Error()).Block(
 		append(calcArraySizeCodes, Return(Id("size"), Nil()))...,
 	)
 
 	f.Comment(fmt.Sprintf("// calculate size from %s.%s\n", st.ImportPath, st.Name)).
-		Func().Id(st.CalcMapSizeFuncName()).Params(firstEncParam, Id(ptn.IdEncoder).Op("*").Qual(ptn.PkEnc, "Encoder")).Params(Int(), Error()).Block(
+		Func().Id(st.CalcMapSizeFuncName()).Params(firstEncParam).Params(Int(), Error()).Block(
 		append(calcMapSizeCodes, Return(Id("size"), Nil()))...,
 	)
 
 	f.Comment(fmt.Sprintf("// encode from %s.%s\n", st.ImportPath, st.Name)).
-		Func().Id(st.EncodeArrayFuncName()).Params(firstEncParam, Id(ptn.IdEncoder).Op("*").Qual(ptn.PkEnc, "Encoder"), Id("offset").Int()).Params(Index().Byte(), Int(), Error()).Block(
-		append(encArrayCodes, Return(Id(ptn.IdEncoder).Dot("EncodedBytes").Call(), Id("offset"), Err()))...,
+		Func().Id(st.EncodeArrayFuncName()).Params(firstEncParam, Id("buf").Index().Byte(), Id("offset").Int()).Params(Int(), Error()).Block(
+		append(encArrayCodes, Return(Id("offset"), Err()))...,
 	)
 
 	f.Comment(fmt.Sprintf("// encode from %s.%s\n", st.ImportPath, st.Name)).
-		Func().Id(st.EncodeMapFuncName()).Params(firstEncParam, Id(ptn.IdEncoder).Op("*").Qual(ptn.PkEnc, "Encoder"), Id("offset").Int()).Params(Index().Byte(), Int(), Error()).Block(
-		append(encMapCodes, Return(Id(ptn.IdEncoder).Dot("EncodedBytes").Call(), Id("offset"), Err()))...,
+		Func().Id(st.EncodeMapFuncName()).Params(firstEncParam, Id("buf").Index().Byte(), Id("offset").Int()).Params(Int(), Error()).Block(
+		append(encMapCodes, Return(Id("offset"), Err()))...,
 	)
 
 	f.Comment(fmt.Sprintf("// decode to %s.%s\n", st.ImportPath, st.Name)).
@@ -230,9 +230,9 @@ func (st *Structure) createStructCode(fieldNum int) (Code, Code, Code) {
 		suffix = "32"
 	}
 
-	return Id("size").Op("+=").Id(ptn.IdEncoder).Dot("CalcStructHeader" + suffix).Call(Lit(fieldNum)),
-		Id("offset").Op("=").Id(ptn.IdEncoder).Dot(" WriteStructHeader"+suffix+"AsArray").Call(Lit(fieldNum), Id("offset")),
-		Id("offset").Op("=").Id(ptn.IdEncoder).Dot(" WriteStructHeader"+suffix+"AsMap").Call(Lit(fieldNum), Id("offset"))
+	return Id("size").Op("+=").Qual(ptn.PkEnc, "CalcStructHeader"+suffix).Call(Lit(fieldNum)),
+		Id("offset").Op("=").Qual(ptn.PkEnc, "WriteStructHeader"+suffix+"AsArrayTo").Call(Id("buf"), Lit(fieldNum), Id("offset")),
+		Id("offset").Op("=").Qual(ptn.PkEnc, "WriteStructHeader"+suffix+"AsMapTo").Call(Id("buf"), Lit(fieldNum), Id("offset"))
 }
 
 func (st *Structure) createKeyStringCode(v string) (Code, Code) {
@@ -248,8 +248,8 @@ func (st *Structure) createKeyStringCode(v string) (Code, Code) {
 		suffix = "32"
 	}
 
-	return Id("size").Op("+=").Id(ptn.IdEncoder).Dot("CalcString" + suffix).Call(Lit(l)),
-		Id("offset").Op("=").Id(ptn.IdEncoder).Dot("WriteString"+suffix).Call(Lit(v), Lit(l), Id("offset"))
+	return Id("size").Op("+=").Qual(ptn.PkEnc, "CalcString"+suffix).Call(Lit(l)),
+		Id("offset").Op("=").Qual(ptn.PkEnc, "WriteString"+suffix+"To").Call(Id("buf"), Lit(v), Lit(l), Id("offset"))
 }
 
 func (st *Structure) createFieldCode(node *Node, encodeFieldName, decodeFieldName string) (cArray []Code, cMap []Code, eArray []Code, eMap []Code, dArray []Code, dMap []Code) {

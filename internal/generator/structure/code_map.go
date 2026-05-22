@@ -67,7 +67,7 @@ func (g mapCodeGen) createEncCode(
 	elmKeyCodes, elmValueCodes []Code) []Code {
 
 	encCodes := make([]Code, 0)
-	encCodes = append(encCodes, Id("offset").Op("=").Id(ptn.IdEncoder).Dot("WriteMapLength").Call(Len(Id(fieldName)), Id("offset")))
+	encCodes = append(encCodes, Id("offset").Op("=").Qual(ptn.PkEnc, "WriteMapLengthTo").Call(Id("buf"), Len(Id(fieldName)), Id("offset")))
 	encCodes = append(encCodes, For(List(Id(childKeyName), Id(childValueName)).Op(":=").Range().Id(fieldName)).Block(
 		append(elmKeyCodes, elmValueCodes...)...,
 	))
@@ -76,7 +76,7 @@ func (g mapCodeGen) createEncCode(
 	codes = append(codes, If(Id(fieldName).Op("!=").Nil()).Block(
 		encCodes...,
 	).Else().Block(
-		Id("offset").Op("=").Id(ptn.IdEncoder).Dot("WriteNil").Call(Id("offset")),
+		Id("offset").Op("=").Qual(ptn.PkEnc, "WriteNilTo").Call(Id("buf"), Id("offset")),
 	))
 	return codes
 }

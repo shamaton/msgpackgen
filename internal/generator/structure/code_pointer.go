@@ -37,7 +37,7 @@ func (g pointerCodeGen) createPointerCalcCode(encodeFieldName, encodeChildName s
 			Id(encodeChildName).Op(":=").Op("*").Id(encodeFieldName),
 		}, elmCodes...)...,
 	).Else().Block(
-		Id("size").Op("+=").Id(ptn.IdEncoder).Dot("CalcNil").Call(),
+		createAddSizeCode("CalcNil"),
 	))
 	return codes
 }
@@ -49,7 +49,7 @@ func (g pointerCodeGen) createPointerEncCode(encodeFieldName, encodeChildName st
 			Id(encodeChildName).Op(":=").Op("*").Id(encodeFieldName),
 		}, elmCodes...)...,
 	).Else().Block(
-		Id("offset").Op("=").Id(ptn.IdEncoder).Dot("WriteNil").Call(Id("offset")),
+		Id("offset").Op("=").Qual(ptn.PkEnc, "WriteNilTo").Call(Id("buf"), Id("offset")),
 	))
 	return codes
 }

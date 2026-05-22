@@ -58,7 +58,7 @@ func (g arrayCodeGen) createCalcCode(fieldName, childName string, isChildByte bo
 func (g arrayCodeGen) createEncCode(fieldName, childName string, isChildByte bool, elmCodes []Code) []Code {
 
 	blockCodes := make([]Code, 0)
-	blockCodes = append(blockCodes, Id("offset").Op("=").Id(ptn.IdEncoder).Dot("WriteSliceLength").Call(Len(Id(fieldName)), Id("offset"), Lit(isChildByte)))
+	blockCodes = append(blockCodes, Id("offset").Op("=").Qual(ptn.PkEnc, "WriteSliceLengthTo").Call(Id("buf"), Len(Id(fieldName)), Id("offset"), Lit(isChildByte)))
 	blockCodes = append(blockCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Id(fieldName)).Block(
 		elmCodes...,
 	))

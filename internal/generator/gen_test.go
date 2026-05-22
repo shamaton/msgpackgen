@@ -2,11 +2,14 @@ package generator
 
 import (
 	"fmt"
+	"go/ast"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/shamaton/msgpackgen/internal/generator/structure"
 )
 
 func TestSearchGoMod(t *testing.T) {
@@ -125,6 +128,54 @@ func TestGenerateCodeRegistersToResolver(t *testing.T) {
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("generated code does not contain %q:\n%s", want, got)
+		}
+	}
+}
+
+func TestGenerateCodeUsesStatelessStructEncoder(t *testing.T) {
+	oldAnalyzedStructs := analyzedStructs
+	analyzedStructs = []*structure.Structure{
+		{
+			ImportPath: "github.com/shamaton/msgpackgen",
+			Name:       "generatedFixture",
+			NoUseQual:  true,
+			Fields: []structure.Field{
+				{
+					Name: "Value",
+					Tag:  "Value",
+					Node: structure.CreateIdentNode(ast.NewIdent("int"), nil),
+				},
+			},
+		},
+	}
+	t.Cleanup(func() {
+		analyzedStructs = oldAnalyzedStructs
+	})
+
+	g := generator{outputJenFilePath: "resolver_test"}
+	got := fmt.Sprintf("%#v", g.generateCode())
+
+	for _, want := range []string{
+		"func ___calcArraySizegeneratedFixture_",
+		"(v generatedFixture) (int, error)",
+		"func ___encodeArraygeneratedFixture_",
+		"v generatedFixture, buf []byte, offset int",
+		"enc.CalcInt(v.Value)",
+		"enc.WriteIntTo(buf, v.Value, offset)",
+		"enc.RequireAt(buf, start, size)",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("generated code does not contain %q:\n%s", want, got)
+		}
+	}
+
+	for _, unwanted := range []string{
+		"enc.NewEncoder()",
+		"MakeBytes",
+		"EncodedBytes",
+	} {
+		if strings.Contains(got, unwanted) {
+			t.Fatalf("generated code unexpectedly contains %q:\n%s", unwanted, got)
 		}
 	}
 }

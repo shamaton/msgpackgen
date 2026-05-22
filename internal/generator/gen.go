@@ -640,22 +640,19 @@ func (g *generator) encodeToCaseCode(v *structure.Structure, asArray bool) (stat
 	f := func(ptr string) *Statement {
 		return Case(caseStatement(ptr)).Block(
 			Id("start").Op(":=").Len(Id("buf")),
-			Id(ptn.IdEncoder).Op(":=").Qual(ptn.PkEnc, "NewEncoder").Call(),
-			List(Id("size"), Err()).Op(":=").Id(calcFuncName).Call(Id(ptr+"v"), Id(ptn.IdEncoder)),
+			List(Id("size"), Err()).Op(":=").Id(calcFuncName).Call(Id(ptr+"v")),
 			If(Err().Op("!=").Nil()).Block(
 				Return(Nil(), False(), Err()),
-			),
-			Id(ptn.IdEncoder).Dot("MakeBytes").Call(Id("size")),
-			List(Id("b"), Id("offset"), Err()).Op(":=").Id(encodeFuncName).Call(Id(ptr+"v"), Id(ptn.IdEncoder), Lit(0)),
-			If(Err().Op("!=").Nil()).Block(
-				Return(Nil(), False(), Err()),
-			),
-			If(Id("size").Op("!=").Id("offset")).Block(
-				Return(Nil(), False(), Qual("fmt", "Errorf").Call(Lit("%s size / offset different %d : %d"), errID, Id("size"), Id("offset"))),
 			),
 			Id("buf").Op("=").Qual(ptn.PkEnc, "RequireAt").Call(Id("buf"), Id("start"), Id("size")),
-			Copy(Id("buf").Index(Id("start").Op(":")), Id("b")),
-			Return(Id("buf").Index(Op(":").Id("start").Op("+").Id("offset")), True(), Nil()),
+			List(Id("offset"), Err()).Op(":=").Id(encodeFuncName).Call(Id(ptr+"v"), Id("buf"), Id("start")),
+			If(Err().Op("!=").Nil()).Block(
+				Return(Nil(), False(), Err()),
+			),
+			If(Id("start").Op("+").Id("size").Op("!=").Id("offset")).Block(
+				Return(Nil(), False(), Qual("fmt", "Errorf").Call(Lit("%s size / offset different %d : %d"), errID, Id("start").Op("+").Id("size"), Id("offset"))),
+			),
+			Return(Id("buf").Index(Op(":").Id("offset")), True(), Nil()),
 		)
 	}
 

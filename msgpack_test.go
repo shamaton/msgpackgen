@@ -80,6 +80,67 @@ func TestGeneratedMarshalToAppendsBuffer(t *testing.T) {
 	}
 }
 
+func TestGeneratedMarshalToAppendsWithInsufficientCapacity(t *testing.T) {
+	structAsArray := msgpack.StructAsArray()
+	t.Cleanup(func() {
+		msgpack.SetStructAsArray(structAsArray)
+	})
+
+	nested := inside{Int: 7}
+	v := testingStruct{
+		Int:        1,
+		Inside:     inside{Int: 2},
+		TmpSlice:   [][]inside{{{Int: 3}}},
+		TmpArray:   [1]inside{{Int: 4}},
+		TmpMap:     map[inside]inside{{Int: 5}: {Int: 6}},
+		TmpPointer: &nested,
+	}
+
+	for _, tt := range []struct {
+		name    string
+		setMode func()
+		body    func() ([]byte, error)
+		to      func([]byte) ([]byte, error)
+	}{
+		{
+			name:    "map",
+			setMode: func() { msgpack.SetStructAsArray(false) },
+			body:    func() ([]byte, error) { return msgpack.MarshalAsMap(v) },
+			to:      func(buf []byte) ([]byte, error) { return msgpack.MarshalAsMapTo(v, buf) },
+		},
+		{
+			name:    "array",
+			setMode: func() { msgpack.SetStructAsArray(true) },
+			body:    func() ([]byte, error) { return msgpack.MarshalAsArray(v) },
+			to:      func(buf []byte) ([]byte, error) { return msgpack.MarshalAsArrayTo(v, buf) },
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setMode()
+			body, err := tt.body()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			prefix := []byte{0xaa}
+			if cap(prefix) != len(prefix) {
+				t.Fatalf("test setup must use insufficient capacity: len=%d cap=%d", len(prefix), cap(prefix))
+			}
+			got, err := tt.to(prefix)
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := append([]byte{0xaa}, body...)
+			if string(got) != string(want) {
+				t.Fatalf("MarshalTo = %x, want %x", got, want)
+			}
+			if prefix[0] != 0xaa {
+				t.Fatalf("prefix mutated: %x", prefix)
+			}
+		})
+	}
+}
+
 func TestGeneratedMarshalToStrictDoesNotFallback(t *testing.T) {
 	if _, err := msgpack.MarshalAsMapTo(notGenerated1{}, []byte{0xaa}); err == nil || !strings.Contains(err.Error(), "use strict option") {
 		t.Fatalf("MarshalAsMapTo error = %v, want strict option", err)
