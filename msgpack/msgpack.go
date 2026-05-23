@@ -1,3 +1,11 @@
+// Package msgpack provides MessagePack encode/decode APIs backed by generated
+// resolvers and a fallback runtime.
+//
+// Generated resolver registration is intended for init or startup time. Call
+// RegisterGeneratedResolver from the generated file before goroutines start
+// calling Marshal, MarshalTo, or Unmarshal. SetResolver and SetToResolver are
+// also registration-time APIs; they are not synchronized with concurrent
+// encoding or decoding.
 package msgpack
 
 import (

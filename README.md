@@ -70,9 +70,12 @@ buf := make([]byte, 0, 1024)
 buf, err := msgpack.MarshalTo(v, buf)
 ```
 
-Call `RegisterGeneratedResolver` during init or startup before concurrent
-`Marshal` / `Unmarshal` use. Resolver registration is not synchronized with
-encoding or decoding calls.
+Call `RegisterGeneratedResolver` once during init or startup, before starting
+goroutines that call `Marshal`, `MarshalTo`, or `Unmarshal`. Resolver
+registration is a startup-time operation: do not call `RegisterGeneratedResolver`,
+`SetResolver`, or `SetToResolver` while encoding or decoding is running. These
+registration APIs are not synchronized with `Marshal`, `MarshalTo`, or
+`Unmarshal`.
 
 ## Serializer
 ### Supported Types
