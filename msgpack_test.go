@@ -254,6 +254,94 @@ func TestGeneratedMarshalToStrictDoesNotFallback(t *testing.T) {
 	}
 }
 
+func TestGeneratedResolverStartupRegistrationSupportsPublicAPIs(t *testing.T) {
+	structAsArray := msgpack.StructAsArray()
+	t.Cleanup(func() {
+		msgpack.SetStructAsArray(structAsArray)
+	})
+
+	v := inside{Int: 42}
+
+	mapBody, err := msgpack.MarshalAsMap(v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if mapBody[0] != 0x81 {
+		t.Fatalf("MarshalAsMap header = 0x%x, want 0x81", mapBody[0])
+	}
+	arrayBody, err := msgpack.MarshalAsArray(v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if arrayBody[0] != 0x91 {
+		t.Fatalf("MarshalAsArray header = 0x%x, want 0x91", arrayBody[0])
+	}
+
+	prefix := []byte{0xaa, 0xbb}
+	mapWithPrefix, err := msgpack.MarshalAsMapTo(v, append([]byte(nil), prefix...))
+	if err != nil {
+		t.Fatal(err)
+	}
+	mapWant := append(append([]byte(nil), prefix...), mapBody...)
+	if string(mapWithPrefix) != string(mapWant) {
+		t.Fatalf("MarshalAsMapTo = %x, want %x", mapWithPrefix, mapWant)
+	}
+	arrayWithPrefix, err := msgpack.MarshalAsArrayTo(v, append([]byte(nil), prefix...))
+	if err != nil {
+		t.Fatal(err)
+	}
+	arrayWant := append(append([]byte(nil), prefix...), arrayBody...)
+	if string(arrayWithPrefix) != string(arrayWant) {
+		t.Fatalf("MarshalAsArrayTo = %x, want %x", arrayWithPrefix, arrayWant)
+	}
+
+	msgpack.SetStructAsArray(false)
+	gotMap, err := msgpack.Marshal(v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(gotMap) != string(mapBody) {
+		t.Fatalf("Marshal map = %x, want %x", gotMap, mapBody)
+	}
+	var mapDefaultOut inside
+	if err := msgpack.Unmarshal(gotMap, &mapDefaultOut); err != nil {
+		t.Fatal(err)
+	}
+	if mapDefaultOut != v {
+		t.Fatalf("Unmarshal map = %+v, want %+v", mapDefaultOut, v)
+	}
+
+	msgpack.SetStructAsArray(true)
+	gotArray, err := msgpack.Marshal(v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(gotArray) != string(arrayBody) {
+		t.Fatalf("Marshal array = %x, want %x", gotArray, arrayBody)
+	}
+	var arrayDefaultOut inside
+	if err := msgpack.Unmarshal(gotArray, &arrayDefaultOut); err != nil {
+		t.Fatal(err)
+	}
+	if arrayDefaultOut != v {
+		t.Fatalf("Unmarshal array = %+v, want %+v", arrayDefaultOut, v)
+	}
+
+	var mapOut, arrayOut inside
+	if err := msgpack.UnmarshalAsMap(mapBody, &mapOut); err != nil {
+		t.Fatal(err)
+	}
+	if mapOut != v {
+		t.Fatalf("UnmarshalAsMap = %+v, want %+v", mapOut, v)
+	}
+	if err := msgpack.UnmarshalAsArray(arrayBody, &arrayOut); err != nil {
+		t.Fatal(err)
+	}
+	if arrayOut != v {
+		t.Fatalf("UnmarshalAsArray = %+v, want %+v", arrayOut, v)
+	}
+}
+
 func TestInt(t *testing.T) {
 	v := testingValue{Int: -8, Int8: math.MinInt8, Int16: math.MinInt16}
 	if err := checkValue(v); err != nil {
