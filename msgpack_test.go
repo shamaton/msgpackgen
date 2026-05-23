@@ -142,11 +142,115 @@ func TestGeneratedMarshalToAppendsWithInsufficientCapacity(t *testing.T) {
 }
 
 func TestGeneratedMarshalToStrictDoesNotFallback(t *testing.T) {
-	if _, err := msgpack.MarshalAsMapTo(notGenerated1{}, []byte{0xaa}); err == nil || !strings.Contains(err.Error(), "use strict option") {
-		t.Fatalf("MarshalAsMapTo error = %v, want strict option", err)
-	}
-	if _, err := msgpack.MarshalAsArrayTo(notGenerated1{}, []byte{0xbb}); err == nil || !strings.Contains(err.Error(), "use strict option") {
-		t.Fatalf("MarshalAsArrayTo error = %v, want strict option", err)
+	structAsArray := msgpack.StructAsArray()
+	t.Cleanup(func() {
+		msgpack.SetStructAsArray(structAsArray)
+	})
+
+	value := testingValue{Int: 1}
+	valuePtr := &value
+	valuePtrPtr := &valuePtr
+	unsupportedPointerDepth := &valuePtrPtr
+
+	for _, tt := range []struct {
+		name string
+		fn   func() ([]byte, error)
+	}{
+		{
+			name: "marshal map unsupported type",
+			fn: func() ([]byte, error) {
+				msgpack.SetStructAsArray(false)
+				return msgpack.Marshal(notGenerated1{})
+			},
+		},
+		{
+			name: "marshal array unsupported type",
+			fn: func() ([]byte, error) {
+				msgpack.SetStructAsArray(true)
+				return msgpack.Marshal(notGenerated1{})
+			},
+		},
+		{
+			name: "marshal as map unsupported type",
+			fn:   func() ([]byte, error) { return msgpack.MarshalAsMap(notGenerated1{}) },
+		},
+		{
+			name: "marshal as array unsupported type",
+			fn:   func() ([]byte, error) { return msgpack.MarshalAsArray(notGenerated1{}) },
+		},
+		{
+			name: "marshal to map unsupported type",
+			fn: func() ([]byte, error) {
+				msgpack.SetStructAsArray(false)
+				return msgpack.MarshalTo(notGenerated1{}, []byte{0xa1})
+			},
+		},
+		{
+			name: "marshal to array unsupported type",
+			fn: func() ([]byte, error) {
+				msgpack.SetStructAsArray(true)
+				return msgpack.MarshalTo(notGenerated1{}, []byte{0xa2})
+			},
+		},
+		{
+			name: "marshal as map to unsupported type",
+			fn:   func() ([]byte, error) { return msgpack.MarshalAsMapTo(notGenerated1{}, []byte{0xaa}) },
+		},
+		{
+			name: "marshal as array to unsupported type",
+			fn:   func() ([]byte, error) { return msgpack.MarshalAsArrayTo(notGenerated1{}, []byte{0xbb}) },
+		},
+		{
+			name: "marshal map unsupported pointer depth",
+			fn: func() ([]byte, error) {
+				msgpack.SetStructAsArray(false)
+				return msgpack.Marshal(unsupportedPointerDepth)
+			},
+		},
+		{
+			name: "marshal array unsupported pointer depth",
+			fn: func() ([]byte, error) {
+				msgpack.SetStructAsArray(true)
+				return msgpack.Marshal(unsupportedPointerDepth)
+			},
+		},
+		{
+			name: "marshal as map unsupported pointer depth",
+			fn:   func() ([]byte, error) { return msgpack.MarshalAsMap(unsupportedPointerDepth) },
+		},
+		{
+			name: "marshal as array unsupported pointer depth",
+			fn:   func() ([]byte, error) { return msgpack.MarshalAsArray(unsupportedPointerDepth) },
+		},
+		{
+			name: "marshal to map unsupported pointer depth",
+			fn: func() ([]byte, error) {
+				msgpack.SetStructAsArray(false)
+				return msgpack.MarshalTo(unsupportedPointerDepth, []byte{0xc1})
+			},
+		},
+		{
+			name: "marshal to array unsupported pointer depth",
+			fn: func() ([]byte, error) {
+				msgpack.SetStructAsArray(true)
+				return msgpack.MarshalTo(unsupportedPointerDepth, []byte{0xc2})
+			},
+		},
+		{
+			name: "marshal as map to unsupported pointer depth",
+			fn:   func() ([]byte, error) { return msgpack.MarshalAsMapTo(unsupportedPointerDepth, []byte{0xcc}) },
+		},
+		{
+			name: "marshal as array to unsupported pointer depth",
+			fn:   func() ([]byte, error) { return msgpack.MarshalAsArrayTo(unsupportedPointerDepth, []byte{0xdd}) },
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			b, err := tt.fn()
+			if err == nil || !strings.Contains(err.Error(), "use strict option") {
+				t.Fatalf("error = %v, bytes = %x, want strict option", err, b)
+			}
+		})
 	}
 }
 
