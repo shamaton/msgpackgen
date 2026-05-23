@@ -91,6 +91,10 @@ map: `map[key]value`
 
 struct: `time.Time` and structures you defined
 
+`time.Time` values are encoded and decoded as UTC by default. Location
+information is not preserved; values with a non-UTC location round-trip as the
+same instant in UTC.
+
 ### Tags
 Renaming or omitting are available.
 
