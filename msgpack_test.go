@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -339,6 +340,57 @@ func TestGeneratedResolverStartupRegistrationSupportsPublicAPIs(t *testing.T) {
 	}
 	if arrayOut != v {
 		t.Fatalf("UnmarshalAsArray = %+v, want %+v", arrayOut, v)
+	}
+}
+
+func TestGeneratedMarshalToUsesRegisteredToResolver(t *testing.T) {
+	v := inside{Int: 42}
+	prefix := []byte{0xaa, 0xbb}
+
+	mapBody, err := msgpack.MarshalAsMap(v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mapBuf := make([]byte, len(prefix), len(prefix)+len(mapBody))
+	mapAllocs := testing.AllocsPerRun(1000, func() {
+		buf := mapBuf[:len(prefix)]
+		copy(buf, prefix)
+		got, err := msgpack.MarshalAsMapTo(v, buf)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(got[:len(prefix)], prefix) {
+			t.Fatalf("MarshalAsMapTo prefix = %x, want %x", got[:len(prefix)], prefix)
+		}
+		if !bytes.Equal(got[len(prefix):], mapBody) {
+			t.Fatalf("MarshalAsMapTo body = %x, want %x", got[len(prefix):], mapBody)
+		}
+	})
+	if mapAllocs != 0 {
+		t.Fatalf("MarshalAsMapTo allocations = %v, want 0", mapAllocs)
+	}
+
+	arrayBody, err := msgpack.MarshalAsArray(v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	arrayBuf := make([]byte, len(prefix), len(prefix)+len(arrayBody))
+	arrayAllocs := testing.AllocsPerRun(1000, func() {
+		buf := arrayBuf[:len(prefix)]
+		copy(buf, prefix)
+		got, err := msgpack.MarshalAsArrayTo(v, buf)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(got[:len(prefix)], prefix) {
+			t.Fatalf("MarshalAsArrayTo prefix = %x, want %x", got[:len(prefix)], prefix)
+		}
+		if !bytes.Equal(got[len(prefix):], arrayBody) {
+			t.Fatalf("MarshalAsArrayTo body = %x, want %x", got[len(prefix):], arrayBody)
+		}
+	})
+	if arrayAllocs != 0 {
+		t.Fatalf("MarshalAsArrayTo allocations = %v, want 0", arrayAllocs)
 	}
 }
 
