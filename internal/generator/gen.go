@@ -617,22 +617,21 @@ func (g *generator) encodeAsMapToCases() []Code {
 func (g *generator) encodeToCaseCode(v *structure.Structure, asArray bool) (states []Code, pointers []Code) {
 
 	var caseStatement func(string) *Statement
-	var errID *Statement
 	if v.NoUseQual {
 		caseStatement = func(op string) *Statement { return Op(op).Id(v.Name) }
-		errID = Lit(v.Name)
 	} else {
 		caseStatement = func(op string) *Statement { return Op(op).Qual(v.ImportPath, v.Name) }
-		errID = Lit(v.ImportPath + "." + v.Name)
 	}
 
-	var calcFuncName, encodeFuncName, pointerFuncName string
+	var calcFuncName, calcMaxFuncName, encodeFuncName, pointerFuncName string
 	if asArray {
 		calcFuncName = v.CalcArraySizeFuncName()
+		calcMaxFuncName = v.CalcArraySizeMaxFuncName()
 		encodeFuncName = v.EncodeArrayFuncName()
 		pointerFuncName = "encodeAsArrayTo"
 	} else {
 		calcFuncName = v.CalcMapSizeFuncName()
+		calcMaxFuncName = v.CalcMapSizeMaxFuncName()
 		encodeFuncName = v.EncodeMapFuncName()
 		pointerFuncName = "encodeAsMapTo"
 	}
@@ -640,17 +639,30 @@ func (g *generator) encodeToCaseCode(v *structure.Structure, asArray bool) (stat
 	f := func(ptr string) *Statement {
 		return Case(caseStatement(ptr)).Block(
 			Id("start").Op(":=").Len(Id("buf")),
-			List(Id("size"), Err()).Op(":=").Id(calcFuncName).Call(Id(ptr+"v")),
-			If(Err().Op("!=").Nil()).Block(
-				Return(Nil(), False(), Err()),
+			Id("remaining").Op(":=").Cap(Id("buf")).Op("-").Id("start"),
+			Var().Id("size").Int(),
+			Var().Err().Error(),
+			If(Id("remaining").Op(">").Lit(0)).Block(
+				List(Id("size"), Err()).Op("=").Id(calcMaxFuncName).Call(Id(ptr+"v")),
+				If(Err().Op("!=").Nil()).Block(
+					Return(Nil(), False(), Err()),
+				),
+			).Else().Block(
+				List(Id("size"), Err()).Op("=").Id(calcFuncName).Call(Id(ptr+"v")),
+				If(Err().Op("!=").Nil()).Block(
+					Return(Nil(), False(), Err()),
+				),
+			),
+			If(Id("remaining").Op(">").Lit(0).Op("&&").Id("remaining").Op("<").Id("size")).Block(
+				List(Id("size"), Err()).Op("=").Id(calcFuncName).Call(Id(ptr+"v")),
+				If(Err().Op("!=").Nil()).Block(
+					Return(Nil(), False(), Err()),
+				),
 			),
 			Id("buf").Op("=").Qual(ptn.PkEnc, "RequireAt").Call(Id("buf"), Id("start"), Id("size")),
 			List(Id("offset"), Err()).Op(":=").Id(encodeFuncName).Call(Id(ptr+"v"), Id("buf"), Id("start")),
 			If(Err().Op("!=").Nil()).Block(
 				Return(Nil(), False(), Err()),
-			),
-			If(Id("start").Op("+").Id("size").Op("!=").Id("offset")).Block(
-				Return(Nil(), False(), Qual("fmt", "Errorf").Call(Lit("%s size / offset different %d : %d"), errID, Id("start").Op("+").Id("size"), Id("offset"))),
 			),
 			Return(Id("buf").Index(Op(":").Id("offset")), True(), Nil()),
 		)

@@ -165,12 +165,12 @@ func TestGenerateCodeUsesStatelessStructEncoder(t *testing.T) {
 		"(v generatedFixture) (int, error)",
 		"func ___encodeArraygeneratedFixture_",
 		"v generatedFixture, buf []byte, offset int",
-		"enc.CalcInt(v.Value)",
+		"enc.CalcIntMax(v.Value)",
 		"enc.WriteIntTo(buf, v.Value, offset)",
-		"enc.CalcTime(v.At)",
+		"enc.CalcTimeMax(v.At)",
 		"enc.WriteTimeTo(buf, v.At, offset)",
-		"offset += copy(buf[offset:], \"\\xa5Value\")",
-		"offset += copy(buf[offset:], \"\\xa2At\")",
+		"offset += copy(buf[offset:offset+6], \"\\xa5Value\")",
+		"offset += copy(buf[offset:offset+3], \"\\xa2At\")",
 		"enc.RequireAt(buf, start, size)",
 	} {
 		if !strings.Contains(got, want) {

@@ -37,9 +37,19 @@ func (st *Structure) CalcArraySizeFuncName() string {
 	return st.createFuncName("calcArraySize")
 }
 
+// CalcArraySizeMaxFuncName gets the max-size function name for each structure.
+func (st *Structure) CalcArraySizeMaxFuncName() string {
+	return st.createFuncName("calcArraySizeMax")
+}
+
 // CalcMapSizeFuncName gets the function name for each structure
 func (st *Structure) CalcMapSizeFuncName() string {
 	return st.createFuncName("calcMapSize")
+}
+
+// CalcMapSizeMaxFuncName gets the max-size function name for each structure.
+func (st *Structure) CalcMapSizeMaxFuncName() string {
+	return st.createFuncName("calcMapSizeMax")
 }
 
 // EncodeArrayFuncName gets the function name for each structure
@@ -76,9 +86,17 @@ func (st *Structure) CreateCode(f *File) {
 	calcArraySizeCodes = append(calcArraySizeCodes, Id("size").Op(":=").Lit(0))
 	calcArraySizeCodes = append(calcArraySizeCodes, calcStruct)
 
+	calcArraySizeMaxCodes := make([]Code, 0)
+	calcArraySizeMaxCodes = append(calcArraySizeMaxCodes, Id("size").Op(":=").Lit(0))
+	calcArraySizeMaxCodes = append(calcArraySizeMaxCodes, calcStruct)
+
 	calcMapSizeCodes := make([]Code, 0)
 	calcMapSizeCodes = append(calcMapSizeCodes, Id("size").Op(":=").Lit(0))
 	calcMapSizeCodes = append(calcMapSizeCodes, calcStruct)
+
+	calcMapSizeMaxCodes := make([]Code, 0)
+	calcMapSizeMaxCodes = append(calcMapSizeMaxCodes, Id("size").Op(":=").Lit(0))
+	calcMapSizeMaxCodes = append(calcMapSizeMaxCodes, calcStruct)
 
 	encArrayCodes := make([]Code, 0)
 	encArrayCodes = append(encArrayCodes, Var().Err().Error())
@@ -102,12 +120,16 @@ func (st *Structure) CreateCode(f *File) {
 
 		calcKeyStringCode, writeKeyStringCode := st.createKeyStringCode(field.Tag)
 		calcMapSizeCodes = append(calcMapSizeCodes, calcKeyStringCode)
+		calcMapSizeMaxCodes = append(calcMapSizeMaxCodes, calcKeyStringCode)
 		encMapCodes = append(encMapCodes, writeKeyStringCode)
 
 		cArray, cMap, eArray, eMap, dArray, dMap := st.createFieldCode(field.Node, fieldName, fieldName)
+		cArrayMax, cMapMax := st.createFieldMaxCode(field.Node, fieldName)
 		calcArraySizeCodes = append(calcArraySizeCodes, cArray...)
+		calcArraySizeMaxCodes = append(calcArraySizeMaxCodes, cArrayMax...)
 
 		calcMapSizeCodes = append(calcMapSizeCodes, cMap...)
+		calcMapSizeMaxCodes = append(calcMapSizeMaxCodes, cMapMax...)
 
 		encArrayCodes = append(encArrayCodes, eArray...)
 		encMapCodes = append(encMapCodes, eMap...)
@@ -193,9 +215,19 @@ func (st *Structure) CreateCode(f *File) {
 		append(calcArraySizeCodes, Return(Id("size"), Nil()))...,
 	)
 
+	f.Comment(fmt.Sprintf("// calculate max size from %s.%s\n", st.ImportPath, st.Name)).
+		Func().Id(st.CalcArraySizeMaxFuncName()).Params(firstEncParam).Params(Int(), Error()).Block(
+		append(calcArraySizeMaxCodes, Return(Id("size"), Nil()))...,
+	)
+
 	f.Comment(fmt.Sprintf("// calculate size from %s.%s\n", st.ImportPath, st.Name)).
 		Func().Id(st.CalcMapSizeFuncName()).Params(firstEncParam).Params(Int(), Error()).Block(
 		append(calcMapSizeCodes, Return(Id("size"), Nil()))...,
+	)
+
+	f.Comment(fmt.Sprintf("// calculate max size from %s.%s\n", st.ImportPath, st.Name)).
+		Func().Id(st.CalcMapSizeMaxFuncName()).Params(firstEncParam).Params(Int(), Error()).Block(
+		append(calcMapSizeMaxCodes, Return(Id("size"), Nil()))...,
 	)
 
 	f.Comment(fmt.Sprintf("// encode from %s.%s\n", st.ImportPath, st.Name)).
@@ -238,9 +270,10 @@ func (st *Structure) createStructCode(fieldNum int) (Code, Code, Code) {
 
 func (st *Structure) createKeyStringCode(v string) (Code, Code) {
 	keyBytes := encodedStringBytes(v)
+	keyLen := len(keyBytes)
 
 	return Id("size").Op("+=").Lit(len(keyBytes)),
-		Id("offset").Op("+=").Id("copy").Call(Id("buf").Index(Id("offset").Op(":")), Lit(string(keyBytes)))
+		Id("offset").Op("+=").Id("copy").Call(Id("buf").Index(Id("offset").Op(":").Id("offset").Op("+").Lit(keyLen)), Lit(string(keyBytes)))
 }
 
 func encodedStringBytes(v string) []byte {

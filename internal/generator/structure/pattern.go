@@ -40,6 +40,10 @@ func createAddSizeCode(funcName string, params ...Code) Code {
 	return Id("size").Op("+=").Qual(ptn.PkEnc, funcName).Call(params...)
 }
 
+func createAddSizeMaxCode(funcName string, params ...Code) Code {
+	return createAddSizeCode(funcName+"Max", params...)
+}
+
 func createAddSizeErrCheckCode(funcName string, params ...Code) []Code {
 	return []Code{
 		List(Id("s"), Err()).Op(":=").Qual(ptn.PkEnc, funcName).Call(params...),
@@ -49,6 +53,10 @@ func createAddSizeErrCheckCode(funcName string, params ...Code) []Code {
 		Id("size").Op("+=").Id("s"),
 	}
 
+}
+
+func createAddSizeMaxErrCheckCode(funcName string, params ...Code) []Code {
+	return createAddSizeErrCheckCode(funcName+"Max", params...)
 }
 
 func createWriteToCode(funcName string, params ...Code) Code {
