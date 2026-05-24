@@ -169,11 +169,15 @@ type Example struct {
 	Interface any
 }
 ```
-If you serialize a struct that wasn't code generated, it will be processed by [shamaton/msgpack](https://github.com/shamaton/msgpack).
 
 ### Strict Mode
-If you use strict mode(option `-strict`), you will get an error if an unrecognized structure is passed.
-In other words,  [shamaton/msgpack](https://github.com/shamaton/msgpack) is not used.
+By default, structs that were not code generated fall back to
+[shamaton/msgpack](https://github.com/shamaton/msgpack). v1 uses
+`github.com/shamaton/msgpack/v3` for that fallback path.
+
+If you use strict mode(option `-strict`), you will get an error if an
+unrecognized structure is passed. In other words,
+[shamaton/msgpack](https://github.com/shamaton/msgpack) is not used.
 
 ---
 
