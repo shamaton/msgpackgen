@@ -142,6 +142,77 @@ func TestGeneratedMarshalToAppendsWithInsufficientCapacity(t *testing.T) {
 	}
 }
 
+func TestGeneratedMarshalToWithSufficientCapacityAllocatesZero(t *testing.T) {
+	structAsArray := msgpack.StructAsArray()
+	t.Cleanup(func() {
+		msgpack.SetStructAsArray(structAsArray)
+	})
+
+	v := inside{Int: 1}
+	prefix := []byte{0xaa, 0xbb}
+
+	for _, tt := range []struct {
+		name    string
+		setMode func()
+		body    func() ([]byte, error)
+		to      func([]byte) ([]byte, error)
+	}{
+		{
+			name:    "marshal_to_map",
+			setMode: func() { msgpack.SetStructAsArray(false) },
+			body:    func() ([]byte, error) { return msgpack.MarshalAsMap(v) },
+			to:      func(buf []byte) ([]byte, error) { return msgpack.MarshalTo(v, buf) },
+		},
+		{
+			name:    "marshal_to_array",
+			setMode: func() { msgpack.SetStructAsArray(true) },
+			body:    func() ([]byte, error) { return msgpack.MarshalAsArray(v) },
+			to:      func(buf []byte) ([]byte, error) { return msgpack.MarshalTo(v, buf) },
+		},
+		{
+			name:    "marshal_as_map_to",
+			setMode: func() { msgpack.SetStructAsArray(false) },
+			body:    func() ([]byte, error) { return msgpack.MarshalAsMap(v) },
+			to:      func(buf []byte) ([]byte, error) { return msgpack.MarshalAsMapTo(v, buf) },
+		},
+		{
+			name:    "marshal_as_array_to",
+			setMode: func() { msgpack.SetStructAsArray(true) },
+			body:    func() ([]byte, error) { return msgpack.MarshalAsArray(v) },
+			to:      func(buf []byte) ([]byte, error) { return msgpack.MarshalAsArrayTo(v, buf) },
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setMode()
+			body, err := tt.body()
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := append(append([]byte(nil), prefix...), body...)
+			buf := make([]byte, len(prefix), len(want))
+			copy(buf, prefix)
+
+			var got []byte
+			allocs := testing.AllocsPerRun(1000, func() {
+				var err error
+				got, err = tt.to(buf[:len(prefix)])
+				if err != nil {
+					panic(err)
+				}
+			})
+			if allocs != 0 {
+				t.Fatalf("allocs = %v, want 0", allocs)
+			}
+			if !bytes.Equal(got, want) {
+				t.Fatalf("MarshalTo = %x, want %x", got, want)
+			}
+			if !bytes.Equal(got[:len(prefix)], prefix) {
+				t.Fatalf("prefix = %x, want %x", got[:len(prefix)], prefix)
+			}
+		})
+	}
+}
+
 func TestGeneratedMarshalToStrictDoesNotFallback(t *testing.T) {
 	structAsArray := msgpack.StructAsArray()
 	t.Cleanup(func() {
