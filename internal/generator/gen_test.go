@@ -162,9 +162,9 @@ func TestGenerateCodeUsesStatelessStructEncoder(t *testing.T) {
 
 	for _, want := range []string{
 		"func ___calcArraySizegeneratedFixture_",
-		"(v generatedFixture) (int, error)",
+		"(v *generatedFixture) (int, error)",
 		"func ___encodeArraygeneratedFixture_",
-		"v generatedFixture, buf []byte, offset int",
+		"v *generatedFixture, buf []byte, offset int",
 		"enc.CalcIntMax(v.Value)",
 		"enc.WriteIntTo(buf, v.Value, offset)",
 		"enc.CalcTimeMax(v.At)",
@@ -215,6 +215,8 @@ func TestGenerateCodeUsesNoErrSizeForEligibleNamedStructs(t *testing.T) {
 	childNode := structure.CreateStructNode("github.com/shamaton/msgpackgen", "generator", "ChildFixture", nil)
 	itemsNode := structure.CreateSliceNode(nil)
 	itemsNode.SetKeyNode(structure.CreateStructNode("github.com/shamaton/msgpackgen", "generator", "ChildFixture", itemsNode))
+	childPtrNode := structure.CreatePointerNode(nil)
+	childPtrNode.SetKeyNode(structure.CreateStructNode("github.com/shamaton/msgpackgen", "generator", "ChildFixture", childPtrNode))
 	parent := &structure.Structure{
 		ImportPath: "github.com/shamaton/msgpackgen",
 		Name:       "ParentFixture",
@@ -229,6 +231,11 @@ func TestGenerateCodeUsesNoErrSizeForEligibleNamedStructs(t *testing.T) {
 				Name: "Items",
 				Tag:  "Items",
 				Node: itemsNode,
+			},
+			{
+				Name: "ChildPtr",
+				Tag:  "ChildPtr",
+				Node: childPtrNode,
 			},
 		},
 	}
@@ -253,9 +260,23 @@ func TestGenerateCodeUsesNoErrSizeForEligibleNamedStructs(t *testing.T) {
 		"___calcArraySizeMaxNoErrChildFixture_",
 		"___calcMapSizeNoErrChildFixture_",
 		"___calcMapSizeMaxNoErrChildFixture_",
+		"___calcArraySizeNoErrChildFixture_",
+		"(&v.Child)",
+		"vv := &v.Items[vvi]",
+		"___encodeArrayChildFixture_",
+		"(vv, buf, offset)",
+		"size_v_ChildPtr := ___calcArraySizeNoErrChildFixture_",
+		"size_v_ChildPtr := ___calcArraySizeMaxNoErrChildFixture_",
+		"(v.ChildPtr)",
+		"___encodeArrayChildFixture_",
+		"(v.ChildPtr, buf, offset)",
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("generated code does not contain %q:\n%s", want, got)
 		}
+	}
+
+	if strings.Contains(got, "ChildPtrp := *v.ChildPtr") || strings.Contains(got, "vp := *v.ChildPtr") {
+		t.Fatalf("generated code unexpectedly copies pointer child:\n%s", got)
 	}
 }

@@ -31,6 +31,36 @@ func isRecursiveChildArraySliceMap(node *Node) bool {
 	panic("unreachable code")
 }
 
+func isPointerLoopElement(node *Node) bool {
+	return node != nil && node.IsStruct() && node.ImportPath != "time"
+}
+
+func shouldPassNamedPointer(node *Node) bool {
+	return node.HasParent() && (node.Parent.IsArray() || node.Parent.IsSlice() || node.Parent.IsPointer())
+}
+
+func namedCallArg(node *Node, fieldName string) Code {
+	if shouldPassNamedPointer(node) {
+		return Id(fieldName)
+	}
+	return Op("&").Id(fieldName)
+}
+
+func createSequenceRangeCode(fieldName, childName string, passChildPointer bool, elmCodes []Code) Code {
+	if !passChildPointer {
+		return For(List(Id("_"), Id(childName)).Op(":=").Range().Id(fieldName)).Block(
+			elmCodes...,
+		)
+	}
+
+	indexName := childName + "i"
+	return For(Id(indexName).Op(":=").Range().Id(fieldName)).Block(
+		append([]Code{
+			Id(childName).Op(":=").Op("&").Id(fieldName).Index(Id(indexName)),
+		}, elmCodes...)...,
+	)
+}
+
 func createFuncName(prefix, name, importPath string) string {
 	suffix := fmt.Sprintf("%x", sha256.Sum256([]byte(importPath)))
 	return ptn.PrivateFuncName(fmt.Sprintf("%s%s_%s", prefix, name, suffix))

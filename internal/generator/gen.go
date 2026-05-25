@@ -637,30 +637,35 @@ func (g *generator) encodeToCaseCode(v *structure.Structure, asArray bool) (stat
 	}
 
 	f := func(ptr string) *Statement {
+		arg := Code(Id("v"))
+		if ptr == "" {
+			arg = Op("&").Id("v")
+		}
+
 		return Case(caseStatement(ptr)).Block(
 			Id("start").Op(":=").Len(Id("buf")),
 			Id("remaining").Op(":=").Cap(Id("buf")).Op("-").Id("start"),
 			Var().Id("size").Int(),
 			Var().Err().Error(),
 			If(Id("remaining").Op(">").Lit(0)).Block(
-				List(Id("size"), Err()).Op("=").Id(calcMaxFuncName).Call(Id(ptr+"v")),
+				List(Id("size"), Err()).Op("=").Id(calcMaxFuncName).Call(arg),
 				If(Err().Op("!=").Nil()).Block(
 					Return(Nil(), False(), Err()),
 				),
 			).Else().Block(
-				List(Id("size"), Err()).Op("=").Id(calcFuncName).Call(Id(ptr+"v")),
+				List(Id("size"), Err()).Op("=").Id(calcFuncName).Call(arg),
 				If(Err().Op("!=").Nil()).Block(
 					Return(Nil(), False(), Err()),
 				),
 			),
 			If(Id("remaining").Op(">").Lit(0).Op("&&").Id("remaining").Op("<").Id("size")).Block(
-				List(Id("size"), Err()).Op("=").Id(calcFuncName).Call(Id(ptr+"v")),
+				List(Id("size"), Err()).Op("=").Id(calcFuncName).Call(arg),
 				If(Err().Op("!=").Nil()).Block(
 					Return(Nil(), False(), Err()),
 				),
 			),
 			Id("buf").Op("=").Qual(ptn.PkEnc, "RequireAt").Call(Id("buf"), Id("start"), Id("size")),
-			List(Id("offset"), Err()).Op(":=").Id(encodeFuncName).Call(Id(ptr+"v"), Id("buf"), Id("start")),
+			List(Id("offset"), Err()).Op(":=").Id(encodeFuncName).Call(arg, Id("buf"), Id("start")),
 			If(Err().Op("!=").Nil()).Block(
 				Return(Nil(), False(), Err()),
 			),

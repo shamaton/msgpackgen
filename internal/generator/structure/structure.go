@@ -248,10 +248,10 @@ func (st *Structure) CreateCode(f *File) {
 
 	var firstEncParam, firstDecParam *Statement
 	if st.NoUseQual {
-		firstEncParam = Id(v).Id(st.Name)
+		firstEncParam = Id(v).Op("*").Id(st.Name)
 		firstDecParam = Id(v).Op("*").Id(st.Name)
 	} else {
-		firstEncParam = Id(v).Qual(st.ImportPath, st.Name)
+		firstEncParam = Id(v).Op("*").Qual(st.ImportPath, st.Name)
 		firstDecParam = Id(v).Op("*").Qual(st.ImportPath, st.Name)
 	}
 

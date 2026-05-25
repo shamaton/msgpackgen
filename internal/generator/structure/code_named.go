@@ -40,7 +40,7 @@ func (g namedCodeGen) createCalcCode(node *Node, fieldName, sizeName, funcName s
 	return []Code{
 		List(Id(sizeName), Err()).
 			Op(":=").
-			Id(createFuncName(funcName, node.StructName, node.ImportPath)).Call(Id(fieldName)),
+			Id(createFuncName(funcName, node.StructName, node.ImportPath)).Call(namedCallArg(node, fieldName)),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Lit(0), Err()),
 		),
@@ -57,7 +57,7 @@ func (g namedCodeGen) createEncCode(node *Node, fieldName, funcName string) []Co
 	return []Code{
 		List(Id("offset"), Err()).
 			Op("=").
-			Id(createFuncName(funcName, node.StructName, node.ImportPath)).Call(Id(fieldName), Id("buf"), Id("offset")),
+			Id(createFuncName(funcName, node.StructName, node.ImportPath)).Call(namedCallArg(node, fieldName), Id("buf"), Id("offset")),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Lit(0), Err()),
 		),

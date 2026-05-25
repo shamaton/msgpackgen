@@ -44,9 +44,10 @@ func (st *Structure) createSliceMaxCode(node *Node, fieldName string) (cArray []
 
 	childArray, childMap := st.createFieldMaxCode(node.Elm(), childName)
 	isChildByte := node.Elm().IsIdentical() && node.Elm().IdenticalName == "byte"
+	passChildPointer := isPointerLoopElement(node.Elm())
 
-	cArray = createNullableSequenceMaxCode(fieldName, childName, "CalcSliceLength", isChildByte, childArray)
-	cMap = createNullableSequenceMaxCode(fieldName, childName, "CalcSliceLength", isChildByte, childMap)
+	cArray = createNullableSequenceMaxCode(fieldName, childName, "CalcSliceLength", isChildByte, passChildPointer, childArray)
+	cMap = createNullableSequenceMaxCode(fieldName, childName, "CalcSliceLength", isChildByte, passChildPointer, childMap)
 	return
 }
 
@@ -58,9 +59,10 @@ func (st *Structure) createArrayMaxCode(node *Node, fieldName string) (cArray []
 
 	childArray, childMap := st.createFieldMaxCode(node.Elm(), childName)
 	isChildByte := node.Elm().IsIdentical() && node.Elm().IdenticalName == "byte"
+	passChildPointer := isPointerLoopElement(node.Elm())
 
-	cArray = createSequenceMaxCode(fieldName, childName, "CalcSliceLength", isChildByte, childArray)
-	cMap = createSequenceMaxCode(fieldName, childName, "CalcSliceLength", isChildByte, childMap)
+	cArray = createSequenceMaxCode(fieldName, childName, "CalcSliceLength", isChildByte, passChildPointer, childArray)
+	cMap = createSequenceMaxCode(fieldName, childName, "CalcSliceLength", isChildByte, passChildPointer, childMap)
 	return
 }
 
@@ -87,10 +89,15 @@ func (st *Structure) createPointerMaxCode(node *Node, fieldName string) (cArray 
 		childName = "vp"
 	}
 
-	childArray, childMap := st.createFieldMaxCode(node.Elm(), childName)
+	passPointerDirect := canPassPointerDirect(node.Elm())
+	childFieldName := childName
+	if passPointerDirect {
+		childFieldName = fieldName
+	}
+	childArray, childMap := st.createFieldMaxCode(node.Elm(), childFieldName)
 
-	cArray = createNullablePointerMaxCode(fieldName, childName, childArray)
-	cMap = createNullablePointerMaxCode(fieldName, childName, childMap)
+	cArray = createNullablePointerMaxCode(fieldName, childName, passPointerDirect, childArray)
+	cMap = createNullablePointerMaxCode(fieldName, childName, passPointerDirect, childMap)
 	return
 }
 
@@ -110,8 +117,8 @@ func (st *Structure) createNamedMaxCode(node *Node, fieldName string) (cArray []
 	return
 }
 
-func createNullableSequenceMaxCode(fieldName, childName, funcName string, isChildByte bool, childCodes []Code) []Code {
-	blockCodes := createSequenceMaxCode(fieldName, childName, funcName, isChildByte, childCodes)
+func createNullableSequenceMaxCode(fieldName, childName, funcName string, isChildByte, passChildPointer bool, childCodes []Code) []Code {
+	blockCodes := createSequenceMaxCode(fieldName, childName, funcName, isChildByte, passChildPointer, childCodes)
 	return []Code{
 		If(Id(fieldName).Op("!=").Nil()).Block(
 			blockCodes...,
@@ -121,11 +128,9 @@ func createNullableSequenceMaxCode(fieldName, childName, funcName string, isChil
 	}
 }
 
-func createSequenceMaxCode(fieldName, childName, funcName string, isChildByte bool, childCodes []Code) []Code {
+func createSequenceMaxCode(fieldName, childName, funcName string, isChildByte, passChildPointer bool, childCodes []Code) []Code {
 	blockCodes := createAddSizeMaxErrCheckCode(funcName, Len(Id(fieldName)), Lit(isChildByte))
-	blockCodes = append(blockCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Id(fieldName)).Block(
-		childCodes...,
-	))
+	blockCodes = append(blockCodes, createSequenceRangeCode(fieldName, childName, passChildPointer, childCodes))
 	return []Code{Block(blockCodes...)}
 }
 
@@ -144,12 +149,16 @@ func createNullableMapMaxCode(fieldName, childKeyName, childValueName string, ke
 	}
 }
 
-func createNullablePointerMaxCode(fieldName, childName string, childCodes []Code) []Code {
+func createNullablePointerMaxCode(fieldName, childName string, passPointerDirect bool, childCodes []Code) []Code {
+	nonNilCodes := childCodes
+	if !passPointerDirect {
+		nonNilCodes = append([]Code{
+			Id(childName).Op(":=").Op("*").Id(fieldName),
+		}, childCodes...)
+	}
 	return []Code{
 		If(Id(fieldName).Op("!=").Nil()).Block(
-			append([]Code{
-				Id(childName).Op(":=").Op("*").Id(fieldName),
-			}, childCodes...)...,
+			nonNilCodes...,
 		).Else().Block(
 			createAddSizeCode("CalcNil"),
 		),
@@ -160,7 +169,7 @@ func createNamedMaxSizeCode(node *Node, fieldName, sizeName, funcName string) []
 	return []Code{
 		List(Id(sizeName), Err()).
 			Op(":=").
-			Id(createFuncName(funcName, node.StructName, node.ImportPath)).Call(Id(fieldName)),
+			Id(createFuncName(funcName, node.StructName, node.ImportPath)).Call(namedCallArg(node, fieldName)),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Lit(0), Err()),
 		),

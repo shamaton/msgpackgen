@@ -99,7 +99,7 @@ func createNamedSizeNoErrCode(node *Node, fieldName, sizeName, funcName string) 
 	return []Code{
 		Id(sizeName).
 			Op(":=").
-			Id(createFuncName(funcName, node.StructName, node.ImportPath)).Call(Id(fieldName)),
+			Id(createFuncName(funcName, node.StructName, node.ImportPath)).Call(namedCallArg(node, fieldName)),
 		Id("size").Op("+=").Id(sizeName),
 	}
 }

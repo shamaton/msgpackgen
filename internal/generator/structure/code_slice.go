@@ -24,26 +24,25 @@ func (st *Structure) createSliceCode(node *Node, encodeFieldName, decodeFieldNam
 		_, _, _, _, da, dm = st.createFieldCode(node.Elm(), encodeChildName, decodeChildName+"v")
 	}
 	isChildByte := node.Elm().IsIdentical() && node.Elm().IdenticalName == "byte"
+	passChildPointer := isPointerLoopElement(node.Elm())
 
 	g := sliceCodeGen{}
 
-	cArray = g.createCalcCode(encodeFieldName, encodeChildName, isChildByte, ca)
-	cMap = g.createCalcCode(encodeFieldName, encodeChildName, isChildByte, cm)
+	cArray = g.createCalcCode(encodeFieldName, encodeChildName, isChildByte, passChildPointer, ca)
+	cMap = g.createCalcCode(encodeFieldName, encodeChildName, isChildByte, passChildPointer, cm)
 
-	eArray = g.createEncCode(encodeFieldName, encodeChildName, isChildByte, ea)
-	eMap = g.createEncCode(encodeFieldName, encodeChildName, isChildByte, em)
+	eArray = g.createEncCode(encodeFieldName, encodeChildName, isChildByte, passChildPointer, ea)
+	eMap = g.createEncCode(encodeFieldName, encodeChildName, isChildByte, passChildPointer, em)
 
 	dArray = g.createDecCode(node, st.Others, decodeFieldName, decodeChildName, da)
 	dMap = g.createDecCode(node, st.Others, decodeFieldName, decodeChildName, dm)
 	return
 }
 
-func (g sliceCodeGen) createCalcCode(fieldName, childName string, isChildTypeByte bool, elmCodes []Code) []Code {
+func (g sliceCodeGen) createCalcCode(fieldName, childName string, isChildTypeByte, passChildPointer bool, elmCodes []Code) []Code {
 
 	blockCodes := createAddSizeErrCheckCode("CalcSliceLength", Len(Id(fieldName)), Lit(isChildTypeByte))
-	blockCodes = append(blockCodes, For(List(Id("_"), Id(childName)).Op(":=").Range(). /*Op(ptrOp).*/ Id(fieldName)).Block(
-		elmCodes...,
-	))
+	blockCodes = append(blockCodes, createSequenceRangeCode(fieldName, childName, passChildPointer, elmCodes))
 
 	codes := make([]Code, 0)
 	codes = append(codes, If(Id(fieldName).Op("!=").Nil()).Block(
@@ -54,13 +53,11 @@ func (g sliceCodeGen) createCalcCode(fieldName, childName string, isChildTypeByt
 	return codes
 }
 
-func (g sliceCodeGen) createEncCode(fieldName, childName string, isChildTypeByte bool, elmCodes []Code) []Code {
+func (g sliceCodeGen) createEncCode(fieldName, childName string, isChildTypeByte, passChildPointer bool, elmCodes []Code) []Code {
 
 	blockCodes := make([]Code, 0)
 	blockCodes = append(blockCodes, Id("offset").Op("=").Qual(ptn.PkEnc, "WriteSliceLengthTo").Call(Id("buf"), Len(Id(fieldName)), Id("offset"), Lit(isChildTypeByte)))
-	blockCodes = append(blockCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Id(fieldName)).Block(
-		elmCodes...,
-	))
+	blockCodes = append(blockCodes, createSequenceRangeCode(fieldName, childName, passChildPointer, elmCodes))
 
 	codes := make([]Code, 0)
 	codes = append(codes, If(Id(fieldName).Op("!=").Nil()).Block(

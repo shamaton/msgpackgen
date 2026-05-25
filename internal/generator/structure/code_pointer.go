@@ -15,14 +15,20 @@ func (st *Structure) createPointerCode(node *Node, encodeFieldName, decodeFieldN
 		encodeChildName = "vp"
 	}
 
-	ca, cm, ea, em, da, dm := st.createFieldCode(node.Elm(), encodeChildName, decodeFieldName)
+	var ca, cm, ea, em []Code
+	if canPassPointerDirect(node.Elm()) {
+		ca, cm, ea, em, _, _ = st.createFieldCode(node.Elm(), encodeFieldName, decodeFieldName)
+	} else {
+		ca, cm, ea, em, _, _ = st.createFieldCode(node.Elm(), encodeChildName, decodeFieldName)
+	}
+	_, _, _, _, da, dm := st.createFieldCode(node.Elm(), encodeChildName, decodeFieldName)
 
 	g := pointerCodeGen{}
-	cArray = g.createPointerCalcCode(encodeFieldName, encodeChildName, ca)
-	cMap = g.createPointerCalcCode(encodeFieldName, encodeChildName, cm)
+	cArray = g.createPointerCalcCode(encodeFieldName, encodeChildName, canPassPointerDirect(node.Elm()), ca)
+	cMap = g.createPointerCalcCode(encodeFieldName, encodeChildName, canPassPointerDirect(node.Elm()), cm)
 
-	eArray = g.createPointerEncCode(encodeFieldName, encodeChildName, ea)
-	eMap = g.createPointerEncCode(encodeFieldName, encodeChildName, em)
+	eArray = g.createPointerEncCode(encodeFieldName, encodeChildName, canPassPointerDirect(node.Elm()), ea)
+	eMap = g.createPointerEncCode(encodeFieldName, encodeChildName, canPassPointerDirect(node.Elm()), em)
 
 	dArray = g.createPointerDecCode(node, da)
 	dMap = g.createPointerDecCode(node, dm)
@@ -30,24 +36,36 @@ func (st *Structure) createPointerCode(node *Node, encodeFieldName, decodeFieldN
 	return
 }
 
-func (g pointerCodeGen) createPointerCalcCode(encodeFieldName, encodeChildName string, elmCodes []Code) []Code {
+func canPassPointerDirect(node *Node) bool {
+	return node.IsStruct() && node.ImportPath != "time"
+}
+
+func (g pointerCodeGen) createPointerCalcCode(encodeFieldName, encodeChildName string, passPointerDirect bool, elmCodes []Code) []Code {
 	codes := make([]Code, 0)
-	codes = append(codes, If(Id(encodeFieldName).Op("!=").Nil()).Block(
-		append([]Code{
+	nonNilCodes := elmCodes
+	if !passPointerDirect {
+		nonNilCodes = append([]Code{
 			Id(encodeChildName).Op(":=").Op("*").Id(encodeFieldName),
-		}, elmCodes...)...,
+		}, elmCodes...)
+	}
+	codes = append(codes, If(Id(encodeFieldName).Op("!=").Nil()).Block(
+		nonNilCodes...,
 	).Else().Block(
 		createAddSizeCode("CalcNil"),
 	))
 	return codes
 }
 
-func (g pointerCodeGen) createPointerEncCode(encodeFieldName, encodeChildName string, elmCodes []Code) []Code {
+func (g pointerCodeGen) createPointerEncCode(encodeFieldName, encodeChildName string, passPointerDirect bool, elmCodes []Code) []Code {
 	codes := make([]Code, 0)
-	codes = append(codes, If(Id(encodeFieldName).Op("!=").Nil()).Block(
-		append([]Code{
+	nonNilCodes := elmCodes
+	if !passPointerDirect {
+		nonNilCodes = append([]Code{
 			Id(encodeChildName).Op(":=").Op("*").Id(encodeFieldName),
-		}, elmCodes...)...,
+		}, elmCodes...)
+	}
+	codes = append(codes, If(Id(encodeFieldName).Op("!=").Nil()).Block(
+		nonNilCodes...,
 	).Else().Block(
 		Id("offset").Op("=").Qual(ptn.PkEnc, "WriteNilTo").Call(Id("buf"), Id("offset")),
 	))
