@@ -18,8 +18,13 @@ func (st *Structure) createNamedCode(encodeFieldName, decodeFieldName string, as
 	}
 
 	g := namedCodeGen{}
-	cArray = g.createCalcCode(ast, encodeFieldName, sizeName, "calcArraySize")
-	cMap = g.createCalcCode(ast, encodeFieldName, sizeName, "calcMapSize")
+	if ref := st.findStructure(ast.ImportPath, ast.StructName); ref != nil && ref.CanCalcSizeNoErr() {
+		cArray = g.createCalcNoErrCode(ast, encodeFieldName, sizeName, "calcArraySizeNoErr")
+		cMap = g.createCalcNoErrCode(ast, encodeFieldName, sizeName, "calcMapSizeNoErr")
+	} else {
+		cArray = g.createCalcCode(ast, encodeFieldName, sizeName, "calcArraySize")
+		cMap = g.createCalcCode(ast, encodeFieldName, sizeName, "calcMapSize")
+	}
 
 	eArray = g.createEncCode(ast, encodeFieldName, "encodeArray")
 	eMap = g.createEncCode(ast, encodeFieldName, "encodeMap")
@@ -41,6 +46,10 @@ func (g namedCodeGen) createCalcCode(node *Node, fieldName, sizeName, funcName s
 		),
 		Id("size").Op("+=").Id(sizeName),
 	}
+}
+
+func (g namedCodeGen) createCalcNoErrCode(node *Node, fieldName, sizeName, funcName string) []Code {
+	return createNamedSizeNoErrCode(node, fieldName, sizeName, funcName)
 }
 
 func (g namedCodeGen) createEncCode(node *Node, fieldName, funcName string) []Code {

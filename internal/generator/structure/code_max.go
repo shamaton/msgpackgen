@@ -100,8 +100,13 @@ func (st *Structure) createNamedMaxCode(node *Node, fieldName string) (cArray []
 		sizeName = strings.ReplaceAll(sizeName, ".", "_")
 	}
 
-	cArray = createNamedMaxSizeCode(node, fieldName, sizeName, "calcArraySizeMax")
-	cMap = createNamedMaxSizeCode(node, fieldName, sizeName, "calcMapSizeMax")
+	if ref := st.findStructure(node.ImportPath, node.StructName); ref != nil && ref.CanCalcSizeNoErr() {
+		cArray = createNamedSizeNoErrCode(node, fieldName, sizeName, "calcArraySizeMaxNoErr")
+		cMap = createNamedSizeNoErrCode(node, fieldName, sizeName, "calcMapSizeMaxNoErr")
+	} else {
+		cArray = createNamedMaxSizeCode(node, fieldName, sizeName, "calcArraySizeMax")
+		cMap = createNamedMaxSizeCode(node, fieldName, sizeName, "calcMapSizeMax")
+	}
 	return
 }
 

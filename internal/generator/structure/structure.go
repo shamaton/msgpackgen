@@ -42,6 +42,16 @@ func (st *Structure) CalcArraySizeMaxFuncName() string {
 	return st.createFuncName("calcArraySizeMax")
 }
 
+// CalcArraySizeNoErrFuncName gets the no-error size function name for each structure.
+func (st *Structure) CalcArraySizeNoErrFuncName() string {
+	return st.createFuncName("calcArraySizeNoErr")
+}
+
+// CalcArraySizeMaxNoErrFuncName gets the no-error max-size function name for each structure.
+func (st *Structure) CalcArraySizeMaxNoErrFuncName() string {
+	return st.createFuncName("calcArraySizeMaxNoErr")
+}
+
 // CalcMapSizeFuncName gets the function name for each structure
 func (st *Structure) CalcMapSizeFuncName() string {
 	return st.createFuncName("calcMapSize")
@@ -50,6 +60,16 @@ func (st *Structure) CalcMapSizeFuncName() string {
 // CalcMapSizeMaxFuncName gets the max-size function name for each structure.
 func (st *Structure) CalcMapSizeMaxFuncName() string {
 	return st.createFuncName("calcMapSizeMax")
+}
+
+// CalcMapSizeNoErrFuncName gets the no-error size function name for each structure.
+func (st *Structure) CalcMapSizeNoErrFuncName() string {
+	return st.createFuncName("calcMapSizeNoErr")
+}
+
+// CalcMapSizeMaxNoErrFuncName gets the no-error max-size function name for each structure.
+func (st *Structure) CalcMapSizeMaxNoErrFuncName() string {
+	return st.createFuncName("calcMapSizeMaxNoErr")
 }
 
 // EncodeArrayFuncName gets the function name for each structure
@@ -98,6 +118,18 @@ func (st *Structure) CreateCode(f *File) {
 	calcMapSizeMaxCodes = append(calcMapSizeMaxCodes, Id("size").Op(":=").Lit(0))
 	calcMapSizeMaxCodes = append(calcMapSizeMaxCodes, calcStruct)
 
+	canCalcSizeNoErr := st.CanCalcSizeNoErr()
+	calcArraySizeNoErrCodes := make([]Code, 0)
+	calcArraySizeMaxNoErrCodes := make([]Code, 0)
+	calcMapSizeNoErrCodes := make([]Code, 0)
+	calcMapSizeMaxNoErrCodes := make([]Code, 0)
+	if canCalcSizeNoErr {
+		calcArraySizeNoErrCodes = append(calcArraySizeNoErrCodes, Id("size").Op(":=").Lit(0), calcStruct)
+		calcArraySizeMaxNoErrCodes = append(calcArraySizeMaxNoErrCodes, Id("size").Op(":=").Lit(0), calcStruct)
+		calcMapSizeNoErrCodes = append(calcMapSizeNoErrCodes, Id("size").Op(":=").Lit(0), calcStruct)
+		calcMapSizeMaxNoErrCodes = append(calcMapSizeMaxNoErrCodes, Id("size").Op(":=").Lit(0), calcStruct)
+	}
+
 	encArrayCodes := make([]Code, 0)
 	encArrayCodes = append(encArrayCodes, Var().Err().Error())
 	encArrayCodes = append(encArrayCodes, encStructArray)
@@ -122,6 +154,10 @@ func (st *Structure) CreateCode(f *File) {
 		calcMapSizeCodes = append(calcMapSizeCodes, calcKeyStringCode)
 		calcMapSizeMaxCodes = append(calcMapSizeMaxCodes, calcKeyStringCode)
 		encMapCodes = append(encMapCodes, writeKeyStringCode)
+		if canCalcSizeNoErr {
+			calcMapSizeNoErrCodes = append(calcMapSizeNoErrCodes, calcKeyStringCode)
+			calcMapSizeMaxNoErrCodes = append(calcMapSizeMaxNoErrCodes, calcKeyStringCode)
+		}
 
 		cArray, cMap, eArray, eMap, dArray, dMap := st.createFieldCode(field.Node, fieldName, fieldName)
 		cArrayMax, cMapMax := st.createFieldMaxCode(field.Node, fieldName)
@@ -130,6 +166,15 @@ func (st *Structure) CreateCode(f *File) {
 
 		calcMapSizeCodes = append(calcMapSizeCodes, cMap...)
 		calcMapSizeMaxCodes = append(calcMapSizeMaxCodes, cMapMax...)
+
+		if canCalcSizeNoErr {
+			cArrayNoErr, cMapNoErr := st.createFieldSizeNoErrCode(field.Node, fieldName, false)
+			cArrayMaxNoErr, cMapMaxNoErr := st.createFieldSizeNoErrCode(field.Node, fieldName, true)
+			calcArraySizeNoErrCodes = append(calcArraySizeNoErrCodes, cArrayNoErr...)
+			calcArraySizeMaxNoErrCodes = append(calcArraySizeMaxNoErrCodes, cArrayMaxNoErr...)
+			calcMapSizeNoErrCodes = append(calcMapSizeNoErrCodes, cMapNoErr...)
+			calcMapSizeMaxNoErrCodes = append(calcMapSizeMaxNoErrCodes, cMapMaxNoErr...)
+		}
 
 		encArrayCodes = append(encArrayCodes, eArray...)
 		encMapCodes = append(encMapCodes, eMap...)
@@ -229,6 +274,28 @@ func (st *Structure) CreateCode(f *File) {
 		Func().Id(st.CalcMapSizeMaxFuncName()).Params(firstEncParam).Params(Int(), Error()).Block(
 		append(calcMapSizeMaxCodes, Return(Id("size"), Nil()))...,
 	)
+
+	if canCalcSizeNoErr {
+		f.Comment(fmt.Sprintf("// calculate no-error size from %s.%s\n", st.ImportPath, st.Name)).
+			Func().Id(st.CalcArraySizeNoErrFuncName()).Params(firstEncParam).Params(Int()).Block(
+			append(calcArraySizeNoErrCodes, Return(Id("size")))...,
+		)
+
+		f.Comment(fmt.Sprintf("// calculate no-error max size from %s.%s\n", st.ImportPath, st.Name)).
+			Func().Id(st.CalcArraySizeMaxNoErrFuncName()).Params(firstEncParam).Params(Int()).Block(
+			append(calcArraySizeMaxNoErrCodes, Return(Id("size")))...,
+		)
+
+		f.Comment(fmt.Sprintf("// calculate no-error size from %s.%s\n", st.ImportPath, st.Name)).
+			Func().Id(st.CalcMapSizeNoErrFuncName()).Params(firstEncParam).Params(Int()).Block(
+			append(calcMapSizeNoErrCodes, Return(Id("size")))...,
+		)
+
+		f.Comment(fmt.Sprintf("// calculate no-error max size from %s.%s\n", st.ImportPath, st.Name)).
+			Func().Id(st.CalcMapSizeMaxNoErrFuncName()).Params(firstEncParam).Params(Int()).Block(
+			append(calcMapSizeMaxNoErrCodes, Return(Id("size")))...,
+		)
+	}
 
 	f.Comment(fmt.Sprintf("// encode from %s.%s\n", st.ImportPath, st.Name)).
 		Func().Id(st.EncodeArrayFuncName()).Params(firstEncParam, Id("buf").Index().Byte(), Id("offset").Int()).Params(Int(), Error()).Block(

@@ -190,3 +190,72 @@ func TestGenerateCodeUsesStatelessStructEncoder(t *testing.T) {
 		}
 	}
 }
+
+func TestGenerateCodeUsesNoErrSizeForEligibleNamedStructs(t *testing.T) {
+	oldAnalyzedStructs := analyzedStructs
+
+	child := &structure.Structure{
+		ImportPath: "github.com/shamaton/msgpackgen",
+		Name:       "ChildFixture",
+		NoUseQual:  true,
+		Fields: []structure.Field{
+			{
+				Name: "ID",
+				Tag:  "ID",
+				Node: structure.CreateIdentNode(ast.NewIdent("int"), nil),
+			},
+			{
+				Name: "Name",
+				Tag:  "Name",
+				Node: structure.CreateIdentNode(ast.NewIdent("string"), nil),
+			},
+		},
+	}
+
+	childNode := structure.CreateStructNode("github.com/shamaton/msgpackgen", "generator", "ChildFixture", nil)
+	itemsNode := structure.CreateSliceNode(nil)
+	itemsNode.SetKeyNode(structure.CreateStructNode("github.com/shamaton/msgpackgen", "generator", "ChildFixture", itemsNode))
+	parent := &structure.Structure{
+		ImportPath: "github.com/shamaton/msgpackgen",
+		Name:       "ParentFixture",
+		NoUseQual:  true,
+		Fields: []structure.Field{
+			{
+				Name: "Child",
+				Tag:  "Child",
+				Node: childNode,
+			},
+			{
+				Name: "Items",
+				Tag:  "Items",
+				Node: itemsNode,
+			},
+		},
+	}
+
+	analyzedStructs = []*structure.Structure{child, parent}
+	for _, st := range analyzedStructs {
+		st.Others = analyzedStructs
+	}
+	t.Cleanup(func() {
+		analyzedStructs = oldAnalyzedStructs
+	})
+
+	g := generator{outputJenFilePath: "resolver_test"}
+	got := fmt.Sprintf("%#v", g.generateCode())
+
+	for _, want := range []string{
+		"func ___calcArraySizeNoErrChildFixture_",
+		"func ___calcArraySizeMaxNoErrChildFixture_",
+		"func ___calcMapSizeNoErrChildFixture_",
+		"func ___calcMapSizeMaxNoErrChildFixture_",
+		"___calcArraySizeNoErrChildFixture_",
+		"___calcArraySizeMaxNoErrChildFixture_",
+		"___calcMapSizeNoErrChildFixture_",
+		"___calcMapSizeMaxNoErrChildFixture_",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("generated code does not contain %q:\n%s", want, got)
+		}
+	}
+}
