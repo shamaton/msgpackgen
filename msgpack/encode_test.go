@@ -369,6 +369,58 @@ func TestInternalBufferEncodeUsesStructAsArray(t *testing.T) {
 	}
 }
 
+func TestPublicMarshalUsesInternalToResolver(t *testing.T) {
+	preserveResolvers(t)
+	SetResolver(
+		func(any) ([]byte, error) { return []byte{0x11}, nil },
+		func(any) ([]byte, error) { return []byte{0x22}, nil },
+		noOpDecResolver,
+		noOpDecResolver,
+	)
+	SetToResolver(
+		func(_ any, buf []byte) ([]byte, bool, error) {
+			return append(buf, 0x81), true, nil
+		},
+		func(_ any, buf []byte) ([]byte, bool, error) {
+			return append(buf, 0x91), true, nil
+		},
+	)
+
+	got, err := MarshalAsMap(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string([]byte{0x81}) {
+		t.Fatalf("MarshalAsMap = %x, want 81", got)
+	}
+
+	got, err = MarshalAsArray(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string([]byte{0x91}) {
+		t.Fatalf("MarshalAsArray = %x, want 91", got)
+	}
+
+	SetStructAsArray(false)
+	got, err = Marshal(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string([]byte{0x81}) {
+		t.Fatalf("Marshal map = %x, want 81", got)
+	}
+
+	SetStructAsArray(true)
+	got, err = Marshal(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string([]byte{0x91}) {
+		t.Fatalf("Marshal array = %x, want 91", got)
+	}
+}
+
 func TestSetToResolverAcceptsNil(t *testing.T) {
 	preserveResolvers(t)
 	SetResolver(
