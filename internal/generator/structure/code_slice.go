@@ -56,14 +56,14 @@ func (g sliceCodeGen) createCalcCode(fieldName, childName string, isChildTypeByt
 func (g sliceCodeGen) createEncCode(fieldName, childName string, isChildTypeByte, passChildPointer bool, elmCodes []Code) []Code {
 
 	blockCodes := make([]Code, 0)
-	blockCodes = append(blockCodes, Id("offset").Op("=").Qual(ptn.PkEnc, "WriteSliceLengthTo").Call(Id("buf"), Len(Id(fieldName)), Id("offset"), Lit(isChildTypeByte)))
+	blockCodes = append(blockCodes, Id("offset").Op("=").Qual(ptn.PkEnc, "WriteSliceLength").Call(Id("buf"), Len(Id(fieldName)), Id("offset"), Lit(isChildTypeByte)))
 	blockCodes = append(blockCodes, createSequenceRangeCode(fieldName, childName, passChildPointer, elmCodes))
 
 	codes := make([]Code, 0)
 	codes = append(codes, If(Id(fieldName).Op("!=").Nil()).Block(
 		blockCodes...,
 	).Else().Block(
-		Id("offset").Op("=").Qual(ptn.PkEnc, "WriteNilTo").Call(Id("buf"), Id("offset")),
+		Id("offset").Op("=").Qual(ptn.PkEnc, "WriteNil").Call(Id("buf"), Id("offset")),
 	))
 	return codes
 }

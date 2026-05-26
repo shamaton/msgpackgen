@@ -331,8 +331,8 @@ func (st *Structure) createStructCode(fieldNum int) (Code, Code, Code) {
 	}
 
 	return Id("size").Op("+=").Qual(ptn.PkEnc, "CalcStructHeader"+suffix).Call(Lit(fieldNum)),
-		Id("offset").Op("=").Qual(ptn.PkEnc, "WriteStructHeader"+suffix+"AsArrayTo").Call(Id("buf"), Lit(fieldNum), Id("offset")),
-		Id("offset").Op("=").Qual(ptn.PkEnc, "WriteStructHeader"+suffix+"AsMapTo").Call(Id("buf"), Lit(fieldNum), Id("offset"))
+		Id("offset").Op("=").Qual(ptn.PkEnc, "WriteStructHeader"+suffix+"AsArray").Call(Id("buf"), Lit(fieldNum), Id("offset")),
+		Id("offset").Op("=").Qual(ptn.PkEnc, "WriteStructHeader"+suffix+"AsMap").Call(Id("buf"), Lit(fieldNum), Id("offset"))
 }
 
 func (st *Structure) createKeyStringCode(v string) (Code, Code) {

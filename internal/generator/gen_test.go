@@ -166,9 +166,9 @@ func TestGenerateCodeUsesStatelessStructEncoder(t *testing.T) {
 		"func ___encodeArraygeneratedFixture_",
 		"v *generatedFixture, buf []byte, offset int",
 		"enc.CalcIntMax(v.Value)",
-		"enc.WriteIntTo(buf, v.Value, offset)",
+		"enc.WriteInt(buf, v.Value, offset)",
 		"enc.CalcTimeMax(v.At)",
-		"enc.WriteTimeTo(buf, v.At, offset)",
+		"enc.WriteTime(buf, v.At, offset)",
 		"offset += copy(buf[offset:offset+6], \"\\xa5Value\")",
 		"offset += copy(buf[offset:offset+3], \"\\xa2At\")",
 		"enc.RequireAt(buf, start, size)",
@@ -182,8 +182,8 @@ func TestGenerateCodeUsesStatelessStructEncoder(t *testing.T) {
 		"enc.NewEncoder()",
 		"MakeBytes",
 		"EncodedBytes",
-		"enc.WriteStringFixTo(buf, \"Value\"",
-		"enc.WriteStringFixTo(buf, \"At\"",
+		"enc.WriteStringFix(buf, \"Value\"",
+		"enc.WriteStringFix(buf, \"At\"",
 	} {
 		if strings.Contains(got, unwanted) {
 			t.Fatalf("generated code unexpectedly contains %q:\n%s", unwanted, got)

@@ -6,38 +6,83 @@ import (
 	"github.com/shamaton/msgpack/v3/def"
 )
 
-//func (e *Encoder) isPositiveFixUint64(v uint64) bool {
-//	return def.PositiveFixIntMin <= v && v <= def.PositiveFixIntMax
-//}
-
-// CalcUint check value and returns data size that need.
-func (e *Encoder) CalcUint(v uint) int {
-	return e.calcUint(uint64(v))
+// CalcUint checks value and returns data size that need.
+func CalcUint(v uint) int {
+	return calcUintSize(uint64(v))
 }
 
-// CalcUint8 check value and returns data size that need.
-func (e *Encoder) CalcUint8(v uint8) int {
-	return e.calcUint(uint64(v))
+// CalcUintMax returns the maximum data size that a uint value can need.
+func CalcUintMax(v uint) int {
+	return def.Byte1 + def.Byte8
 }
 
-// CalcUint16 check value and returns data size that need.
-func (e *Encoder) CalcUint16(v uint16) int {
-	return e.calcUint(uint64(v))
+// CalcUint8 checks value and returns data size that need.
+func CalcUint8(v uint8) int {
+	return calcUintSize(uint64(v))
 }
 
-// CalcUint32 check value and returns data size that need.
-func (e *Encoder) CalcUint32(v uint32) int {
-	return e.calcUint(uint64(v))
+// CalcUint8Max returns the maximum data size that a uint8 value can need.
+func CalcUint8Max(v uint8) int {
+	return def.Byte1 + def.Byte1
 }
 
-// CalcUint64 check value and returns data size that need.
-func (e *Encoder) CalcUint64(v uint64) int {
-	return e.calcUint(v)
+// CalcUint16 checks value and returns data size that need.
+func CalcUint16(v uint16) int {
+	return calcUintSize(uint64(v))
 }
 
-func (e *Encoder) calcUint(v uint64) int {
+// CalcUint16Max returns the maximum data size that a uint16 value can need.
+func CalcUint16Max(v uint16) int {
+	return def.Byte1 + def.Byte2
+}
+
+// CalcUint32 checks value and returns data size that need.
+func CalcUint32(v uint32) int {
+	return calcUintSize(uint64(v))
+}
+
+// CalcUint32Max returns the maximum data size that a uint32 value can need.
+func CalcUint32Max(v uint32) int {
+	return def.Byte1 + def.Byte4
+}
+
+// CalcUint64 checks value and returns data size that need.
+func CalcUint64(v uint64) int {
+	return calcUintSize(v)
+}
+
+// CalcUint64Max returns the maximum data size that a uint64 value can need.
+func CalcUint64Max(v uint64) int {
+	return def.Byte1 + def.Byte8
+}
+
+// WriteUint sets the contents of v to buf at offset.
+func WriteUint(buf []byte, v uint, offset int) int {
+	return writeUint(buf, uint64(v), offset)
+}
+
+// WriteUint8 sets the contents of v to buf at offset.
+func WriteUint8(buf []byte, v uint8, offset int) int {
+	return writeUint(buf, uint64(v), offset)
+}
+
+// WriteUint16 sets the contents of v to buf at offset.
+func WriteUint16(buf []byte, v uint16, offset int) int {
+	return writeUint(buf, uint64(v), offset)
+}
+
+// WriteUint32 sets the contents of v to buf at offset.
+func WriteUint32(buf []byte, v uint32, offset int) int {
+	return writeUint(buf, uint64(v), offset)
+}
+
+// WriteUint64 sets the contents of v to buf at offset.
+func WriteUint64(buf []byte, v uint64, offset int) int {
+	return writeUint(buf, v, offset)
+}
+
+func calcUintSize(v uint64) int {
 	if v <= math.MaxInt8 {
-		// format code only
 		return def.Byte1
 	} else if v <= math.MaxUint8 {
 		return def.Byte1 + def.Byte1
@@ -49,46 +94,21 @@ func (e *Encoder) calcUint(v uint64) int {
 	return def.Byte1 + def.Byte8
 }
 
-// WriteUint sets the contents of v to the buffer.
-func (e *Encoder) WriteUint(v uint, offset int) int {
-	return e.writeUint(uint64(v), offset)
-}
-
-// WriteUint8 sets the contents of v to the buffer.
-func (e *Encoder) WriteUint8(v uint8, offset int) int {
-	return e.writeUint(uint64(v), offset)
-}
-
-// WriteUint16 sets the contents of v to the buffer.
-func (e *Encoder) WriteUint16(v uint16, offset int) int {
-	return e.writeUint(uint64(v), offset)
-}
-
-// WriteUint32 sets the contents of v to the buffer.
-func (e *Encoder) WriteUint32(v uint32, offset int) int {
-	return e.writeUint(uint64(v), offset)
-}
-
-// WriteUint64 sets the contents of v to the buffer.
-func (e *Encoder) WriteUint64(v uint64, offset int) int {
-	return e.writeUint(v, offset)
-}
-
-func (e *Encoder) writeUint(v uint64, offset int) int {
+func writeUint(buf []byte, v uint64, offset int) int {
 	if v <= math.MaxInt8 {
-		offset = e.setByte1Uint64(v, offset)
+		offset = setByte1Uint64(buf, v, offset)
 	} else if v <= math.MaxUint8 {
-		offset = e.setByte1Int(def.Uint8, offset)
-		offset = e.setByte1Uint64(v, offset)
+		offset = setByte1Int(buf, def.Uint8, offset)
+		offset = setByte1Uint64(buf, v, offset)
 	} else if v <= math.MaxUint16 {
-		offset = e.setByte1Int(def.Uint16, offset)
-		offset = e.setByte2Uint64(v, offset)
+		offset = setByte1Int(buf, def.Uint16, offset)
+		offset = setByte2Uint64(buf, v, offset)
 	} else if v <= math.MaxUint32 {
-		offset = e.setByte1Int(def.Uint32, offset)
-		offset = e.setByte4Uint64(v, offset)
+		offset = setByte1Int(buf, def.Uint32, offset)
+		offset = setByte4Uint64(buf, v, offset)
 	} else {
-		offset = e.setByte1Int(def.Uint64, offset)
-		offset = e.setByte8Uint64(v, offset)
+		offset = setByte1Int(buf, def.Uint64, offset)
+		offset = setByte8Uint64(buf, v, offset)
 	}
 	return offset
 }

@@ -6,81 +6,84 @@ import (
 	"github.com/shamaton/msgpack/v3/def"
 )
 
-// CalcString check value and returns data size that need.
-func (e *Encoder) CalcString(v string) int {
+// CalcString checks value and returns data size that need.
+func CalcString(v string) int {
 	l := len(v)
 	if l < 32 {
-		return e.CalcStringFix(l)
+		return CalcStringFix(l)
 	} else if l <= math.MaxUint8 {
-		return e.CalcString8(l)
+		return CalcString8(l)
 	} else if l <= math.MaxUint16 {
-		return e.CalcString16(l)
+		return CalcString16(l)
 	}
-	return e.CalcString32(l)
-	// NOTE : length over uint32
+	return CalcString32(l)
+}
+
+// CalcStringMax returns the maximum data size that a string value can need.
+func CalcStringMax(v string) int {
+	return def.Byte1 + def.Byte4 + len(v)
 }
 
 // CalcStringFix returns data size that need.
-func (e *Encoder) CalcStringFix(length int) int {
+func CalcStringFix(length int) int {
 	return def.Byte1 + length
 }
 
 // CalcString8 returns data size that need.
-func (e *Encoder) CalcString8(length int) int {
+func CalcString8(length int) int {
 	return def.Byte1 + def.Byte1 + length
 }
 
 // CalcString16 returns data size that need.
-func (e *Encoder) CalcString16(length int) int {
+func CalcString16(length int) int {
 	return def.Byte1 + def.Byte2 + length
 }
 
 // CalcString32 returns data size that need.
-func (e *Encoder) CalcString32(length int) int {
+func CalcString32(length int) int {
 	return def.Byte1 + def.Byte4 + length
 }
 
-// WriteString sets the contents of str to the buffer.
-func (e *Encoder) WriteString(str string, offset int) int {
+// WriteString sets the contents of str to buf at offset.
+func WriteString(buf []byte, str string, offset int) int {
 	l := len(str)
 	if l < 32 {
-		return e.WriteStringFix(str, l, offset)
+		return WriteStringFix(buf, str, l, offset)
 	} else if l <= math.MaxUint8 {
-		return e.WriteString8(str, l, offset)
+		return WriteString8(buf, str, l, offset)
 	} else if l <= math.MaxUint16 {
-		return e.WriteString16(str, l, offset)
-	} else {
-		return e.WriteString32(str, l, offset)
+		return WriteString16(buf, str, l, offset)
 	}
+	return WriteString32(buf, str, l, offset)
 }
 
-// WriteStringFix sets the contents of str to the buffer.
-func (e *Encoder) WriteStringFix(str string, length, offset int) int {
-	offset = e.setByte1Int(def.FixStr+length, offset)
-	offset += copy(e.d[offset:], str)
+// WriteStringFix sets the contents of str to buf at offset.
+func WriteStringFix(buf []byte, str string, length, offset int) int {
+	offset = setByte1Int(buf, def.FixStr+length, offset)
+	offset += copy(buf[offset:offset+length], str)
 	return offset
 }
 
-// WriteString8 sets the contents of str to the buffer.
-func (e *Encoder) WriteString8(str string, length, offset int) int {
-	offset = e.setByte1Int(def.Str8, offset)
-	offset = e.setByte1Int(length, offset)
-	offset += copy(e.d[offset:], str)
+// WriteString8 sets the contents of str to buf at offset.
+func WriteString8(buf []byte, str string, length, offset int) int {
+	offset = setByte1Int(buf, def.Str8, offset)
+	offset = setByte1Int(buf, length, offset)
+	offset += copy(buf[offset:offset+length], str)
 	return offset
 }
 
-// WriteString16 sets the contents of str to the buffer.
-func (e *Encoder) WriteString16(str string, length, offset int) int {
-	offset = e.setByte1Int(def.Str16, offset)
-	offset = e.setByte2Int(length, offset)
-	offset += copy(e.d[offset:], str)
+// WriteString16 sets the contents of str to buf at offset.
+func WriteString16(buf []byte, str string, length, offset int) int {
+	offset = setByte1Int(buf, def.Str16, offset)
+	offset = setByte2Int(buf, length, offset)
+	offset += copy(buf[offset:offset+length], str)
 	return offset
 }
 
-// WriteString32 sets the contents of str to the buffer.
-func (e *Encoder) WriteString32(str string, length, offset int) int {
-	offset = e.setByte1Int(def.Str32, offset)
-	offset = e.setByte4Int(length, offset)
-	offset += copy(e.d[offset:], str)
+// WriteString32 sets the contents of str to buf at offset.
+func WriteString32(buf []byte, str string, length, offset int) int {
+	offset = setByte1Int(buf, def.Str32, offset)
+	offset = setByte4Int(buf, length, offset)
+	offset += copy(buf[offset:offset+length], str)
 	return offset
 }

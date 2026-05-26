@@ -89,10 +89,10 @@ func createAddSizeMaxErrCheckCode(funcName string, params ...Code) []Code {
 	return createAddSizeErrCheckCode(funcName+"Max", params...)
 }
 
-func createWriteToCode(funcName string, params ...Code) Code {
+func createWriteCode(funcName string, params ...Code) Code {
 	args := append([]Code{Id("buf")}, params...)
 	args = append(args, Id("offset"))
-	return Id("offset").Op("=").Qual(ptn.PkEnc, funcName+"To").Call(args...)
+	return Id("offset").Op("=").Qual(ptn.PkEnc, funcName).Call(args...)
 }
 
 func createDecodeNilCheckedCode(nonNilCodes []Code) Code {

@@ -139,11 +139,8 @@ func TestDecoderReturnsErrorForTruncatedInput(t *testing.T) {
 	}
 }
 
-func TestIsCodeNilBoundsSafe(t *testing.T) {
+func TestIsCodeNilCheckedBoundsSafe(t *testing.T) {
 	d := NewDecoder(nil)
-	if d.IsCodeNil(0) {
-		t.Fatal("IsCodeNil on empty decoder = true, want false")
-	}
 	if _, err := d.IsCodeNilChecked(0); !errors.Is(err, def.ErrTooShortBytes) {
 		t.Fatalf("IsCodeNilChecked error = %v, want %v", err, def.ErrTooShortBytes)
 	}

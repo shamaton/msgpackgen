@@ -67,7 +67,7 @@ func (g pointerCodeGen) createPointerEncCode(encodeFieldName, encodeChildName st
 	codes = append(codes, If(Id(encodeFieldName).Op("!=").Nil()).Block(
 		nonNilCodes...,
 	).Else().Block(
-		Id("offset").Op("=").Qual(ptn.PkEnc, "WriteNilTo").Call(Id("buf"), Id("offset")),
+		Id("offset").Op("=").Qual(ptn.PkEnc, "WriteNil").Call(Id("buf"), Id("offset")),
 	))
 	return codes
 }

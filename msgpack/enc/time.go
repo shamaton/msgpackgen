@@ -6,8 +6,8 @@ import (
 	"github.com/shamaton/msgpack/v3/def"
 )
 
-// CalcTime check value and returns data size that need.
-func (e *Encoder) CalcTime(t time.Time) int {
+// CalcTime checks value and returns data size that need.
+func CalcTime(t time.Time) int {
 	t = t.UTC()
 	secs := uint64(t.Unix())
 	if secs>>34 == 0 {
@@ -21,29 +21,34 @@ func (e *Encoder) CalcTime(t time.Time) int {
 	return def.Byte1 + def.Byte1 + def.Byte1 + def.Byte4 + def.Byte8
 }
 
-// WriteTime sets the contents of t to the buffer.
-func (e *Encoder) WriteTime(t time.Time, offset int) int {
+// CalcTimeMax returns the maximum data size that a time value can need.
+func CalcTimeMax(t time.Time) int {
+	return def.Byte1 + def.Byte1 + def.Byte1 + def.Byte4 + def.Byte8
+}
+
+// WriteTime sets the contents of t to buf at offset.
+func WriteTime(buf []byte, t time.Time, offset int) int {
 	t = t.UTC()
 	secs := uint64(t.Unix())
 	if secs>>34 == 0 {
 		data := uint64(t.Nanosecond())<<34 | secs
 		if data&0xffffffff00000000 == 0 {
-			offset = e.setByte1Int(def.Fixext4, offset)
-			offset = e.setByte1Int(def.TimeStamp, offset)
-			offset = e.setByte4Uint64(data, offset)
+			offset = setByte1Int(buf, def.Fixext4, offset)
+			offset = setByte1Int(buf, def.TimeStamp, offset)
+			offset = setByte4Uint64(buf, data, offset)
 			return offset
 		}
 
-		offset = e.setByte1Int(def.Fixext8, offset)
-		offset = e.setByte1Int(def.TimeStamp, offset)
-		offset = e.setByte8Uint64(data, offset)
+		offset = setByte1Int(buf, def.Fixext8, offset)
+		offset = setByte1Int(buf, def.TimeStamp, offset)
+		offset = setByte8Uint64(buf, data, offset)
 		return offset
 	}
 
-	offset = e.setByte1Int(def.Ext8, offset)
-	offset = e.setByte1Int(12, offset)
-	offset = e.setByte1Int(def.TimeStamp, offset)
-	offset = e.setByte4Int(t.Nanosecond(), offset)
-	offset = e.setByte8Uint64(secs, offset)
+	offset = setByte1Int(buf, def.Ext8, offset)
+	offset = setByte1Int(buf, 12, offset)
+	offset = setByte1Int(buf, def.TimeStamp, offset)
+	offset = setByte4Int(buf, t.Nanosecond(), offset)
+	offset = setByte8Uint64(buf, secs, offset)
 	return offset
 }

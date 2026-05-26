@@ -37,7 +37,7 @@ func (g identCodeGen) createCalcCode(funcName string, params ...Code) []Code {
 
 func (g identCodeGen) createEncCode(funcName string, params ...Code) []Code {
 	return []Code{
-		createWriteToCode(funcName, params[:len(params)-1]...),
+		createWriteCode(funcName, params[:len(params)-1]...),
 	}
 }
 
