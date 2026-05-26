@@ -62,20 +62,11 @@ func main() {
     }
 ```
 
-`MarshalTo`, `MarshalAsMapTo`, and `MarshalAsArrayTo` append encoded bytes to
-the `buf` passed by the caller and return the resulting slice.
-
-```go
-buf := make([]byte, 0, 1024)
-buf, err := msgpack.MarshalTo(v, buf)
-```
-
 Call `RegisterGeneratedResolver` once during init or startup, before starting
-goroutines that call `Marshal`, `MarshalTo`, or `Unmarshal`. Resolver
+goroutines that call `Marshal` or `Unmarshal`. Resolver
 registration is a startup-time operation: do not call `RegisterGeneratedResolver`,
 `SetResolver`, or `SetToResolver` while encoding or decoding is running. These
-registration APIs are not synchronized with `Marshal`, `MarshalTo`, or
-`Unmarshal`.
+registration APIs are not synchronized with `Marshal` or `Unmarshal`.
 
 ## Serializer
 ### Supported Types

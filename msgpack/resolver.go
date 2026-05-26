@@ -4,9 +4,9 @@ type (
 	// EncResolver is a definition to resolve serialization.
 	EncResolver func(i any) ([]byte, error)
 	// EncToResolver resolves serialization by appending to buf.
-	// If err is non-nil, Marshal*To returns it without fallback. If handled is false,
-	// Marshal*To falls back using the original input buf. If handled is true,
-	// Marshal*To returns the resolver's buf.
+	// If err is non-nil, encoding returns it without fallback. If handled is false,
+	// encoding falls back using the original input buf. If handled is true,
+	// encoding returns the resolver's buf.
 	EncToResolver func(i any, buf []byte) ([]byte, bool, error)
 	// DecResolver is a definition to resolve de-serialization.
 	DecResolver func(data []byte, i any) (bool, error)

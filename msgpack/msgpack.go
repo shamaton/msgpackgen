@@ -3,9 +3,9 @@
 //
 // Generated resolver registration is intended for init or startup time. Call
 // RegisterGeneratedResolver from the generated file before goroutines start
-// calling Marshal, MarshalTo, or Unmarshal. SetResolver and SetToResolver are
-// also registration-time APIs; they are not synchronized with concurrent
-// encoding or decoding.
+// calling Marshal or Unmarshal. SetResolver and SetToResolver are also
+// registration-time APIs; they are not synchronized with concurrent encoding or
+// decoding.
 package msgpack
 
 import (
@@ -20,12 +20,11 @@ func Marshal(v any) ([]byte, error) {
 	return MarshalAsMap(v)
 }
 
-// MarshalTo returns the MessagePack-encoded byte array of v by appending to buf.
-func MarshalTo(v any, buf []byte) ([]byte, error) {
+func marshalWithBuffer(v any, buf []byte) ([]byte, error) {
 	if StructAsArray() {
-		return MarshalAsArrayTo(v, buf)
+		return marshalAsArrayTo(v, buf)
 	}
-	return MarshalAsMapTo(v, buf)
+	return marshalAsMapTo(v, buf)
 }
 
 // Unmarshal analyzes the MessagePack-encoded data and stores

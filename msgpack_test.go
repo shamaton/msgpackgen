@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -43,177 +42,7 @@ func TestSwitchDefaultBehaviour(t *testing.T) {
 
 }
 
-func TestGeneratedMarshalToAppendsBuffer(t *testing.T) {
-	structAsArray := msgpack.StructAsArray()
-	t.Cleanup(func() {
-		msgpack.SetStructAsArray(structAsArray)
-	})
-
-	v := inside{Int: 1}
-	prefix := []byte{0xaa}
-
-	msgpack.SetStructAsArray(false)
-	mapBody, err := msgpack.Marshal(v)
-	if err != nil {
-		t.Fatal(err)
-	}
-	mapGot, err := msgpack.MarshalTo(v, append([]byte(nil), prefix...))
-	if err != nil {
-		t.Fatal(err)
-	}
-	mapWant := append(append([]byte(nil), prefix...), mapBody...)
-	if string(mapGot) != string(mapWant) {
-		t.Fatalf("MarshalTo map = %x, want %x", mapGot, mapWant)
-	}
-
-	msgpack.SetStructAsArray(true)
-	arrayBody, err := msgpack.Marshal(v)
-	if err != nil {
-		t.Fatal(err)
-	}
-	arrayGot, err := msgpack.MarshalTo(v, append([]byte(nil), prefix...))
-	if err != nil {
-		t.Fatal(err)
-	}
-	arrayWant := append(append([]byte(nil), prefix...), arrayBody...)
-	if string(arrayGot) != string(arrayWant) {
-		t.Fatalf("MarshalTo array = %x, want %x", arrayGot, arrayWant)
-	}
-}
-
-func TestGeneratedMarshalToAppendsWithInsufficientCapacity(t *testing.T) {
-	structAsArray := msgpack.StructAsArray()
-	t.Cleanup(func() {
-		msgpack.SetStructAsArray(structAsArray)
-	})
-
-	nested := inside{Int: 7}
-	v := testingStruct{
-		Int:        1,
-		Inside:     inside{Int: 2},
-		TmpSlice:   [][]inside{{{Int: 3}}},
-		TmpArray:   [1]inside{{Int: 4}},
-		TmpMap:     map[inside]inside{{Int: 5}: {Int: 6}},
-		TmpPointer: &nested,
-	}
-
-	for _, tt := range []struct {
-		name    string
-		setMode func()
-		body    func() ([]byte, error)
-		to      func([]byte) ([]byte, error)
-	}{
-		{
-			name:    "map",
-			setMode: func() { msgpack.SetStructAsArray(false) },
-			body:    func() ([]byte, error) { return msgpack.MarshalAsMap(v) },
-			to:      func(buf []byte) ([]byte, error) { return msgpack.MarshalAsMapTo(v, buf) },
-		},
-		{
-			name:    "array",
-			setMode: func() { msgpack.SetStructAsArray(true) },
-			body:    func() ([]byte, error) { return msgpack.MarshalAsArray(v) },
-			to:      func(buf []byte) ([]byte, error) { return msgpack.MarshalAsArrayTo(v, buf) },
-		},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.setMode()
-			body, err := tt.body()
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			prefix := []byte{0xaa}
-			if cap(prefix) != len(prefix) {
-				t.Fatalf("test setup must use insufficient capacity: len=%d cap=%d", len(prefix), cap(prefix))
-			}
-			got, err := tt.to(prefix)
-			if err != nil {
-				t.Fatal(err)
-			}
-			want := append([]byte{0xaa}, body...)
-			if string(got) != string(want) {
-				t.Fatalf("MarshalTo = %x, want %x", got, want)
-			}
-			if prefix[0] != 0xaa {
-				t.Fatalf("prefix mutated: %x", prefix)
-			}
-		})
-	}
-}
-
-func TestGeneratedMarshalToWithSufficientCapacityAllocatesZero(t *testing.T) {
-	structAsArray := msgpack.StructAsArray()
-	t.Cleanup(func() {
-		msgpack.SetStructAsArray(structAsArray)
-	})
-
-	v := inside{Int: 1}
-	prefix := []byte{0xaa, 0xbb}
-
-	for _, tt := range []struct {
-		name    string
-		setMode func()
-		body    func() ([]byte, error)
-		to      func([]byte) ([]byte, error)
-	}{
-		{
-			name:    "marshal_to_map",
-			setMode: func() { msgpack.SetStructAsArray(false) },
-			body:    func() ([]byte, error) { return msgpack.MarshalAsMap(v) },
-			to:      func(buf []byte) ([]byte, error) { return msgpack.MarshalTo(v, buf) },
-		},
-		{
-			name:    "marshal_to_array",
-			setMode: func() { msgpack.SetStructAsArray(true) },
-			body:    func() ([]byte, error) { return msgpack.MarshalAsArray(v) },
-			to:      func(buf []byte) ([]byte, error) { return msgpack.MarshalTo(v, buf) },
-		},
-		{
-			name:    "marshal_as_map_to",
-			setMode: func() { msgpack.SetStructAsArray(false) },
-			body:    func() ([]byte, error) { return msgpack.MarshalAsMap(v) },
-			to:      func(buf []byte) ([]byte, error) { return msgpack.MarshalAsMapTo(v, buf) },
-		},
-		{
-			name:    "marshal_as_array_to",
-			setMode: func() { msgpack.SetStructAsArray(true) },
-			body:    func() ([]byte, error) { return msgpack.MarshalAsArray(v) },
-			to:      func(buf []byte) ([]byte, error) { return msgpack.MarshalAsArrayTo(v, buf) },
-		},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.setMode()
-			body, err := tt.body()
-			if err != nil {
-				t.Fatal(err)
-			}
-			want := append(append([]byte(nil), prefix...), body...)
-			buf := make([]byte, len(prefix), len(want))
-			copy(buf, prefix)
-
-			var got []byte
-			allocs := testing.AllocsPerRun(1000, func() {
-				var err error
-				got, err = tt.to(buf[:len(prefix)])
-				if err != nil {
-					panic(err)
-				}
-			})
-			if allocs != 0 {
-				t.Fatalf("allocs = %v, want 0", allocs)
-			}
-			if !bytes.Equal(got, want) {
-				t.Fatalf("MarshalTo = %x, want %x", got, want)
-			}
-			if !bytes.Equal(got[:len(prefix)], prefix) {
-				t.Fatalf("prefix = %x, want %x", got[:len(prefix)], prefix)
-			}
-		})
-	}
-}
-
-func TestGeneratedMarshalToStrictDoesNotFallback(t *testing.T) {
+func TestGeneratedMarshalStrictDoesNotFallback(t *testing.T) {
 	structAsArray := msgpack.StructAsArray()
 	t.Cleanup(func() {
 		msgpack.SetStructAsArray(structAsArray)
@@ -251,28 +80,6 @@ func TestGeneratedMarshalToStrictDoesNotFallback(t *testing.T) {
 			fn:   func() ([]byte, error) { return msgpack.MarshalAsArray(notGenerated1{}) },
 		},
 		{
-			name: "marshal to map unsupported type",
-			fn: func() ([]byte, error) {
-				msgpack.SetStructAsArray(false)
-				return msgpack.MarshalTo(notGenerated1{}, []byte{0xa1})
-			},
-		},
-		{
-			name: "marshal to array unsupported type",
-			fn: func() ([]byte, error) {
-				msgpack.SetStructAsArray(true)
-				return msgpack.MarshalTo(notGenerated1{}, []byte{0xa2})
-			},
-		},
-		{
-			name: "marshal as map to unsupported type",
-			fn:   func() ([]byte, error) { return msgpack.MarshalAsMapTo(notGenerated1{}, []byte{0xaa}) },
-		},
-		{
-			name: "marshal as array to unsupported type",
-			fn:   func() ([]byte, error) { return msgpack.MarshalAsArrayTo(notGenerated1{}, []byte{0xbb}) },
-		},
-		{
 			name: "marshal map unsupported pointer depth",
 			fn: func() ([]byte, error) {
 				msgpack.SetStructAsArray(false)
@@ -293,28 +100,6 @@ func TestGeneratedMarshalToStrictDoesNotFallback(t *testing.T) {
 		{
 			name: "marshal as array unsupported pointer depth",
 			fn:   func() ([]byte, error) { return msgpack.MarshalAsArray(unsupportedPointerDepth) },
-		},
-		{
-			name: "marshal to map unsupported pointer depth",
-			fn: func() ([]byte, error) {
-				msgpack.SetStructAsArray(false)
-				return msgpack.MarshalTo(unsupportedPointerDepth, []byte{0xc1})
-			},
-		},
-		{
-			name: "marshal to array unsupported pointer depth",
-			fn: func() ([]byte, error) {
-				msgpack.SetStructAsArray(true)
-				return msgpack.MarshalTo(unsupportedPointerDepth, []byte{0xc2})
-			},
-		},
-		{
-			name: "marshal as map to unsupported pointer depth",
-			fn:   func() ([]byte, error) { return msgpack.MarshalAsMapTo(unsupportedPointerDepth, []byte{0xcc}) },
-		},
-		{
-			name: "marshal as array to unsupported pointer depth",
-			fn:   func() ([]byte, error) { return msgpack.MarshalAsArrayTo(unsupportedPointerDepth, []byte{0xdd}) },
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -347,24 +132,6 @@ func TestGeneratedResolverStartupRegistrationSupportsPublicAPIs(t *testing.T) {
 	}
 	if arrayBody[0] != 0x91 {
 		t.Fatalf("MarshalAsArray header = 0x%x, want 0x91", arrayBody[0])
-	}
-
-	prefix := []byte{0xaa, 0xbb}
-	mapWithPrefix, err := msgpack.MarshalAsMapTo(v, append([]byte(nil), prefix...))
-	if err != nil {
-		t.Fatal(err)
-	}
-	mapWant := append(append([]byte(nil), prefix...), mapBody...)
-	if string(mapWithPrefix) != string(mapWant) {
-		t.Fatalf("MarshalAsMapTo = %x, want %x", mapWithPrefix, mapWant)
-	}
-	arrayWithPrefix, err := msgpack.MarshalAsArrayTo(v, append([]byte(nil), prefix...))
-	if err != nil {
-		t.Fatal(err)
-	}
-	arrayWant := append(append([]byte(nil), prefix...), arrayBody...)
-	if string(arrayWithPrefix) != string(arrayWant) {
-		t.Fatalf("MarshalAsArrayTo = %x, want %x", arrayWithPrefix, arrayWant)
 	}
 
 	msgpack.SetStructAsArray(false)
@@ -411,57 +178,6 @@ func TestGeneratedResolverStartupRegistrationSupportsPublicAPIs(t *testing.T) {
 	}
 	if arrayOut != v {
 		t.Fatalf("UnmarshalAsArray = %+v, want %+v", arrayOut, v)
-	}
-}
-
-func TestGeneratedMarshalToUsesRegisteredToResolver(t *testing.T) {
-	v := inside{Int: 42}
-	prefix := []byte{0xaa, 0xbb}
-
-	mapBody, err := msgpack.MarshalAsMap(v)
-	if err != nil {
-		t.Fatal(err)
-	}
-	mapBuf := make([]byte, len(prefix), len(prefix)+len(mapBody))
-	mapAllocs := testing.AllocsPerRun(1000, func() {
-		buf := mapBuf[:len(prefix)]
-		copy(buf, prefix)
-		got, err := msgpack.MarshalAsMapTo(v, buf)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !bytes.Equal(got[:len(prefix)], prefix) {
-			t.Fatalf("MarshalAsMapTo prefix = %x, want %x", got[:len(prefix)], prefix)
-		}
-		if !bytes.Equal(got[len(prefix):], mapBody) {
-			t.Fatalf("MarshalAsMapTo body = %x, want %x", got[len(prefix):], mapBody)
-		}
-	})
-	if mapAllocs != 0 {
-		t.Fatalf("MarshalAsMapTo allocations = %v, want 0", mapAllocs)
-	}
-
-	arrayBody, err := msgpack.MarshalAsArray(v)
-	if err != nil {
-		t.Fatal(err)
-	}
-	arrayBuf := make([]byte, len(prefix), len(prefix)+len(arrayBody))
-	arrayAllocs := testing.AllocsPerRun(1000, func() {
-		buf := arrayBuf[:len(prefix)]
-		copy(buf, prefix)
-		got, err := msgpack.MarshalAsArrayTo(v, buf)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !bytes.Equal(got[:len(prefix)], prefix) {
-			t.Fatalf("MarshalAsArrayTo prefix = %x, want %x", got[:len(prefix)], prefix)
-		}
-		if !bytes.Equal(got[len(prefix):], arrayBody) {
-			t.Fatalf("MarshalAsArrayTo body = %x, want %x", got[len(prefix):], arrayBody)
-		}
-	})
-	if arrayAllocs != 0 {
-		t.Fatalf("MarshalAsArrayTo allocations = %v, want 0", arrayAllocs)
 	}
 }
 
@@ -1247,13 +963,8 @@ func TestTimeDecodeDefaultsToUTC(t *testing.T) {
 			unmarshal: func(b []byte, v *testingTime) error { return msgpack.UnmarshalAsArray(b, v) },
 		},
 		{
-			name:      "generated array to",
-			marshal:   func(v testingTime) ([]byte, error) { return msgpack.MarshalAsArrayTo(v, nil) },
-			unmarshal: func(b []byte, v *testingTime) error { return msgpack.UnmarshalAsArray(b, v) },
-		},
-		{
-			name:      "generated map to",
-			marshal:   func(v testingTime) ([]byte, error) { return msgpack.MarshalAsMapTo(v, nil) },
+			name:      "generated map",
+			marshal:   func(v testingTime) ([]byte, error) { return msgpack.MarshalAsMap(v) },
 			unmarshal: func(b []byte, v *testingTime) error { return msgpack.UnmarshalAsMap(b, v) },
 		},
 	} {
