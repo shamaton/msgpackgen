@@ -108,7 +108,7 @@ func TestOutput(t *testing.T) {
 	}
 }
 
-func TestGenerateCodeRegistersToResolver(t *testing.T) {
+func TestGenerateCodeRegistersResolver(t *testing.T) {
 	oldAnalyzedStructs := analyzedStructs
 	analyzedStructs = nil
 	t.Cleanup(func() {
@@ -120,14 +120,22 @@ func TestGenerateCodeRegistersToResolver(t *testing.T) {
 
 	for _, want := range []string{
 		"msgpack.SetResolver(___encodeAsMap, ___encodeAsArray, ___decodeAsMap, ___decodeAsArray)",
-		"msgpack.SetToResolver(___encodeAsMapTo, ___encodeAsArrayTo)",
-		"func ___encodeAsMapTo(i any, buf []byte) ([]byte, bool, error)",
-		"func ___encodeAsArrayTo(i any, buf []byte) ([]byte, bool, error)",
-		"b, handled, err := ___encodeAsMapTo(i, nil)",
+		"func ___encodeAsMap(i any, buf []byte) ([]byte, bool, error)",
+		"func ___encodeAsArray(i any, buf []byte) ([]byte, bool, error)",
 		"return buf, false, nil",
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("generated code does not contain %q:\n%s", want, got)
+		}
+	}
+
+	for _, unwanted := range []string{
+		"SetToResolver",
+		"encodeAsMapTo",
+		"encodeAsArrayTo",
+	} {
+		if strings.Contains(got, unwanted) {
+			t.Fatalf("generated code unexpectedly contains %q:\n%s", unwanted, got)
 		}
 	}
 }

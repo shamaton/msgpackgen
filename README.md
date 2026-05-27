@@ -65,8 +65,15 @@ func main() {
 Call `RegisterGeneratedResolver` once during init or startup, before starting
 goroutines that call `Marshal` or `Unmarshal`. Resolver
 registration is a startup-time operation: do not call `RegisterGeneratedResolver`,
-`SetResolver`, or `SetToResolver` while encoding or decoding is running. These
-registration APIs are not synchronized with `Marshal` or `Unmarshal`.
+or `SetResolver` while encoding or decoding is running. These registration APIs
+are not synchronized with `Marshal` or `Unmarshal`.
+
+### v1 Resolver Migration
+v1 generated resolvers use a buffer-aware encode resolver. After updating from
+v0.x to v1, regenerate `resolver.msgpackgen.go` before building. Generated files
+from v0.x still use the old `EncResolver` / `SetResolver` signature and will not
+compile with v1. Pre-release v1 generated files that call `SetToResolver` must
+also be regenerated.
 
 ## Serializer
 ### Supported Types

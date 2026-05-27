@@ -10,15 +10,10 @@ func MarshalAsMap(v any) ([]byte, error) {
 
 func marshalAsMapTo(v any, buf []byte) ([]byte, error) {
 	base := buf
-	if b, handled, err := encAsMapToResolver(v, buf); err != nil {
+	if b, handled, err := encAsMapResolver(v, buf); err != nil {
 		return nil, err
 	} else if handled {
 		return b, nil
-	}
-	if b, err := encAsMapResolver(v); err != nil {
-		return nil, err
-	} else if b != nil {
-		return append(base, b...), nil
 	}
 
 	b, err := msgpack.MarshalAsMap(v)
@@ -36,15 +31,10 @@ func MarshalAsArray(v any) ([]byte, error) {
 
 func marshalAsArrayTo(v any, buf []byte) ([]byte, error) {
 	base := buf
-	if b, handled, err := encAsArrayToResolver(v, buf); err != nil {
+	if b, handled, err := encAsArrayResolver(v, buf); err != nil {
 		return nil, err
 	} else if handled {
 		return b, nil
-	}
-	if b, err := encAsArrayResolver(v); err != nil {
-		return nil, err
-	} else if b != nil {
-		return append(base, b...), nil
 	}
 
 	b, err := msgpack.MarshalAsArray(v)
