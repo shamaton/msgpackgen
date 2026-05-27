@@ -97,9 +97,13 @@ func (g mapCodeGen) createDecCode(
 
 	da := []Code{ast.Key.TypeJenChain(structures, Var().Id(childKeyName+"v"))}
 	da = append(da, elmKeyCodes...)
-	da = append(da, ast.Value.TypeJenChain(structures, Var().Id(childValueName+"v")))
-	da = append(da, elmValueCodes...)
-	da = append(da, Id(childValueName).Index(Id(childKeyName+"v")).Op("=").Id(childValueName+"v"))
+	if directCodes, ok := createDirectMapValueDecodeCode(ast, childValueName, childKeyName+"v"); ok {
+		da = append(da, directCodes...)
+	} else {
+		da = append(da, ast.Value.TypeJenChain(structures, Var().Id(childValueName+"v")))
+		da = append(da, elmValueCodes...)
+		da = append(da, Id(childValueName).Index(Id(childKeyName+"v")).Op("=").Id(childValueName+"v"))
+	}
 
 	decCodes = append(decCodes, For(Id(childValueName+"i").Op(":=").Lit(0).Op(";").Id(childValueName+"i").Op("<").Id(childValueName+"l").Op(";").Id(childValueName+"i").Op("++")).Block(
 		da...,

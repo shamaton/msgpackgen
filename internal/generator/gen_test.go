@@ -278,6 +278,7 @@ func TestGenerateCodeUsesNoErrSizeForEligibleNamedStructs(t *testing.T) {
 		"(v.ChildPtr)",
 		"___encodeArrayChildFixture_",
 		"(v.ChildPtr, buf, offset)",
+		"(&vv[vvi], decoder, offset)",
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("generated code does not contain %q:\n%s", want, got)
@@ -287,12 +288,18 @@ func TestGenerateCodeUsesNoErrSizeForEligibleNamedStructs(t *testing.T) {
 	if strings.Contains(got, "ChildPtrp := *v.ChildPtr") || strings.Contains(got, "vp := *v.ChildPtr") {
 		t.Fatalf("generated code unexpectedly copies pointer child:\n%s", got)
 	}
+	if strings.Contains(got, "var vvv ChildFixture") || strings.Contains(got, "vv[vvi] = vvv") {
+		t.Fatalf("generated code unexpectedly decodes slice child through a temporary:\n%s", got)
+	}
 }
 
 func TestGenerateCodeOptimizesMapDecodeDispatch(t *testing.T) {
 	oldAnalyzedStructs := analyzedStructs
 	scoresNode := structure.CreateSliceNode(nil)
 	scoresNode.SetKeyNode(structure.CreateIdentNode(ast.NewIdent("int"), scoresNode))
+	valuesNode := structure.CreateMapNode(nil)
+	valuesNode.SetKeyNode(structure.CreateIdentNode(ast.NewIdent("string"), valuesNode))
+	valuesNode.SetValueNode(structure.CreateIdentNode(ast.NewIdent("uint"), valuesNode))
 	analyzedStructs = []*structure.Structure{
 		{
 			ImportPath: "github.com/shamaton/msgpackgen",
@@ -314,6 +321,11 @@ func TestGenerateCodeOptimizesMapDecodeDispatch(t *testing.T) {
 					Tag:  "Scores",
 					Node: scoresNode,
 				},
+				{
+					Name: "Values",
+					Tag:  "Values",
+					Node: valuesNode,
+				},
 			},
 		},
 	}
@@ -330,6 +342,8 @@ func TestGenerateCodeOptimizesMapDecodeDispatch(t *testing.T) {
 		"case \"Name\":",
 		"case \"Scores\":",
 		"vv[vvi], offset, err = decoder.AsInt(offset)",
+		"case \"Values\":",
+		"vv[kkv], offset, err = decoder.AsUint(offset)",
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("generated code does not contain %q:\n%s", want, got)
@@ -342,6 +356,8 @@ func TestGenerateCodeOptimizesMapDecodeDispatch(t *testing.T) {
 		"for i, key := range keys",
 		"var vvv int",
 		"vv[vvi] = vvv",
+		"var vvv uint",
+		"vv[kkv] = vvv",
 	} {
 		if strings.Contains(got, unwanted) {
 			t.Fatalf("generated code unexpectedly contains %q:\n%s", unwanted, got)

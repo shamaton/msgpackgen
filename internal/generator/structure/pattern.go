@@ -171,8 +171,38 @@ func createDecodeSetValueCode(node *Node, varName, fieldName string) []Code {
 	return codes
 }
 
-func createDirectSequenceDecodeCode(node *Node, childName, childIndexName string) ([]Code, bool) {
+func createDirectSequenceDecodeCode(node *Node, childName, childIndexName, funcName string) ([]Code, bool) {
 	child := node.Elm()
+	switch {
+	case child.IsIdentical():
+		funcName = "As" + identCodeGen{}.toPascalCase(child.IdenticalName)
+	case child.IsStruct() && child.ImportPath == "time" && child.StructName == "Time":
+		funcName = "AsDateTime"
+	case child.IsStruct():
+		return []Code{
+			List(Id("offset"), Err()).Op("=").Id(
+				createFuncName(funcName, child.StructName, child.ImportPath),
+			).Call(Op("&").Id(childName).Index(Id(childIndexName)), Id(ptn.IdDecoder), Id("offset")),
+			If(Err().Op("!=").Nil()).Block(
+				Return(Lit(0), Err()),
+			),
+		}, true
+	default:
+		return nil, false
+	}
+
+	return []Code{
+		List(Id(childName).Index(Id(childIndexName)), Id("offset"), Err()).
+			Op("=").
+			Id(ptn.IdDecoder).Dot(funcName).Call(Id("offset")),
+		If(Err().Op("!=").Nil()).Block(
+			Return(Lit(0), Err()),
+		),
+	}, true
+}
+
+func createDirectMapValueDecodeCode(node *Node, mapName, keyName string) ([]Code, bool) {
+	_, child := node.KeyValue()
 	var funcName string
 	switch {
 	case child.IsIdentical():
@@ -184,7 +214,7 @@ func createDirectSequenceDecodeCode(node *Node, childName, childIndexName string
 	}
 
 	return []Code{
-		List(Id(childName).Index(Id(childIndexName)), Id("offset"), Err()).
+		List(Id(mapName).Index(Id(keyName)), Id("offset"), Err()).
 			Op("=").
 			Id(ptn.IdDecoder).Dot(funcName).Call(Id("offset")),
 		If(Err().Op("!=").Nil()).Block(

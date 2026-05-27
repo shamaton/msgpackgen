@@ -34,8 +34,8 @@ func (st *Structure) createSliceCode(node *Node, encodeFieldName, decodeFieldNam
 	eArray = g.createEncCode(encodeFieldName, encodeChildName, isChildByte, passChildPointer, ea)
 	eMap = g.createEncCode(encodeFieldName, encodeChildName, isChildByte, passChildPointer, em)
 
-	dArray = g.createDecCode(node, st.Others, decodeFieldName, decodeChildName, da)
-	dMap = g.createDecCode(node, st.Others, decodeFieldName, decodeChildName, dm)
+	dArray = g.createDecCode(node, st.Others, decodeFieldName, decodeChildName, "decodeArray", da)
+	dMap = g.createDecCode(node, st.Others, decodeFieldName, decodeChildName, "decodeMap", dm)
 	return
 }
 
@@ -68,7 +68,7 @@ func (g sliceCodeGen) createEncCode(fieldName, childName string, isChildTypeByte
 	return codes
 }
 
-func (g sliceCodeGen) createDecCode(node *Node, structures []*Structure, fieldName, childName string, elmCodes []Code) []Code {
+func (g sliceCodeGen) createDecCode(node *Node, structures []*Structure, fieldName, childName, funcName string, elmCodes []Code) []Code {
 
 	childLengthName := childName + "l"
 	childIndexName := childName + "i"
@@ -83,7 +83,7 @@ func (g sliceCodeGen) createDecCode(node *Node, structures []*Structure, fieldNa
 	))
 	blockCodes = append(blockCodes, Id(childName).Op("=").Make(node.TypeJenChain(structures), Id(childLengthName)))
 
-	if directCodes, ok := createDirectSequenceDecodeCode(node, childName, childIndexName); ok {
+	if directCodes, ok := createDirectSequenceDecodeCode(node, childName, childIndexName, funcName); ok {
 		elmCodes = directCodes
 	} else {
 		elmCodes = append([]Code{node.Elm().TypeJenChain(structures, Var().Id(childChildName))}, elmCodes...)

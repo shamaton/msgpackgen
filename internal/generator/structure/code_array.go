@@ -37,8 +37,8 @@ func (st *Structure) createArrayCode(node *Node, encodeFieldName, decodeFieldNam
 	eArray = g.createEncCode(encodeFieldName, encodeChildName, isChildByte, passChildPointer, ea)
 	eMap = g.createEncCode(encodeFieldName, encodeChildName, isChildByte, passChildPointer, em)
 
-	dArray = g.createDecCode(node, st.Others, decodeFieldName, decodeChildName, da)
-	dMap = g.createDecCode(node, st.Others, decodeFieldName, decodeChildName, dm)
+	dArray = g.createDecCode(node, st.Others, decodeFieldName, decodeChildName, "decodeArray", da)
+	dMap = g.createDecCode(node, st.Others, decodeFieldName, decodeChildName, "decodeMap", dm)
 
 	return
 }
@@ -67,7 +67,7 @@ func (g arrayCodeGen) createEncCode(fieldName, childName string, isChildByte, pa
 	return codes
 }
 
-func (g arrayCodeGen) createDecCode(node *Node, structures []*Structure, fieldName, childName string, elmCodes []Code) []Code {
+func (g arrayCodeGen) createDecCode(node *Node, structures []*Structure, fieldName, childName, funcName string, elmCodes []Code) []Code {
 
 	blockCodes := make([]Code, 0)
 	blockCodes = append(blockCodes, node.TypeJenChain(structures, Var().Id(childName)))
@@ -80,7 +80,7 @@ func (g arrayCodeGen) createDecCode(node *Node, structures []*Structure, fieldNa
 		Return(Lit(0), Qual("fmt", "Errorf").Call(Lit("length size(%d) is over array size(%d)"), Id(childName+"l"), Id(fmt.Sprint(node.ArrayLen)))),
 	))
 
-	if directCodes, ok := createDirectSequenceDecodeCode(node, childName, childName+"i"); ok {
+	if directCodes, ok := createDirectSequenceDecodeCode(node, childName, childName+"i", funcName); ok {
 		elmCodes = directCodes
 	} else {
 		elmCodes = append([]Code{node.Elm().TypeJenChain(structures, Var().Id(childName+"v"))}, elmCodes...)
