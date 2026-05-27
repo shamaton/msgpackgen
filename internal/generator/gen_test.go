@@ -291,6 +291,8 @@ func TestGenerateCodeUsesNoErrSizeForEligibleNamedStructs(t *testing.T) {
 
 func TestGenerateCodeOptimizesMapDecodeDispatch(t *testing.T) {
 	oldAnalyzedStructs := analyzedStructs
+	scoresNode := structure.CreateSliceNode(nil)
+	scoresNode.SetKeyNode(structure.CreateIdentNode(ast.NewIdent("int"), scoresNode))
 	analyzedStructs = []*structure.Structure{
 		{
 			ImportPath: "github.com/shamaton/msgpackgen",
@@ -307,6 +309,11 @@ func TestGenerateCodeOptimizesMapDecodeDispatch(t *testing.T) {
 					Tag:  "Name",
 					Node: structure.CreateIdentNode(ast.NewIdent("string"), nil),
 				},
+				{
+					Name: "Scores",
+					Tag:  "Scores",
+					Node: scoresNode,
+				},
 			},
 		},
 	}
@@ -321,6 +328,8 @@ func TestGenerateCodeOptimizesMapDecodeDispatch(t *testing.T) {
 		"switch string(dataKey)",
 		"case \"ID\":",
 		"case \"Name\":",
+		"case \"Scores\":",
+		"vv[vvi], offset, err = decoder.AsInt(offset)",
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("generated code does not contain %q:\n%s", want, got)
@@ -331,6 +340,8 @@ func TestGenerateCodeOptimizesMapDecodeDispatch(t *testing.T) {
 		"keys := [][]byte",
 		"fieldIndex",
 		"for i, key := range keys",
+		"var vvv int",
+		"vv[vvi] = vvv",
 	} {
 		if strings.Contains(got, unwanted) {
 			t.Fatalf("generated code unexpectedly contains %q:\n%s", unwanted, got)

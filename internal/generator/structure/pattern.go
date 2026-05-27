@@ -170,3 +170,25 @@ func createDecodeSetValueCode(node *Node, varName, fieldName string) []Code {
 
 	return codes
 }
+
+func createDirectSequenceDecodeCode(node *Node, childName, childIndexName string) ([]Code, bool) {
+	child := node.Elm()
+	var funcName string
+	switch {
+	case child.IsIdentical():
+		funcName = "As" + identCodeGen{}.toPascalCase(child.IdenticalName)
+	case child.IsStruct() && child.ImportPath == "time" && child.StructName == "Time":
+		funcName = "AsDateTime"
+	default:
+		return nil, false
+	}
+
+	return []Code{
+		List(Id(childName).Index(Id(childIndexName)), Id("offset"), Err()).
+			Op("=").
+			Id(ptn.IdDecoder).Dot(funcName).Call(Id("offset")),
+		If(Err().Op("!=").Nil()).Block(
+			Return(Lit(0), Err()),
+		),
+	}, true
+}

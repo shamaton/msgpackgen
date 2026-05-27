@@ -83,8 +83,12 @@ func (g sliceCodeGen) createDecCode(node *Node, structures []*Structure, fieldNa
 	))
 	blockCodes = append(blockCodes, Id(childName).Op("=").Make(node.TypeJenChain(structures), Id(childLengthName)))
 
-	elmCodes = append([]Code{node.Elm().TypeJenChain(structures, Var().Id(childChildName))}, elmCodes...)
-	elmCodes = append(elmCodes, Id(childName).Index(Id(childIndexName)).Op("=").Id(childChildName))
+	if directCodes, ok := createDirectSequenceDecodeCode(node, childName, childIndexName); ok {
+		elmCodes = directCodes
+	} else {
+		elmCodes = append([]Code{node.Elm().TypeJenChain(structures, Var().Id(childChildName))}, elmCodes...)
+		elmCodes = append(elmCodes, Id(childName).Index(Id(childIndexName)).Op("=").Id(childChildName))
+	}
 
 	blockCodes = append(blockCodes, For(Id(childIndexName).Op(":=").Range().Id(childName)).Block(
 		elmCodes...,

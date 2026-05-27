@@ -80,8 +80,12 @@ func (g arrayCodeGen) createDecCode(node *Node, structures []*Structure, fieldNa
 		Return(Lit(0), Qual("fmt", "Errorf").Call(Lit("length size(%d) is over array size(%d)"), Id(childName+"l"), Id(fmt.Sprint(node.ArrayLen)))),
 	))
 
-	elmCodes = append([]Code{node.Elm().TypeJenChain(structures, Var().Id(childName+"v"))}, elmCodes...)
-	elmCodes = append(elmCodes, Id(childName).Index(Id(childName+"i")).Op("=").Id(childName+"v"))
+	if directCodes, ok := createDirectSequenceDecodeCode(node, childName, childName+"i"); ok {
+		elmCodes = directCodes
+	} else {
+		elmCodes = append([]Code{node.Elm().TypeJenChain(structures, Var().Id(childName+"v"))}, elmCodes...)
+		elmCodes = append(elmCodes, Id(childName).Index(Id(childName+"i")).Op("=").Id(childName+"v"))
+	}
 
 	blockCodes = append(blockCodes, For(Id(childName+"i").Op(":=").Range().Id(childName).Index(Id(":"+childName+"l"))).Block(
 		elmCodes...,
