@@ -288,3 +288,52 @@ func TestGenerateCodeUsesNoErrSizeForEligibleNamedStructs(t *testing.T) {
 		t.Fatalf("generated code unexpectedly copies pointer child:\n%s", got)
 	}
 }
+
+func TestGenerateCodeOptimizesMapDecodeDispatch(t *testing.T) {
+	oldAnalyzedStructs := analyzedStructs
+	analyzedStructs = []*structure.Structure{
+		{
+			ImportPath: "github.com/shamaton/msgpackgen",
+			Name:       "MapDecodeDispatchFixture",
+			NoUseQual:  true,
+			Fields: []structure.Field{
+				{
+					Name: "ID",
+					Tag:  "ID",
+					Node: structure.CreateIdentNode(ast.NewIdent("int"), nil),
+				},
+				{
+					Name: "Name",
+					Tag:  "Name",
+					Node: structure.CreateIdentNode(ast.NewIdent("string"), nil),
+				},
+			},
+		},
+	}
+	t.Cleanup(func() {
+		analyzedStructs = oldAnalyzedStructs
+	})
+
+	g := generator{outputJenFilePath: "resolver_test"}
+	got := fmt.Sprintf("%#v", g.generateCode())
+
+	for _, want := range []string{
+		"switch string(dataKey)",
+		"case \"ID\":",
+		"case \"Name\":",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("generated code does not contain %q:\n%s", want, got)
+		}
+	}
+
+	for _, unwanted := range []string{
+		"keys := [][]byte",
+		"fieldIndex",
+		"for i, key := range keys",
+	} {
+		if strings.Contains(got, unwanted) {
+			t.Fatalf("generated code unexpectedly contains %q:\n%s", unwanted, got)
+		}
+	}
+}
