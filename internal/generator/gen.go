@@ -430,7 +430,6 @@ func (g *generator) generateCode() *File {
 }
 
 func (g *generator) createPublicTopLevelCode(f *File) {
-	marshalWithBufferName := ptn.PrivateFuncName("marshalWithBuffer")
 	marshalAsMapToName := ptn.PrivateFuncName("marshalAsMapTo")
 	marshalAsArrayToName := ptn.PrivateFuncName("marshalAsArrayTo")
 	unmarshalAsMapName := ptn.PrivateFuncName("unmarshalAsMap")
@@ -442,13 +441,6 @@ func (g *generator) createPublicTopLevelCode(f *File) {
 			Return(Id("MarshalAsArray").Call(Id("v"))),
 		),
 		Return(Id("MarshalAsMap").Call(Id("v"))),
-	)
-
-	f.Func().Id(marshalWithBufferName).Params(Id("v").Any(), Id("buf").Index().Byte()).Params(Index().Byte(), Error()).Block(
-		If(Qual(ptn.PkTop, "StructAsArray").Call()).Block(
-			Return(Id(marshalAsArrayToName).Call(Id("v"), Id("buf"))),
-		),
-		Return(Id(marshalAsMapToName).Call(Id("v"), Id("buf"))),
 	)
 
 	f.Comment("// MarshalAsMap encodes data as map format.\n").

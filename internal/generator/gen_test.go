@@ -126,7 +126,6 @@ func TestGenerateCodeProvidesPublicAPIs(t *testing.T) {
 		"func Unmarshal(data []byte, v any) error",
 		"func UnmarshalAsMap(data []byte, v any) error",
 		"func UnmarshalAsArray(data []byte, v any) error",
-		"func ___marshalWithBuffer(v any, buf []byte) ([]byte, error)",
 		"func ___marshalAsMapTo(v any, buf []byte) ([]byte, error)",
 		"func ___marshalAsArrayTo(v any, buf []byte) ([]byte, error)",
 	} {
@@ -140,6 +139,7 @@ func TestGenerateCodeProvidesPublicAPIs(t *testing.T) {
 		"msgpack.SetResolver",
 		"SetToResolver",
 		"func marshalWithBuffer",
+		"func ___marshalWithBuffer",
 		"func marshalAsMapTo",
 		"func marshalAsArrayTo",
 		"func ___encodeAsMap",
