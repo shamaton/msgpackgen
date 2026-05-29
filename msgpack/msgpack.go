@@ -1,15 +1,16 @@
-// Package msgpack provides MessagePack encode/decode APIs backed by generated
-// resolvers and a fallback runtime.
-//
-// Generated resolver registration is intended for init or startup time. Call
-// RegisterGeneratedResolver from the generated file before goroutines start
-// calling Marshal or Unmarshal. SetResolver is also a registration-time API; it
-// is not synchronized with concurrent encoding or decoding.
+// Package msgpack provides fallback MessagePack encode/decode APIs and shared
+// encoding settings used by generated code.
 package msgpack
 
 import (
+	"errors"
+
 	"github.com/shamaton/msgpack/v3"
 )
+
+// ErrUndefinedType is returned by generated code when the value type is not
+// handled by generated serializers.
+var ErrUndefinedType = errors.New("undefined type")
 
 // Marshal returns the MessagePack-encoded byte array of v.
 func Marshal(v any) ([]byte, error) {

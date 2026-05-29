@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/ast"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -108,7 +109,7 @@ func TestOutput(t *testing.T) {
 	}
 }
 
-func TestGenerateCodeRegistersResolver(t *testing.T) {
+func TestGenerateCodeProvidesPublicAPIs(t *testing.T) {
 	oldAnalyzedStructs := analyzedStructs
 	analyzedStructs = nil
 	t.Cleanup(func() {
@@ -119,10 +120,15 @@ func TestGenerateCodeRegistersResolver(t *testing.T) {
 	got := fmt.Sprintf("%#v", g.generateCode())
 
 	for _, want := range []string{
-		"msgpack.SetResolver(___encodeAsMap, ___encodeAsArray, ___decodeAsMap, ___decodeAsArray)",
-		"func ___encodeAsMap(i any, buf []byte) ([]byte, bool, error)",
-		"func ___encodeAsArray(i any, buf []byte) ([]byte, bool, error)",
-		"return buf, false, nil",
+		"func Marshal(v any) ([]byte, error)",
+		"func MarshalAsMap(v any) ([]byte, error)",
+		"func MarshalAsArray(v any) ([]byte, error)",
+		"func Unmarshal(data []byte, v any) error",
+		"func UnmarshalAsMap(data []byte, v any) error",
+		"func UnmarshalAsArray(data []byte, v any) error",
+		"func ___marshalWithBuffer(v any, buf []byte) ([]byte, error)",
+		"func ___marshalAsMapTo(v any, buf []byte) ([]byte, error)",
+		"func ___marshalAsArrayTo(v any, buf []byte) ([]byte, error)",
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("generated code does not contain %q:\n%s", want, got)
@@ -130,13 +136,173 @@ func TestGenerateCodeRegistersResolver(t *testing.T) {
 	}
 
 	for _, unwanted := range []string{
+		"RegisterGeneratedResolver",
+		"msgpack.SetResolver",
 		"SetToResolver",
+		"func marshalWithBuffer",
+		"func marshalAsMapTo",
+		"func marshalAsArrayTo",
+		"func ___encodeAsMap",
+		"func ___encodeAsArray",
+		"func ___decodeAsMap",
+		"func ___decodeAsArray",
 		"encodeAsMapTo",
 		"encodeAsArrayTo",
 	} {
 		if strings.Contains(got, unwanted) {
 			t.Fatalf("generated code unexpectedly contains %q:\n%s", unwanted, got)
 		}
+	}
+}
+
+func TestGenerateCodeFallbackDependsOnStrict(t *testing.T) {
+	oldAnalyzedStructs := analyzedStructs
+	analyzedStructs = nil
+	t.Cleanup(func() {
+		analyzedStructs = oldAnalyzedStructs
+	})
+
+	nonStrictGenerator := generator{outputJenFilePath: "resolver_test"}
+	nonStrict := fmt.Sprintf("%#v", nonStrictGenerator.generateCode())
+	for _, want := range []string{
+		"errors.Is(err, msgpack.ErrUndefinedType)",
+		"fallback.MarshalAsMap(v)",
+		"fallback.MarshalAsArray(v)",
+		"fallback.UnmarshalAsMap(data, v)",
+		"fallback.UnmarshalAsArray(data, v)",
+		"return nil, msgpack.ErrUndefinedType",
+		"return msgpack.ErrUndefinedType",
+	} {
+		if !strings.Contains(nonStrict, want) {
+			t.Fatalf("non-strict generated code does not contain %q:\n%s", want, nonStrict)
+		}
+	}
+
+	strictGenerator := generator{outputJenFilePath: "resolver_test", strict: true}
+	strict := fmt.Sprintf("%#v", strictGenerator.generateCode())
+	for _, want := range []string{
+		"return nil, msgpack.ErrUndefinedType",
+		"return msgpack.ErrUndefinedType",
+	} {
+		if !strings.Contains(strict, want) {
+			t.Fatalf("strict generated code does not contain %q:\n%s", want, strict)
+		}
+	}
+	for _, unwanted := range []string{
+		"use strict option",
+		"errors.Is(err, msgpack.ErrUndefinedType)",
+		"fallback.MarshalAsMap(v)",
+		"fallback.MarshalAsArray(v)",
+		"fallback.UnmarshalAsMap(data, v)",
+		"fallback.UnmarshalAsArray(data, v)",
+		"fmt.Errorf(\"undefined type\")",
+	} {
+		if strings.Contains(strict, unwanted) {
+			t.Fatalf("strict generated code unexpectedly contains %q:\n%s", unwanted, strict)
+		}
+	}
+}
+
+func TestGeneratedNonStrictFallbackCompilesAndRuns(t *testing.T) {
+	oldAnalyzedStructs := analyzedStructs
+	analyzedStructs = []*structure.Structure{
+		{
+			ImportPath: "example.com/nonstrict",
+			Name:       "Known",
+			NoUseQual:  true,
+			Fields: []structure.Field{
+				{
+					Name: "I",
+					Tag:  "I",
+					Node: structure.CreateIdentNode(ast.NewIdent("int"), nil),
+				},
+			},
+		},
+	}
+	for _, st := range analyzedStructs {
+		st.Others = analyzedStructs
+	}
+	t.Cleanup(func() {
+		analyzedStructs = oldAnalyzedStructs
+	})
+
+	g := generator{outputJenFilePath: "example.com/nonstrict"}
+	generated := fmt.Sprintf("%#v", g.generateCode())
+
+	dir := t.TempDir()
+	repoRoot, err := filepath.Abs("../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	files := map[string]string{
+		"go.mod": fmt.Sprintf(`module example.com/nonstrict
+
+go 1.23
+
+require (
+	github.com/shamaton/msgpack/v3 v3.1.2
+	github.com/shamaton/msgpackgen v0.0.0
+)
+
+replace github.com/shamaton/msgpackgen => %s
+`, filepath.ToSlash(repoRoot)),
+		"model.go": `package nonstrict
+
+type Known struct {
+	I int
+}
+
+type Unknown struct {
+	S string
+}
+`,
+		"resolver.msgpackgen.go": generated,
+		"resolver_test.go": `package nonstrict
+
+import (
+	"errors"
+	"testing"
+
+	"github.com/shamaton/msgpackgen/msgpack"
+)
+
+func TestNonStrictFallback(t *testing.T) {
+	if _, err := MarshalAsMap(Known{I: 1}); err != nil {
+		t.Fatal(err)
+	}
+	b, err := MarshalAsMap(Unknown{S: "fallback"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got Unknown
+	if err := UnmarshalAsMap(b, &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.S != "fallback" {
+		t.Fatalf("got %q", got.S)
+	}
+	if _, err := ___marshalAsMapTo(Unknown{}, nil); !errors.Is(err, msgpack.ErrUndefinedType) {
+		t.Fatalf("private encode error = %v, want ErrUndefinedType", err)
+	}
+	if err := ___unmarshalAsMap(b, &got); !errors.Is(err, msgpack.ErrUndefinedType) {
+		t.Fatalf("private decode error = %v, want ErrUndefinedType", err)
+	}
+}
+`,
+	}
+	for name, body := range files {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0666); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	cmd := exec.Command("go", "test", ".")
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), "GOCACHE="+filepath.Join(dir, "gocache"), "GOFLAGS=-mod=mod")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("go test failed: %v\n%s", err, out)
 	}
 }
 

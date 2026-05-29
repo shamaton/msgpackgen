@@ -23,14 +23,14 @@ func TestSwitchDefaultBehaviour(t *testing.T) {
 	msgpack.SetStructAsArray(false)
 
 	v := inside{Int: 1}
-	b1, err := msgpack.Marshal(v)
+	b1, err := Marshal(v)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	msgpack.SetStructAsArray(true)
 
-	b2, err := msgpack.Marshal(v)
+	b2, err := Marshal(v)
 	if err != nil {
 		t.Error(err)
 	}
@@ -42,7 +42,7 @@ func TestSwitchDefaultBehaviour(t *testing.T) {
 
 }
 
-func TestGeneratedMarshalStrictDoesNotFallback(t *testing.T) {
+func TestGeneratedMarshalRejectsUnrecognizedTypes(t *testing.T) {
 	structAsArray := msgpack.StructAsArray()
 	t.Cleanup(func() {
 		msgpack.SetStructAsArray(structAsArray)
@@ -61,57 +61,57 @@ func TestGeneratedMarshalStrictDoesNotFallback(t *testing.T) {
 			name: "marshal map unsupported type",
 			fn: func() ([]byte, error) {
 				msgpack.SetStructAsArray(false)
-				return msgpack.Marshal(notGenerated1{})
+				return Marshal(notGenerated1{})
 			},
 		},
 		{
 			name: "marshal array unsupported type",
 			fn: func() ([]byte, error) {
 				msgpack.SetStructAsArray(true)
-				return msgpack.Marshal(notGenerated1{})
+				return Marshal(notGenerated1{})
 			},
 		},
 		{
 			name: "marshal as map unsupported type",
-			fn:   func() ([]byte, error) { return msgpack.MarshalAsMap(notGenerated1{}) },
+			fn:   func() ([]byte, error) { return MarshalAsMap(notGenerated1{}) },
 		},
 		{
 			name: "marshal as array unsupported type",
-			fn:   func() ([]byte, error) { return msgpack.MarshalAsArray(notGenerated1{}) },
+			fn:   func() ([]byte, error) { return MarshalAsArray(notGenerated1{}) },
 		},
 		{
 			name: "marshal map unsupported pointer depth",
 			fn: func() ([]byte, error) {
 				msgpack.SetStructAsArray(false)
-				return msgpack.Marshal(unsupportedPointerDepth)
+				return Marshal(unsupportedPointerDepth)
 			},
 		},
 		{
 			name: "marshal array unsupported pointer depth",
 			fn: func() ([]byte, error) {
 				msgpack.SetStructAsArray(true)
-				return msgpack.Marshal(unsupportedPointerDepth)
+				return Marshal(unsupportedPointerDepth)
 			},
 		},
 		{
 			name: "marshal as map unsupported pointer depth",
-			fn:   func() ([]byte, error) { return msgpack.MarshalAsMap(unsupportedPointerDepth) },
+			fn:   func() ([]byte, error) { return MarshalAsMap(unsupportedPointerDepth) },
 		},
 		{
 			name: "marshal as array unsupported pointer depth",
-			fn:   func() ([]byte, error) { return msgpack.MarshalAsArray(unsupportedPointerDepth) },
+			fn:   func() ([]byte, error) { return MarshalAsArray(unsupportedPointerDepth) },
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			b, err := tt.fn()
-			if err == nil || !strings.Contains(err.Error(), "use strict option") {
-				t.Fatalf("error = %v, bytes = %x, want strict option", err, b)
+			if !errors.Is(err, msgpack.ErrUndefinedType) {
+				t.Fatalf("error = %v, bytes = %x, want ErrUndefinedType", err, b)
 			}
 		})
 	}
 }
 
-func TestGeneratedResolverStartupRegistrationSupportsPublicAPIs(t *testing.T) {
+func TestGeneratedPublicAPIs(t *testing.T) {
 	structAsArray := msgpack.StructAsArray()
 	t.Cleanup(func() {
 		msgpack.SetStructAsArray(structAsArray)
@@ -119,14 +119,14 @@ func TestGeneratedResolverStartupRegistrationSupportsPublicAPIs(t *testing.T) {
 
 	v := inside{Int: 42}
 
-	mapBody, err := msgpack.MarshalAsMap(v)
+	mapBody, err := MarshalAsMap(v)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if mapBody[0] != 0x81 {
 		t.Fatalf("MarshalAsMap header = 0x%x, want 0x81", mapBody[0])
 	}
-	arrayBody, err := msgpack.MarshalAsArray(v)
+	arrayBody, err := MarshalAsArray(v)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -135,7 +135,7 @@ func TestGeneratedResolverStartupRegistrationSupportsPublicAPIs(t *testing.T) {
 	}
 
 	msgpack.SetStructAsArray(false)
-	gotMap, err := msgpack.Marshal(v)
+	gotMap, err := Marshal(v)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -143,7 +143,7 @@ func TestGeneratedResolverStartupRegistrationSupportsPublicAPIs(t *testing.T) {
 		t.Fatalf("Marshal map = %x, want %x", gotMap, mapBody)
 	}
 	var mapDefaultOut inside
-	if err := msgpack.Unmarshal(gotMap, &mapDefaultOut); err != nil {
+	if err := Unmarshal(gotMap, &mapDefaultOut); err != nil {
 		t.Fatal(err)
 	}
 	if mapDefaultOut != v {
@@ -151,7 +151,7 @@ func TestGeneratedResolverStartupRegistrationSupportsPublicAPIs(t *testing.T) {
 	}
 
 	msgpack.SetStructAsArray(true)
-	gotArray, err := msgpack.Marshal(v)
+	gotArray, err := Marshal(v)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -159,7 +159,7 @@ func TestGeneratedResolverStartupRegistrationSupportsPublicAPIs(t *testing.T) {
 		t.Fatalf("Marshal array = %x, want %x", gotArray, arrayBody)
 	}
 	var arrayDefaultOut inside
-	if err := msgpack.Unmarshal(gotArray, &arrayDefaultOut); err != nil {
+	if err := Unmarshal(gotArray, &arrayDefaultOut); err != nil {
 		t.Fatal(err)
 	}
 	if arrayDefaultOut != v {
@@ -167,13 +167,13 @@ func TestGeneratedResolverStartupRegistrationSupportsPublicAPIs(t *testing.T) {
 	}
 
 	var mapOut, arrayOut inside
-	if err := msgpack.UnmarshalAsMap(mapBody, &mapOut); err != nil {
+	if err := UnmarshalAsMap(mapBody, &mapOut); err != nil {
 		t.Fatal(err)
 	}
 	if mapOut != v {
 		t.Fatalf("UnmarshalAsMap = %+v, want %+v", mapOut, v)
 	}
-	if err := msgpack.UnmarshalAsArray(arrayBody, &arrayOut); err != nil {
+	if err := UnmarshalAsArray(arrayBody, &arrayOut); err != nil {
 		t.Fatal(err)
 	}
 	if arrayOut != v {
@@ -213,7 +213,7 @@ func TestInt(t *testing.T) {
 	{
 		var r testingInt
 		r.I = 1234
-		err := msgpack.UnmarshalAsArray([]byte{0x91, def.Nil}, &r)
+		err := UnmarshalAsArray([]byte{0x91, def.Nil}, &r)
 		if err != nil {
 			t.Error(err)
 		}
@@ -221,7 +221,7 @@ func TestInt(t *testing.T) {
 			t.Errorf("not equal %v", r)
 		}
 
-		err = msgpack.UnmarshalAsArray([]byte{0x91, def.True}, &r)
+		err = UnmarshalAsArray([]byte{0x91, def.True}, &r)
 		if err == nil || !strings.Contains(err.Error(), "AsInt") {
 			t.Error("something wrong", err)
 		}
@@ -229,12 +229,12 @@ func TestInt(t *testing.T) {
 	{
 		var r testingInt
 		f32 := testingFloat32{F: 2.345}
-		b, err := msgpack.MarshalAsArray(f32)
+		b, err := MarshalAsArray(f32)
 		if err != nil {
 			t.Error(err)
 		}
 
-		err = msgpack.UnmarshalAsArray(b, &r)
+		err = UnmarshalAsArray(b, &r)
 		if err != nil {
 			t.Error(err)
 		}
@@ -247,12 +247,12 @@ func TestInt(t *testing.T) {
 	{
 		var r testingInt
 		f64 := testingFloat64{F: 6.789}
-		b, err := msgpack.MarshalAsArray(f64)
+		b, err := MarshalAsArray(f64)
 		if err != nil {
 			t.Error(err)
 		}
 
-		err = msgpack.UnmarshalAsArray(b, &r)
+		err = UnmarshalAsArray(b, &r)
 		if err != nil {
 			t.Error(err)
 		}
@@ -288,11 +288,11 @@ func TestUint(t *testing.T) {
 	{
 		vv := inside{Int: -1}
 		var r testingUint
-		b, err := msgpack.MarshalAsArray(vv)
+		b, err := MarshalAsArray(vv)
 		if err != nil {
 			t.Error(err)
 		}
-		err = msgpack.UnmarshalAsArray(b, &r)
+		err = UnmarshalAsArray(b, &r)
 		if err != nil {
 			t.Error(err)
 		}
@@ -304,11 +304,11 @@ func TestUint(t *testing.T) {
 	{
 		vv := inside{Int: math.MinInt8}
 		var r testingUint
-		b, err := msgpack.MarshalAsArray(vv)
+		b, err := MarshalAsArray(vv)
 		if err != nil {
 			t.Error(err)
 		}
-		err = msgpack.UnmarshalAsArray(b, &r)
+		err = UnmarshalAsArray(b, &r)
 		if err != nil {
 			t.Error(err)
 		}
@@ -320,11 +320,11 @@ func TestUint(t *testing.T) {
 	{
 		vv := inside{Int: math.MinInt16}
 		var r testingUint
-		b, err := msgpack.MarshalAsArray(vv)
+		b, err := MarshalAsArray(vv)
 		if err != nil {
 			t.Error(err)
 		}
-		err = msgpack.UnmarshalAsArray(b, &r)
+		err = UnmarshalAsArray(b, &r)
 		if err != nil {
 			t.Error(err)
 		}
@@ -336,11 +336,11 @@ func TestUint(t *testing.T) {
 	{
 		vv := inside{Int: math.MinInt32}
 		var r testingUint
-		b, err := msgpack.MarshalAsArray(vv)
+		b, err := MarshalAsArray(vv)
 		if err != nil {
 			t.Error(err)
 		}
-		err = msgpack.UnmarshalAsArray(b, &r)
+		err = UnmarshalAsArray(b, &r)
 		if err != nil {
 			t.Error(err)
 		}
@@ -351,11 +351,11 @@ func TestUint(t *testing.T) {
 	{
 		vv := inside{Int: math.MinInt32 - 1}
 		var r testingUint
-		b, err := msgpack.MarshalAsArray(vv)
+		b, err := MarshalAsArray(vv)
 		if err != nil {
 			t.Error(err)
 		}
-		err = msgpack.UnmarshalAsArray(b, &r)
+		err = UnmarshalAsArray(b, &r)
 		if err != nil {
 			t.Error(err)
 		}
@@ -366,7 +366,7 @@ func TestUint(t *testing.T) {
 	{
 		var r testingUint
 		r.U = 1234
-		err := msgpack.UnmarshalAsArray([]byte{0x91, def.Nil}, &r)
+		err := UnmarshalAsArray([]byte{0x91, def.Nil}, &r)
 		if err != nil {
 			t.Error(err)
 		}
@@ -374,7 +374,7 @@ func TestUint(t *testing.T) {
 			t.Errorf("not equal %v", r)
 		}
 
-		err = msgpack.UnmarshalAsArray([]byte{0x91, def.True}, &r)
+		err = UnmarshalAsArray([]byte{0x91, def.True}, &r)
 		if err == nil {
 			t.Errorf("error must occur")
 		}
@@ -405,11 +405,11 @@ func TestFloat(t *testing.T) {
 	{
 		vv := inside{Int: 1}
 		var r testingFloat32
-		b, err := msgpack.MarshalAsArray(vv)
+		b, err := MarshalAsArray(vv)
 		if err != nil {
 			t.Error(err)
 		}
-		err = msgpack.UnmarshalAsArray(b, &r)
+		err = UnmarshalAsArray(b, &r)
 		if err != nil {
 			t.Error(err)
 		}
@@ -420,11 +420,11 @@ func TestFloat(t *testing.T) {
 	{
 		vv := inside{Int: -1}
 		var r testingFloat32
-		b, err := msgpack.MarshalAsArray(vv)
+		b, err := MarshalAsArray(vv)
 		if err != nil {
 			t.Error(err)
 		}
-		err = msgpack.UnmarshalAsArray(b, &r)
+		err = UnmarshalAsArray(b, &r)
 		if err != nil {
 			t.Error(err)
 		}
@@ -436,11 +436,11 @@ func TestFloat(t *testing.T) {
 	{
 		vv := inside{Int: 1}
 		var r testingFloat64
-		b, err := msgpack.MarshalAsArray(vv)
+		b, err := MarshalAsArray(vv)
 		if err != nil {
 			t.Error(err)
 		}
-		err = msgpack.UnmarshalAsArray(b, &r)
+		err = UnmarshalAsArray(b, &r)
 		if err != nil {
 			t.Error(err)
 		}
@@ -451,11 +451,11 @@ func TestFloat(t *testing.T) {
 	{
 		vv := inside{Int: -1}
 		var r testingFloat64
-		b, err := msgpack.MarshalAsArray(vv)
+		b, err := MarshalAsArray(vv)
 		if err != nil {
 			t.Error(err)
 		}
-		err = msgpack.UnmarshalAsArray(b, &r)
+		err = UnmarshalAsArray(b, &r)
 		if err != nil {
 			t.Error(err)
 		}
@@ -466,11 +466,11 @@ func TestFloat(t *testing.T) {
 	{
 		vv := testingFloat32{F: 1.23}
 		var r testingFloat64
-		b, err := msgpack.MarshalAsArray(vv)
+		b, err := MarshalAsArray(vv)
 		if err != nil {
 			t.Error(err)
 		}
-		err = msgpack.UnmarshalAsArray(b, &r)
+		err = UnmarshalAsArray(b, &r)
 		if err != nil {
 			t.Error(err)
 		}
@@ -480,7 +480,7 @@ func TestFloat(t *testing.T) {
 	}
 	{
 		var r testingFloat32
-		err := msgpack.UnmarshalAsArray([]byte{0x91, def.Nil}, &r)
+		err := UnmarshalAsArray([]byte{0x91, def.Nil}, &r)
 		if err != nil {
 			t.Error(err)
 		}
@@ -490,7 +490,7 @@ func TestFloat(t *testing.T) {
 	}
 	{
 		var r testingFloat64
-		err := msgpack.UnmarshalAsArray([]byte{0x91, def.Nil}, &r)
+		err := UnmarshalAsArray([]byte{0x91, def.Nil}, &r)
 		if err != nil {
 			t.Error(err)
 		}
@@ -500,7 +500,7 @@ func TestFloat(t *testing.T) {
 	}
 	{
 		var r testingFloat32
-		err := msgpack.UnmarshalAsArray([]byte{0x91, def.True}, &r)
+		err := UnmarshalAsArray([]byte{0x91, def.True}, &r)
 		if err == nil {
 			t.Errorf("error must occur")
 		}
@@ -510,7 +510,7 @@ func TestFloat(t *testing.T) {
 	}
 	{
 		var r testingFloat64
-		err := msgpack.UnmarshalAsArray([]byte{0x91, def.True}, &r)
+		err := UnmarshalAsArray([]byte{0x91, def.True}, &r)
 		if err == nil {
 			t.Errorf("error must occur")
 		}
@@ -546,7 +546,7 @@ func TestString(t *testing.T) {
 	{
 		var r testingString
 		r.S = "setset"
-		err := msgpack.UnmarshalAsArray([]byte{0x91, def.Nil}, &r)
+		err := UnmarshalAsArray([]byte{0x91, def.Nil}, &r)
 		if err != nil {
 			t.Error(err)
 		}
@@ -554,7 +554,7 @@ func TestString(t *testing.T) {
 			t.Errorf("not equal %v", r)
 		}
 
-		err = msgpack.UnmarshalAsArray([]byte{0x91, def.True}, &r)
+		err = UnmarshalAsArray([]byte{0x91, def.True}, &r)
 		if err == nil || !strings.Contains(err.Error(), "StringByteLength") {
 			t.Error("something wrong", err)
 		}
@@ -582,14 +582,14 @@ func TestByteRune(t *testing.T) {
 	{
 		var r testingBool
 		r.B = true
-		err := msgpack.UnmarshalAsArray([]byte{0x91, def.Nil}, &r)
+		err := UnmarshalAsArray([]byte{0x91, def.Nil}, &r)
 		if err != nil {
 			t.Error(err)
 		}
 		if r.B != false {
 			t.Errorf("not equal %v", r)
 		}
-		err = msgpack.UnmarshalAsArray([]byte{0x91, def.Uint8, 0x01}, &r)
+		err = UnmarshalAsArray([]byte{0x91, def.Uint8, 0x01}, &r)
 		if err == nil {
 			t.Errorf("error must occur")
 		}
@@ -616,11 +616,11 @@ func TestComplex(t *testing.T) {
 		t.Error(err)
 	}
 
-	b64, err := msgpack.MarshalAsArray(testingComplex64{})
+	b64, err := MarshalAsArray(testingComplex64{})
 	if err != nil {
 		t.Error(err)
 	}
-	b128, err := msgpack.MarshalAsArray(testingComplex128{})
+	b128, err := MarshalAsArray(testingComplex128{})
 	if err != nil {
 		t.Error(err)
 	}
@@ -629,11 +629,11 @@ func TestComplex(t *testing.T) {
 
 	{
 		var r testingComplex64
-		err = msgpack.UnmarshalAsArray(b64, &r)
+		err = UnmarshalAsArray(b64, &r)
 		if err == nil || !strings.Contains(err.Error(), "fixext8") {
 			t.Error(err)
 		}
-		err := msgpack.UnmarshalAsArray([]byte{0x91, def.True}, &r)
+		err := UnmarshalAsArray([]byte{0x91, def.True}, &r)
 		if err == nil {
 			t.Errorf("error must occur")
 		}
@@ -643,11 +643,11 @@ func TestComplex(t *testing.T) {
 	}
 	{
 		var r testingComplex128
-		err = msgpack.UnmarshalAsArray(b128, &r)
+		err = UnmarshalAsArray(b128, &r)
 		if err == nil || !strings.Contains(err.Error(), "fixext16") {
 			t.Error(err)
 		}
-		err := msgpack.UnmarshalAsArray([]byte{0x91, def.True}, &r)
+		err := UnmarshalAsArray([]byte{0x91, def.True}, &r)
 		if err == nil {
 			t.Errorf("error must occur")
 		}
@@ -692,7 +692,7 @@ func TestMap(t *testing.T) {
 
 	{
 		var r testingMap
-		err := msgpack.UnmarshalAsArray([]byte{0x91, def.True}, &r)
+		err := UnmarshalAsArray([]byte{0x91, def.True}, &r)
 		if err == nil {
 			t.Errorf("error must occur")
 		}
@@ -833,12 +833,12 @@ func TestPointerValue(t *testing.T) {
 func TestTime(t *testing.T) {
 	{
 		v := testingTime{Time: time.Now()}
-		b, err := msgpack.Marshal(v)
+		b, err := Marshal(v)
 		if err != nil {
 			t.Error(err)
 		}
 		var vv testingTime
-		err = msgpack.Unmarshal(b, &vv)
+		err = Unmarshal(b, &vv)
 		if err != nil {
 			t.Error(err)
 		}
@@ -848,12 +848,12 @@ func TestTime(t *testing.T) {
 	}
 	{
 		vv := testingTime{}
-		b, err := msgpack.MarshalAsArray(vv)
+		b, err := MarshalAsArray(vv)
 		if err != nil {
 			t.Error(err)
 		}
 		var vvv testingTime
-		err = msgpack.UnmarshalAsArray(b, &vvv)
+		err = UnmarshalAsArray(b, &vvv)
 		if err != nil {
 			t.Error(err)
 		}
@@ -863,12 +863,12 @@ func TestTime(t *testing.T) {
 	}
 	{
 		v := define2.AA{Time: time.Now()}
-		b, err := msgpack.Marshal(v)
+		b, err := Marshal(v)
 		if err != nil {
 			t.Error(err)
 		}
 		var vv define2.AA
-		err = msgpack.Unmarshal(b, &vv)
+		err = Unmarshal(b, &vv)
 		if err != nil {
 			t.Error(err)
 		}
@@ -883,7 +883,7 @@ func TestTime(t *testing.T) {
 
 		var r testingTime
 		c := def.TimeStamp
-		err := msgpack.UnmarshalAsArray(append([]byte{def.FixArray + 1, def.Fixext4, byte(c)}, nowByte...), &r)
+		err := UnmarshalAsArray(append([]byte{def.FixArray + 1, def.Fixext4, byte(c)}, nowByte...), &r)
 		if err != nil {
 			t.Error(err)
 		}
@@ -891,27 +891,27 @@ func TestTime(t *testing.T) {
 			t.Error("different time", r.Time.Unix(), now, nowByte)
 		}
 
-		_, err = msgpack.MarshalAsArray(r)
+		_, err = MarshalAsArray(r)
 		if err != nil {
 			t.Error(err)
 		}
 
-		err = msgpack.UnmarshalAsArray(append([]byte{def.FixArray + 1, def.Fixext4, 3}, nowByte...), &r)
+		err = UnmarshalAsArray(append([]byte{def.FixArray + 1, def.Fixext4, 3}, nowByte...), &r)
 		if err == nil || !strings.Contains(err.Error(), "fixext4. time type is different") {
 			t.Error("something wrong", err)
 		}
 
-		err = msgpack.UnmarshalAsArray([]byte{def.FixArray + 1, def.Fixext8, 3}, &r)
+		err = UnmarshalAsArray([]byte{def.FixArray + 1, def.Fixext8, 3}, &r)
 		if err == nil || !strings.Contains(err.Error(), "fixext8. time type is different") {
 			t.Error("something wrong", err)
 		}
 
-		err = msgpack.UnmarshalAsArray([]byte{def.FixArray + 1, def.Ext8, 11}, &r)
+		err = UnmarshalAsArray([]byte{def.FixArray + 1, def.Ext8, 11}, &r)
 		if err == nil || !strings.Contains(err.Error(), "ext8. time ext length is different") {
 			t.Error("something wrong", err)
 		}
 
-		err = msgpack.UnmarshalAsArray([]byte{def.FixArray + 1, def.Ext8, 12, 3}, &r)
+		err = UnmarshalAsArray([]byte{def.FixArray + 1, def.Ext8, 12, 3}, &r)
 		if err == nil || !strings.Contains(err.Error(), "ext8. time type is different") {
 			t.Error("something wrong", err)
 		}
@@ -921,7 +921,7 @@ func TestTime(t *testing.T) {
 			nanoByte[i] = 0xff
 		}
 		b := append([]byte{def.FixArray + 1, def.Fixext8, byte(c)}, nanoByte...)
-		err = msgpack.UnmarshalAsArray(b, &r)
+		err = UnmarshalAsArray(b, &r)
 		if err == nil || !strings.Contains(err.Error(), "in timestamp 64 formats") {
 			t.Error(err)
 		}
@@ -931,12 +931,12 @@ func TestTime(t *testing.T) {
 			nanoByte[i] = 0xff
 		}
 		b = append([]byte{def.FixArray + 1, def.Ext8, byte(12), byte(c)}, nanoByte...)
-		err = msgpack.UnmarshalAsArray(b, &r)
+		err = UnmarshalAsArray(b, &r)
 		if err == nil || !strings.Contains(err.Error(), "in timestamp 96 formats") {
 			t.Error(err)
 		}
 
-		err = msgpack.UnmarshalAsArray([]byte{def.FixArray + 1, def.Fixext1}, &r)
+		err = UnmarshalAsArray([]byte{def.FixArray + 1, def.Fixext1}, &r)
 		if err == nil || !strings.Contains(err.Error(), "AsDateTime") {
 			t.Error("something wrong", err)
 		}
@@ -959,13 +959,13 @@ func TestTimeDecodeDefaultsToUTC(t *testing.T) {
 	}{
 		{
 			name:      "generated array",
-			marshal:   func(v testingTime) ([]byte, error) { return msgpack.MarshalAsArray(v) },
-			unmarshal: func(b []byte, v *testingTime) error { return msgpack.UnmarshalAsArray(b, v) },
+			marshal:   func(v testingTime) ([]byte, error) { return MarshalAsArray(v) },
+			unmarshal: func(b []byte, v *testingTime) error { return UnmarshalAsArray(b, v) },
 		},
 		{
 			name:      "generated map",
-			marshal:   func(v testingTime) ([]byte, error) { return msgpack.MarshalAsMap(v) },
-			unmarshal: func(b []byte, v *testingTime) error { return msgpack.UnmarshalAsMap(b, v) },
+			marshal:   func(v testingTime) ([]byte, error) { return MarshalAsMap(v) },
+			unmarshal: func(b []byte, v *testingTime) error { return UnmarshalAsMap(b, v) },
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1017,7 +1017,7 @@ func TestGeneratedTimeDecodeReturnsErrorForTruncatedInput(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var r testingTime
-			err := msgpack.UnmarshalAsArray(tt.data, &r)
+			err := UnmarshalAsArray(tt.data, &r)
 			if !errors.Is(err, def.ErrTooShortBytes) {
 				t.Fatalf("error = %v, want %v", err, def.ErrTooShortBytes)
 			}
@@ -1036,7 +1036,7 @@ func TestGeneratedDecodeReturnsErrorForMalformedInput(t *testing.T) {
 			data: []byte{def.FixArray + 1, def.Uint16},
 			fn: func(data []byte) error {
 				var r testingInt
-				return msgpack.UnmarshalAsArray(data, &r)
+				return UnmarshalAsArray(data, &r)
 			},
 		},
 		{
@@ -1044,7 +1044,7 @@ func TestGeneratedDecodeReturnsErrorForMalformedInput(t *testing.T) {
 			data: []byte{def.FixArray + 1, def.Str8, 2, 'a'},
 			fn: func(data []byte) error {
 				var r testingString
-				return msgpack.UnmarshalAsArray(data, &r)
+				return UnmarshalAsArray(data, &r)
 			},
 		},
 		{
@@ -1052,7 +1052,7 @@ func TestGeneratedDecodeReturnsErrorForMalformedInput(t *testing.T) {
 			data: []byte{def.FixArray + 1, def.Array16, 0},
 			fn: func(data []byte) error {
 				var r testingSlice
-				return msgpack.UnmarshalAsArray(data, &r)
+				return UnmarshalAsArray(data, &r)
 			},
 		},
 		{
@@ -1060,7 +1060,7 @@ func TestGeneratedDecodeReturnsErrorForMalformedInput(t *testing.T) {
 			data: []byte{def.FixArray + 1, def.Map16, 0},
 			fn: func(data []byte) error {
 				var r testingMap
-				return msgpack.UnmarshalAsArray(data, &r)
+				return UnmarshalAsArray(data, &r)
 			},
 		},
 		{
@@ -1068,7 +1068,7 @@ func TestGeneratedDecodeReturnsErrorForMalformedInput(t *testing.T) {
 			data: []byte{def.FixArray + 2},
 			fn: func(data []byte) error {
 				var r testingTimePointer
-				return msgpack.UnmarshalAsArray(data, &r)
+				return UnmarshalAsArray(data, &r)
 			},
 		},
 		{
@@ -1076,7 +1076,7 @@ func TestGeneratedDecodeReturnsErrorForMalformedInput(t *testing.T) {
 			data: []byte{def.FixArray + 1},
 			fn: func(data []byte) error {
 				var r testingSlice
-				return msgpack.UnmarshalAsArray(data, &r)
+				return UnmarshalAsArray(data, &r)
 			},
 		},
 		{
@@ -1084,7 +1084,7 @@ func TestGeneratedDecodeReturnsErrorForMalformedInput(t *testing.T) {
 			data: []byte{def.FixMap + 1, def.FixStr + 5, 'S', 'l', 'i', 'c', 'e'},
 			fn: func(data []byte) error {
 				var r testingSlice
-				return msgpack.UnmarshalAsMap(data, &r)
+				return UnmarshalAsMap(data, &r)
 			},
 		},
 		{
@@ -1092,7 +1092,7 @@ func TestGeneratedDecodeReturnsErrorForMalformedInput(t *testing.T) {
 			data: []byte{def.FixArray + 1, def.Fixext8, byte(def.ComplexTypeCode()), 0},
 			fn: func(data []byte) error {
 				var r testingComplex64
-				return msgpack.UnmarshalAsArray(data, &r)
+				return UnmarshalAsArray(data, &r)
 			},
 		},
 		{
@@ -1100,7 +1100,7 @@ func TestGeneratedDecodeReturnsErrorForMalformedInput(t *testing.T) {
 			data: []byte{def.FixMap + 1, def.FixStr + 1, 'I', def.Uint16},
 			fn: func(data []byte) error {
 				var r testingInt
-				return msgpack.UnmarshalAsMap(data, &r)
+				return UnmarshalAsMap(data, &r)
 			},
 		},
 		{
@@ -1108,7 +1108,7 @@ func TestGeneratedDecodeReturnsErrorForMalformedInput(t *testing.T) {
 			data: []byte{def.Map16, 0},
 			fn: func(data []byte) error {
 				var r testingInt
-				return msgpack.UnmarshalAsMap(data, &r)
+				return UnmarshalAsMap(data, &r)
 			},
 		},
 	}
@@ -1127,12 +1127,12 @@ func TestTimePointer(t *testing.T) {
 	now := time.Now()
 	add := now.Add(1 * time.Minute)
 	v := testingTimePointer{Time: &add}
-	b, err := msgpack.Marshal(v)
+	b, err := Marshal(v)
 	if err != nil {
 		t.Error(err)
 	}
 	var r testingTimePointer
-	err = msgpack.Unmarshal(b, &r)
+	err = Unmarshal(b, &r)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1141,12 +1141,12 @@ func TestTimePointer(t *testing.T) {
 	}
 
 	vv := testingTimePointer{}
-	b, err = msgpack.MarshalAsArray(vv)
+	b, err = MarshalAsArray(vv)
 	if err != nil {
 		t.Error(err)
 	}
 	var rr testingTimePointer
-	err = msgpack.UnmarshalAsArray(b, &rr)
+	err = UnmarshalAsArray(b, &rr)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1292,7 +1292,7 @@ func TestSlice(t *testing.T) {
 
 	v = testingValue{}
 	v.Bytes = make([]byte, math.MaxUint32+1)
-	_, err := msgpack.MarshalAsArray(v)
+	_, err := MarshalAsArray(v)
 	if err == nil || !strings.Contains(err.Error(), "not support this array length") {
 		t.Error("something wrong", err)
 	}
@@ -1300,7 +1300,7 @@ func TestSlice(t *testing.T) {
 
 	{
 		var r testingSlice
-		err = msgpack.UnmarshalAsArray([]byte{0x91, def.True}, &r)
+		err = UnmarshalAsArray([]byte{0x91, def.True}, &r)
 		if err == nil {
 			t.Errorf("error must occur")
 		}
@@ -1311,7 +1311,7 @@ func TestSlice(t *testing.T) {
 	//{ windows panic...
 	//	vv := testingSlice{}
 	//	vv.Slice = make([]int8, math.MaxUint32+1)
-	//	_, err := msgpack.MarshalAsArray(v)
+	//	_, err := MarshalAsArray(v)
 	//	if err == nil || !strings.Contains(err.Error(), "not support this array length") {
 	//		t.Error("something wrong", err)
 	//	}
@@ -1524,12 +1524,12 @@ func TestStruct(t *testing.T) {
 	{
 		b1 := []byte{def.Array32, 0x00, 0x00, 0x00, 0x02}
 		var r inside
-		err := msgpack.UnmarshalAsArray(b1, &r)
+		err := UnmarshalAsArray(b1, &r)
 		if err == nil || !strings.Contains(err.Error(), "data length wrong") {
 			t.Error("something wrong", err)
 		}
 		b2 := []byte{def.Map32, 0x00, 0x00, 0x00, 0x02}
-		err = msgpack.UnmarshalAsArray(b2, &r)
+		err = UnmarshalAsArray(b2, &r)
 		if err == nil || !strings.Contains(err.Error(), "data length wrong") {
 			t.Error("something wrong", err)
 		}
@@ -1625,13 +1625,13 @@ func TestPointer(t *testing.T) {
 	//// NG
 	// encode triple pointer
 	b5, b6, err1, err2 := marshal(&v3, &v4)
-	if err1 != nil && !strings.Contains(err1.Error(), "strict") {
+	if err1 != nil && !errors.Is(err1, msgpack.ErrUndefinedType) {
 		t.Error(err1)
 	}
 	if err1 == nil {
 		t.Error("error should occur at marshalling v3 pointer")
 	}
-	if err2 != nil && !strings.Contains(err2.Error(), "strict") {
+	if err2 != nil && !errors.Is(err2, msgpack.ErrUndefinedType) {
 		t.Error(err2)
 	}
 	if err2 == nil {
@@ -1643,13 +1643,13 @@ func TestPointer(t *testing.T) {
 	v5p, v6p := &v5pp, &v6pp
 	v5, v6 := &v5p, &v6p
 	err1, err2 = unmarshal(b5, b6, &v5, &v6)
-	if err1 != nil && !strings.Contains(err1.Error(), "strict") {
+	if err1 != nil && !errors.Is(err1, msgpack.ErrUndefinedType) {
 		t.Error(err1)
 	}
 	if err1 == nil {
 		t.Error("error should occur at unmarshalling b5 pointer")
 	}
-	if err2 != nil && !strings.Contains(err2.Error(), "strict") {
+	if err2 != nil && !errors.Is(err2, msgpack.ErrUndefinedType) {
 		t.Error(err2)
 	}
 	if err2 == nil {
@@ -1753,13 +1753,13 @@ func forCoverage(v1, v2, v3, v4 any) error {
 
 func checkUndefined(m1, m2, u1, u2 any) error {
 	b1, b2, err1, err2 := marshal(m1, m2)
-	if err1 != nil && !strings.Contains(err1.Error(), "use strict option") {
+	if err1 != nil && !errors.Is(err1, msgpack.ErrUndefinedType) {
 		return fmt.Errorf("check undefined: marshal to b1 error %v", err1)
 	}
 	if err1 == nil {
 		return fmt.Errorf("check undefined: error should occur at marshalling m1")
 	}
-	if err2 != nil && !strings.Contains(err2.Error(), "use strict option") {
+	if err2 != nil && !errors.Is(err2, msgpack.ErrUndefinedType) {
 		return fmt.Errorf("check undefined: marshal to b2 error %v", err2)
 	}
 	if err2 == nil {
@@ -1767,13 +1767,13 @@ func checkUndefined(m1, m2, u1, u2 any) error {
 	}
 
 	err1, err2 = unmarshal(b1, b2, u1, u2)
-	if err1 != nil && !strings.Contains(err1.Error(), "use strict option") {
+	if err1 != nil && !errors.Is(err1, msgpack.ErrUndefinedType) {
 		return fmt.Errorf("check undefined: unmarshal to u1 error %v", err1)
 	}
 	if err1 == nil {
 		return fmt.Errorf("check undefined: error should occur at unmarshalling u1")
 	}
-	if err2 != nil && !strings.Contains(err2.Error(), "use strict option") {
+	if err2 != nil && !errors.Is(err2, msgpack.ErrUndefinedType) {
 		return fmt.Errorf("ucheck undefined: unmarshal to u2 error %v", err2)
 	}
 	if err2 == nil {
@@ -1783,11 +1783,11 @@ func checkUndefined(m1, m2, u1, u2 any) error {
 }
 
 func marshal(v1, v2 any) ([]byte, []byte, error, error) {
-	b1, e1 := msgpack.Marshal(v1)
-	b2, e2 := msgpack.MarshalAsArray(v2)
+	b1, e1 := Marshal(v1)
+	b2, e2 := MarshalAsArray(v2)
 	return b1, b2, e1, e2
 }
 
 func unmarshal(b1, b2 []byte, v1, v2 any) (error, error) {
-	return msgpack.Unmarshal(b1, v1), msgpack.UnmarshalAsArray(b2, v2)
+	return Unmarshal(b1, v1), UnmarshalAsArray(b2, v2)
 }

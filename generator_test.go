@@ -22,15 +22,14 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	testBeforeRegister()
-	RegisterGeneratedResolver()
+	testFallbackRuntime()
 
 	code := m.Run()
 
 	os.Exit(code)
 }
 
-func testBeforeRegister() {
+func testFallbackRuntime() {
 	{
 		v := rand.Int()
 		b, err := msgpack.Marshal(v)
@@ -235,7 +234,11 @@ func TestGenerateCodeOK(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	goPath := strings.SplitN(filepath.ToSlash(wd), "/src", 2)[0]
+	slashWD := filepath.ToSlash(wd)
+	if !strings.Contains(slashWD, "/src/") {
+		return
+	}
+	goPath := strings.SplitN(slashWD, "/src", 2)[0]
 	err = os.Setenv("GOPATH", filepath.FromSlash(goPath))
 	if err != nil {
 		t.Fatal(err)
@@ -249,9 +252,9 @@ func TestGenerateCodeOK(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !strings.Contains(string(generated), ".IsCodeNilChecked(") {
-		t.Fatal("generated resolver must use IsCodeNilChecked")
+		t.Fatal("generated code must use IsCodeNilChecked")
 	}
 	if strings.Contains(string(generated), ".IsCodeNil(") {
-		t.Fatal("generated resolver must not use legacy IsCodeNil")
+		t.Fatal("generated code must not use legacy IsCodeNil")
 	}
 }
