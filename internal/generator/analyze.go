@@ -432,9 +432,10 @@ func (g *generator) createAnalyzedFields(packageName, structName string, include
 					}
 					continue
 				}
-				if tag == "ignore" || tag == "-" {
+				switch tag {
+				case "ignore", "-":
 					ignore = true
-				} else if tag == "omitempty" {
+				case "omitempty":
 					omitEmpty = true
 				}
 			}
