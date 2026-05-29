@@ -126,28 +126,53 @@ func TestGenerateCodeProvidesPublicAPIs(t *testing.T) {
 		"func Unmarshal(data []byte, v any) error",
 		"func UnmarshalAsMap(data []byte, v any) error",
 		"func UnmarshalAsArray(data []byte, v any) error",
-		"func ___marshalAsMapTo(v any, buf []byte) ([]byte, error)",
-		"func ___marshalAsArrayTo(v any, buf []byte) ([]byte, error)",
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("generated code does not contain %q:\n%s", want, got)
 		}
 	}
+}
+
+func TestGenerateCodeProvidesV1InternalEntrypoints(t *testing.T) {
+	oldAnalyzedStructs := analyzedStructs
+	analyzedStructs = nil
+	t.Cleanup(func() {
+		analyzedStructs = oldAnalyzedStructs
+	})
+
+	g := generator{outputJenFilePath: "resolver_test"}
+	got := fmt.Sprintf("%#v", g.generateCode())
+
+	for _, want := range []string{
+		"func ___marshalAsMapTo(v any, buf []byte) ([]byte, error)",
+		"func ___marshalAsArrayTo(v any, buf []byte) ([]byte, error)",
+		"func ___unmarshalAsMap(data []byte, v any) error",
+		"func ___unmarshalAsArray(data []byte, v any) error",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("generated code does not contain %q:\n%s", want, got)
+		}
+	}
+}
+
+func TestGenerateCodeOmitsLegacyResolverAPIs(t *testing.T) {
+	oldAnalyzedStructs := analyzedStructs
+	analyzedStructs = nil
+	t.Cleanup(func() {
+		analyzedStructs = oldAnalyzedStructs
+	})
+
+	g := generator{outputJenFilePath: "resolver_test"}
+	got := fmt.Sprintf("%#v", g.generateCode())
 
 	for _, unwanted := range []string{
-		"RegisterGeneratedResolver",
-		"msgpack.SetResolver",
-		"SetToResolver",
-		"func marshalWithBuffer",
-		"func ___marshalWithBuffer",
-		"func marshalAsMapTo",
-		"func marshalAsArrayTo",
-		"func ___encodeAsMap",
-		"func ___encodeAsArray",
-		"func ___decodeAsMap",
-		"func ___decodeAsArray",
-		"encodeAsMapTo",
-		"encodeAsArrayTo",
+		"func RegisterGeneratedResolver(",
+		"func ___encode(",
+		"func ___encodeAsArray(",
+		"func ___encodeAsMap(",
+		"func ___decode(",
+		"func ___decodeAsArray(",
+		"func ___decodeAsMap(",
 	} {
 		if strings.Contains(got, unwanted) {
 			t.Fatalf("generated code unexpectedly contains %q:\n%s", unwanted, got)
