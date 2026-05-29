@@ -38,7 +38,7 @@ func (d *Decoder) AsInt64(offset int) (int64, int, error) {
 func (d *Decoder) asInt(offset int) (int64, int, error) {
 
 	start := offset
-	code, offset, err := d.readSize1Checked(offset)
+	code, offset, err := d.readSize1(offset)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -51,21 +51,21 @@ func (d *Decoder) asInt(offset int) (int64, int, error) {
 		return int64(int8(code)), offset, nil
 
 	case code == def.Uint8:
-		b, offset, err := d.readSize1Checked(offset)
+		b, offset, err := d.readSize1(offset)
 		if err != nil {
 			return 0, 0, err
 		}
 		return int64(uint8(b)), offset, nil
 
 	case code == def.Int8:
-		b, offset, err := d.readSize1Checked(offset)
+		b, offset, err := d.readSize1(offset)
 		if err != nil {
 			return 0, 0, err
 		}
 		return int64(int8(b)), offset, nil
 
 	case code == def.Uint16:
-		bs, offset, err := d.readSize2Checked(offset)
+		bs, offset, err := d.readSize2(offset)
 		if err != nil {
 			return 0, 0, err
 		}
@@ -73,7 +73,7 @@ func (d *Decoder) asInt(offset int) (int64, int, error) {
 		return int64(v), offset, nil
 
 	case code == def.Int16:
-		bs, offset, err := d.readSize2Checked(offset)
+		bs, offset, err := d.readSize2(offset)
 		if err != nil {
 			return 0, 0, err
 		}
@@ -81,7 +81,7 @@ func (d *Decoder) asInt(offset int) (int64, int, error) {
 		return int64(v), offset, nil
 
 	case code == def.Uint32:
-		bs, offset, err := d.readSize4Checked(offset)
+		bs, offset, err := d.readSize4(offset)
 		if err != nil {
 			return 0, 0, err
 		}
@@ -89,7 +89,7 @@ func (d *Decoder) asInt(offset int) (int64, int, error) {
 		return int64(v), offset, nil
 
 	case code == def.Int32:
-		bs, offset, err := d.readSize4Checked(offset)
+		bs, offset, err := d.readSize4(offset)
 		if err != nil {
 			return 0, 0, err
 		}
@@ -97,14 +97,14 @@ func (d *Decoder) asInt(offset int) (int64, int, error) {
 		return int64(v), offset, nil
 
 	case code == def.Uint64:
-		bs, offset, err := d.readSize8Checked(offset)
+		bs, offset, err := d.readSize8(offset)
 		if err != nil {
 			return 0, 0, err
 		}
 		return int64(binary.BigEndian.Uint64(bs)), offset, nil
 
 	case code == def.Int64:
-		bs, offset, err := d.readSize8Checked(offset)
+		bs, offset, err := d.readSize8(offset)
 		if err != nil {
 			return 0, 0, err
 		}

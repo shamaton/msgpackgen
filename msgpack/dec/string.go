@@ -19,7 +19,7 @@ func (d *Decoder) AsString(offset int) (string, int, error) {
 }
 
 func (d *Decoder) AsStringBytes(offset int) ([]byte, int, error) {
-	code, offset, err := d.readSize1Checked(offset)
+	code, offset, err := d.readSize1(offset)
 	if err != nil {
 		return emptyBytes, 0, err
 	}
@@ -28,21 +28,21 @@ func (d *Decoder) AsStringBytes(offset int) ([]byte, int, error) {
 	if d.isFixString(code) {
 		l = int(code - def.FixStr)
 	} else if code == def.Str8 {
-		b, next, err := d.readSize1Checked(offset)
+		b, next, err := d.readSize1(offset)
 		if err != nil {
 			return emptyBytes, 0, err
 		}
 		l = int(b)
 		offset = next
 	} else if code == def.Str16 {
-		b, next, err := d.readSize2Checked(offset)
+		b, next, err := d.readSize2(offset)
 		if err != nil {
 			return emptyBytes, 0, err
 		}
 		l = int(binary.BigEndian.Uint16(b))
 		offset = next
 	} else if code == def.Str32 {
-		b, next, err := d.readSize4Checked(offset)
+		b, next, err := d.readSize4(offset)
 		if err != nil {
 			return emptyBytes, 0, err
 		}
@@ -58,7 +58,7 @@ func (d *Decoder) AsStringBytes(offset int) ([]byte, int, error) {
 		return emptyBytes, offset, nil
 	}
 
-	bs, offset, err := d.readSizeNChecked(offset, l)
+	bs, offset, err := d.readSizeN(offset, l)
 	if err != nil {
 		return emptyBytes, 0, err
 	}

@@ -10,14 +10,14 @@ import (
 // AsFloat32 checks codes and returns the got bytes as float32
 func (d *Decoder) AsFloat32(offset int) (float32, int, error) {
 	start := offset
-	code, offset, err := d.readSize1Checked(offset)
+	code, offset, err := d.readSize1(offset)
 	if err != nil {
 		return 0, 0, err
 	}
 
 	switch {
 	case code == def.Float32:
-		bs, offset, err := d.readSize4Checked(offset)
+		bs, offset, err := d.readSize4(offset)
 		if err != nil {
 			return 0, 0, err
 		}
@@ -47,14 +47,14 @@ func (d *Decoder) AsFloat32(offset int) (float32, int, error) {
 // AsFloat64 checks codes and returns the got bytes as float64
 func (d *Decoder) AsFloat64(offset int) (float64, int, error) {
 	start := offset
-	code, offset, err := d.readSize1Checked(offset)
+	code, offset, err := d.readSize1(offset)
 	if err != nil {
 		return 0, 0, err
 	}
 
 	switch {
 	case code == def.Float64:
-		bs, offset, err := d.readSize8Checked(offset)
+		bs, offset, err := d.readSize8(offset)
 		if err != nil {
 			return 0, 0, err
 		}
@@ -62,7 +62,7 @@ func (d *Decoder) AsFloat64(offset int) (float64, int, error) {
 		return v, offset, nil
 
 	case code == def.Float32:
-		bs, offset, err := d.readSize4Checked(offset)
+		bs, offset, err := d.readSize4(offset)
 		if err != nil {
 			return 0, 0, err
 		}

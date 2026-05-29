@@ -4,7 +4,7 @@ import (
 	"github.com/shamaton/msgpack/v3/def"
 )
 
-func (d *Decoder) readSize1Checked(index int) (byte, int, error) {
+func (d *Decoder) readSize1(index int) (byte, int, error) {
 	rb := def.Byte1
 	if !d.canRead(index, rb) {
 		return 0, 0, def.ErrTooShortBytes
@@ -12,19 +12,19 @@ func (d *Decoder) readSize1Checked(index int) (byte, int, error) {
 	return d.data[index], index + rb, nil
 }
 
-func (d *Decoder) readSize2Checked(index int) ([]byte, int, error) {
-	return d.readSizeNChecked(index, def.Byte2)
+func (d *Decoder) readSize2(index int) ([]byte, int, error) {
+	return d.readSizeN(index, def.Byte2)
 }
 
-func (d *Decoder) readSize4Checked(index int) ([]byte, int, error) {
-	return d.readSizeNChecked(index, def.Byte4)
+func (d *Decoder) readSize4(index int) ([]byte, int, error) {
+	return d.readSizeN(index, def.Byte4)
 }
 
-func (d *Decoder) readSize8Checked(index int) ([]byte, int, error) {
-	return d.readSizeNChecked(index, def.Byte8)
+func (d *Decoder) readSize8(index int) ([]byte, int, error) {
+	return d.readSizeN(index, def.Byte8)
 }
 
-func (d *Decoder) readSizeNChecked(index, n int) ([]byte, int, error) {
+func (d *Decoder) readSizeN(index, n int) ([]byte, int, error) {
 	if !d.canRead(index, n) {
 		return nil, 0, def.ErrTooShortBytes
 	}
