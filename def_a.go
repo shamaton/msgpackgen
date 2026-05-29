@@ -131,6 +131,19 @@ type testingTag struct {
 	Omit   int `msgpack:"-"`
 }
 
+type testingOmitEmpty struct {
+	Keep       int
+	EmptyInt   int              `msgpack:",omitempty"`
+	EmptyNamed string           `msgpack:"empty_named,omitempty"`
+	NonEmpty   string           `msgpack:"non_empty,omitempty"`
+	Slice      []int            `msgpack:",omitempty"`
+	Private    privateOmitEmpty `msgpack:",omitempty"`
+}
+
+type privateOmitEmpty struct {
+	hidden int
+}
+
 type testingStruct struct {
 	Int int
 

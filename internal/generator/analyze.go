@@ -260,7 +260,7 @@ func (g *generator) setFieldToStruct(target *structure.Structure,
 
 			if canGen {
 				target.CanGen = true
-				target.Fields, err = g.createAnalyzedFields(target.Package, target.Name, analyzedFieldMap, g.fileSet, target.File)
+				target.Fields, target.ZeroFields, err = g.createAnalyzedFields(target.Package, target.Name, target.NoUseQual, analyzedFieldMap, g.fileSet, target.File)
 				if err != nil {
 					return false
 				}
@@ -374,7 +374,7 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *structure.Node,
 	return nil, false, []string{"this field is unknown field"}
 }
 
-func (g *generator) createAnalyzedFields(packageName, structName string, analyzedFieldMap map[string]*structure.Node, fset *token.FileSet, file *ast.File) ([]structure.Field, error) {
+func (g *generator) createAnalyzedFields(packageName, structName string, includeUnexportedZeroFields bool, analyzedFieldMap map[string]*structure.Node, fset *token.FileSet, file *ast.File) ([]structure.Field, []structure.Field, error) {
 
 	// todo : should solve import check, but can not solve now
 	//   see below - https://github.com/golang/go/issues/13847
@@ -401,9 +401,18 @@ func (g *generator) createAnalyzedFields(packageName, structName string, analyze
 	internal := obj.Type().Underlying().(*types.Struct)
 
 	analyzedFields := make([]structure.Field, 0)
+	zeroFields := make([]structure.Field, 0)
 	tagNameCheck := map[string]bool{}
 	for i := 0; i < internal.NumFields(); i++ {
 		field := internal.Field(i)
+		name := field.Name()
+		node := analyzedFieldMap[fmt.Sprint(i)+"@"+structName]
+		if field.IsField() && (field.Exported() || includeUnexportedZeroFields) {
+			zeroFields = append(zeroFields, structure.Field{
+				Name: name,
+				Node: node,
+			})
+		}
 
 		// fmt.Println(field.Id(), field.Type(), field.IsField())
 
@@ -411,14 +420,22 @@ func (g *generator) createAnalyzedFields(packageName, structName string, analyze
 			origin, _ := reflect.StructTag(internal.Tag(i)).Lookup("msgpack")
 			tags := strings.Split(origin, ",")
 
-			name := field.Id()
 			tagName := name
 			ignore := false
-			for _, tag := range tags {
+			omitEmpty := false
+			for i, tag := range tags {
+				if i == 0 {
+					if tag == "ignore" || tag == "-" {
+						ignore = true
+					} else if len(tag) > 0 {
+						tagName = tag
+					}
+					continue
+				}
 				if tag == "ignore" || tag == "-" {
 					ignore = true
-				} else if len(tag) > 0 {
-					tagName = tag
+				} else if tag == "omitempty" {
+					omitEmpty = true
 				}
 			}
 
@@ -427,17 +444,18 @@ func (g *generator) createAnalyzedFields(packageName, structName string, analyze
 			}
 
 			if _, found := tagNameCheck[tagName]; found {
-				return nil, fmt.Errorf("duplicate tags %s.%s %s", packageName, structName, tagName)
+				return nil, nil, fmt.Errorf("duplicate tags %s.%s %s", packageName, structName, tagName)
 			}
 			tagNameCheck[tagName] = true
 
 			analyzedFields = append(analyzedFields, structure.Field{
-				Name: name,
-				Tag:  tagName,
-				Node: analyzedFieldMap[fmt.Sprint(i)+"@"+structName],
+				Name:      name,
+				Tag:       tagName,
+				OmitEmpty: omitEmpty,
+				Node:      node,
 			})
 		}
 	}
 
-	return analyzedFields, nil
+	return analyzedFields, zeroFields, nil
 }

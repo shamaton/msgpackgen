@@ -91,6 +91,9 @@ Renaming or omitting are available.
 
 * Renaming fields via `msgpack:"field_name"`
 * Omitting fields via `msgpack:"-"`
+* Omitting zero-value fields from map encoding via `msgpack:",omitempty"` or `msgpack:"field_name,omitempty"`
+
+`omitempty` is applied only to map encoding. Array encoding keeps all generated fields to preserve positional compatibility.
 
 
 ### Switch Default Behaviour

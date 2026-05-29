@@ -1565,6 +1565,89 @@ func TestTag(t *testing.T) {
 	}
 }
 
+func TestOmitEmptyTag(t *testing.T) {
+	v := testingOmitEmpty{Keep: 1, NonEmpty: "value"}
+	b1, b2, e1, e2 := marshal(v, v)
+	if e1 != nil || e2 != nil {
+		t.Error(e1, e2)
+	}
+	if b1[0] != def.FixMap+2 {
+		t.Fatalf("map field count = 0x%x, want 0x%x: % x", b1[0], def.FixMap+2, b1)
+	}
+	if b2[0] != def.FixArray+6 {
+		t.Fatalf("array field count = 0x%x, want 0x%x: % x", b2[0], def.FixArray+6, b2)
+	}
+	if !strings.Contains(string(b1), "non_empty") {
+		t.Fatalf("renamed omitempty key is missing: % x", b1)
+	}
+	if strings.Contains(string(b1), "EmptyInt") || strings.Contains(string(b1), "empty_named") || strings.Contains(string(b1), "Slice") || strings.Contains(string(b1), "Private") {
+		t.Fatalf("zero omitempty field is encoded in map: % x", b1)
+	}
+
+	var v1, v2 testingOmitEmpty
+	e1, e2 = unmarshal(b1, b2, &v1, &v2)
+	if e1 != nil || e2 != nil {
+		t.Error(e1, e2)
+	}
+	if !reflect.DeepEqual(v, v1) || !reflect.DeepEqual(v, v2) {
+		t.Fatalf("not equal value %#v, %#v, %#v", v, v1, v2)
+	}
+
+	v = testingOmitEmpty{Keep: 1, Slice: []int{}}
+	b1, b2, e1, e2 = marshal(v, v)
+	if e1 != nil || e2 != nil {
+		t.Error(e1, e2)
+	}
+	if b1[0] != def.FixMap+2 {
+		t.Fatalf("map field count with empty slice = 0x%x, want 0x%x: % x", b1[0], def.FixMap+2, b1)
+	}
+	if !strings.Contains(string(b1), "Slice") {
+		t.Fatalf("non-nil empty slice is omitted in map: % x", b1)
+	}
+	v1, v2 = testingOmitEmpty{}, testingOmitEmpty{}
+	e1, e2 = unmarshal(b1, b2, &v1, &v2)
+	if e1 != nil || e2 != nil {
+		t.Error(e1, e2)
+	}
+	if !reflect.DeepEqual(v, v1) || !reflect.DeepEqual(v, v2) {
+		t.Fatalf("not equal empty slice value %#v, %#v, %#v", v, v1, v2)
+	}
+
+	v = testingOmitEmpty{Keep: 1, Private: privateOmitEmpty{hidden: 1}}
+	b1, _, e1, _ = marshal(v, v)
+	if e1 != nil {
+		t.Error(e1)
+	}
+	if b1[0] != def.FixMap+2 {
+		t.Fatalf("map field count with private field = 0x%x, want 0x%x: % x", b1[0], def.FixMap+2, b1)
+	}
+	if !strings.Contains(string(b1), "Private") {
+		t.Fatalf("struct with non-zero private field is omitted in map: % x", b1)
+	}
+
+	missingRequired := append([]byte{def.FixMap + 1, def.FixStr + 9}, []byte("non_empty")...)
+	missingRequired = append(missingRequired, def.FixStr+5)
+	missingRequired = append(missingRequired, []byte("value")...)
+	if err := Unmarshal(missingRequired, &v1); err == nil {
+		t.Fatal("missing required field error = nil")
+	}
+
+	tooSmallFieldCount := append([]byte{def.FixMap + 1, def.FixStr + 4}, []byte("Keep")...)
+	tooSmallFieldCount = append(tooSmallFieldCount, 1)
+	tooSmallFieldCount = append(tooSmallFieldCount, def.FixStr+9)
+	tooSmallFieldCount = append(tooSmallFieldCount, []byte("non_empty")...)
+	tooSmallFieldCount = append(tooSmallFieldCount, def.FixStr+5)
+	tooSmallFieldCount = append(tooSmallFieldCount, []byte("value")...)
+	if err := UnmarshalAsMap(tooSmallFieldCount, &v1); err == nil {
+		t.Fatal("too small field count error = nil")
+	}
+
+	tooLargeFieldCount := append([]byte{def.FixMap + 3}, tooSmallFieldCount[1:]...)
+	if err := UnmarshalAsMap(tooLargeFieldCount, &v1); err == nil {
+		t.Fatal("too large field count error = nil")
+	}
+}
+
 func TestPointer(t *testing.T) {
 
 	v := testingValue{Int: -1, Uint: 1}
