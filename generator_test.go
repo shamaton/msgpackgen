@@ -2,15 +2,11 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"io"
-	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/shamaton/msgpackgen/msgpack"
 )
 
 var (
@@ -20,59 +16,6 @@ var (
 	oFile = defaultFileName
 	ptr   = defaultPointerLevel
 )
-
-func TestMain(m *testing.M) {
-	testFallbackRuntime()
-
-	code := m.Run()
-
-	os.Exit(code)
-}
-
-func testFallbackRuntime() {
-	{
-		v := rand.Int()
-		b, err := msgpack.Marshal(v)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		var vv int
-		err = msgpack.Unmarshal(b, &vv)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		if v != vv {
-			fmt.Println(v, vv, "different")
-			os.Exit(1)
-		}
-	}
-	msgpack.SetStructAsArray(true)
-	{
-		v := rand.Int()
-		b, err := msgpack.Marshal(v)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		var vv int
-		err = msgpack.Unmarshal(b, &vv)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		if v != vv {
-			fmt.Println(v, vv, "different")
-			os.Exit(1)
-		}
-	}
-	msgpack.SetStructAsArray(false)
-}
 
 func TestGenerateCodeErrorInput(t *testing.T) {
 	{

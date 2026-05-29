@@ -1,4 +1,4 @@
-package msgpack
+package fallback
 
 import (
 	"errors"
@@ -8,7 +8,7 @@ import (
 	"github.com/shamaton/msgpack/v3/def"
 )
 
-func TestFallbackDecodeReturnsErrorForTruncatedInput(t *testing.T) {
+func TestDecodeReturnsErrorForTruncatedInput(t *testing.T) {
 	tests := []struct {
 		name   string
 		data   []byte
