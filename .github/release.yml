@@ -1,0 +1,29 @@
+changelog:
+  exclude:
+    labels:
+      - tagpr
+  categories:
+    - title: "💥 Breaking Changes"
+      labels:
+        - "breaking-change"
+    - title: "🚀 Features"
+      labels:
+        - "type: feature"
+    - title: "🐛 Bug Fixes"
+      labels:
+        - "type: bug"
+    - title: "📚 Documentation"
+      labels:
+        - "type: docs"
+    - title: "⚡ Performance"
+      labels:
+        - "type: performance"
+    - title: "🔁 Compatibility"
+      labels:
+        - "type: compatibility"
+    - title: "🔧 Maintenance"
+      labels:
+        - "type: maintenance"
+    - title: "Other Changes"
+      labels:
+        - "*"
