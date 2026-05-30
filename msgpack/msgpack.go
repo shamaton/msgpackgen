@@ -1,25 +1,16 @@
+// Package msgpack provides shared encoding settings and errors used by generated
+// code.
 package msgpack
 
 import (
-	"github.com/shamaton/msgpack/v2"
+	"errors"
+
+	"github.com/shamaton/msgpack/v3"
 )
 
-// Marshal returns the MessagePack-encoded byte array of v.
-func Marshal(v interface{}) ([]byte, error) {
-	if StructAsArray() {
-		return MarshalAsArray(v)
-	}
-	return MarshalAsMap(v)
-}
-
-// Unmarshal analyzes the MessagePack-encoded data and stores
-// the result into the pointer of v.
-func Unmarshal(data []byte, v interface{}) error {
-	if StructAsArray() {
-		return UnmarshalAsArray(data, v)
-	}
-	return UnmarshalAsMap(data, v)
-}
+// ErrUndefinedType is returned by generated code when the value type is not
+// handled by generated serializers.
+var ErrUndefinedType = errors.New("undefined type")
 
 // SetStructAsArray sets default encoding option.
 // If this option sets true, default encoding sets to array-format.

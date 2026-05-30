@@ -1,13 +1,15 @@
 package dec
 
 import (
-	"github.com/shamaton/msgpack/v2/def"
+	"github.com/shamaton/msgpack/v3/def"
 )
 
 // AsBool checks codes and returns the got bytes as bool
 func (d *Decoder) AsBool(offset int) (bool, int, error) {
-	code := d.data[offset]
-	offset++
+	code, offset, err := d.readSize1(offset)
+	if err != nil {
+		return false, 0, err
+	}
 
 	switch code {
 	case def.True:

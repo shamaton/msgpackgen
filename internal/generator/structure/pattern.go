@@ -31,24 +31,82 @@ func isRecursiveChildArraySliceMap(node *Node) bool {
 	panic("unreachable code")
 }
 
+func isPointerLoopElement(node *Node) bool {
+	return node != nil && node.IsStruct() && node.ImportPath != "time"
+}
+
+func shouldPassNamedPointer(node *Node) bool {
+	return node.HasParent() && (node.Parent.IsArray() || node.Parent.IsSlice() || node.Parent.IsPointer())
+}
+
+func namedCallArg(node *Node, fieldName string) Code {
+	if shouldPassNamedPointer(node) {
+		return Id(fieldName)
+	}
+	return Op("&").Id(fieldName)
+}
+
+func createSequenceRangeCode(fieldName, childName string, passChildPointer bool, elmCodes []Code) Code {
+	if !passChildPointer {
+		return For(List(Id("_"), Id(childName)).Op(":=").Range().Id(fieldName)).Block(
+			elmCodes...,
+		)
+	}
+
+	indexName := childName + "i"
+	return For(Id(indexName).Op(":=").Range().Id(fieldName)).Block(
+		append([]Code{
+			Id(childName).Op(":=").Op("&").Id(fieldName).Index(Id(indexName)),
+		}, elmCodes...)...,
+	)
+}
+
 func createFuncName(prefix, name, importPath string) string {
 	suffix := fmt.Sprintf("%x", sha256.Sum256([]byte(importPath)))
 	return ptn.PrivateFuncName(fmt.Sprintf("%s%s_%s", prefix, name, suffix))
 }
 
 func createAddSizeCode(funcName string, params ...Code) Code {
-	return Id("size").Op("+=").Id(ptn.IdEncoder).Dot(funcName).Call(params...)
+	return Id("size").Op("+=").Qual(ptn.PkEnc, funcName).Call(params...)
+}
+
+func createAddSizeMaxCode(funcName string, params ...Code) Code {
+	return createAddSizeCode(funcName+"Max", params...)
 }
 
 func createAddSizeErrCheckCode(funcName string, params ...Code) []Code {
 	return []Code{
-		List(Id("s"), Err()).Op(":=").Id(ptn.IdEncoder).Dot(funcName).Call(params...),
+		List(Id("s"), Err()).Op(":=").Qual(ptn.PkEnc, funcName).Call(params...),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Lit(0), Err()),
 		),
 		Id("size").Op("+=").Id("s"),
 	}
 
+}
+
+func createAddSizeMaxErrCheckCode(funcName string, params ...Code) []Code {
+	return createAddSizeErrCheckCode(funcName+"Max", params...)
+}
+
+func createWriteCode(funcName string, params ...Code) Code {
+	args := append([]Code{Id("buf")}, params...)
+	args = append(args, Id("offset"))
+	return Id("offset").Op("=").Qual(ptn.PkEnc, funcName).Call(args...)
+}
+
+func createDecodeNilCheckedCode(nonNilCodes []Code) Code {
+	return Block(
+		List(Id("isNil"), Err()).Op(":=").Id(ptn.IdDecoder).Dot("IsCodeNilChecked").Call(Id("offset")),
+		If(Err().Op("!=").Nil()).Block(
+			Return(Lit(0), Err()),
+		),
+		If(Op("!").Id("isNil")).Block(
+			nonNilCodes...,
+		).Else().Block(
+			Id("offset").Op("++"),
+		),
+	)
 }
 
 func createDecodeDefineVarCode(node *Node, structures []*Structure, varName string) ([]Code, string) {
@@ -111,4 +169,56 @@ func createDecodeSetValueCode(node *Node, varName, fieldName string) []Code {
 	}
 
 	return codes
+}
+
+func createDirectSequenceDecodeCode(node *Node, childName, childIndexName, funcName string) ([]Code, bool) {
+	child := node.Elm()
+	switch {
+	case child.IsIdentical():
+		funcName = "As" + identCodeGen{}.toPascalCase(child.IdenticalName)
+	case child.IsStruct() && child.ImportPath == "time" && child.StructName == "Time":
+		funcName = "AsDateTime"
+	case child.IsStruct():
+		return []Code{
+			List(Id("offset"), Err()).Op("=").Id(
+				createFuncName(funcName, child.StructName, child.ImportPath),
+			).Call(Op("&").Id(childName).Index(Id(childIndexName)), Id(ptn.IdDecoder), Id("offset")),
+			If(Err().Op("!=").Nil()).Block(
+				Return(Lit(0), Err()),
+			),
+		}, true
+	default:
+		return nil, false
+	}
+
+	return []Code{
+		List(Id(childName).Index(Id(childIndexName)), Id("offset"), Err()).
+			Op("=").
+			Id(ptn.IdDecoder).Dot(funcName).Call(Id("offset")),
+		If(Err().Op("!=").Nil()).Block(
+			Return(Lit(0), Err()),
+		),
+	}, true
+}
+
+func createDirectMapValueDecodeCode(node *Node, mapName, keyName string) ([]Code, bool) {
+	_, child := node.KeyValue()
+	var funcName string
+	switch {
+	case child.IsIdentical():
+		funcName = "As" + identCodeGen{}.toPascalCase(child.IdenticalName)
+	case child.IsStruct() && child.ImportPath == "time" && child.StructName == "Time":
+		funcName = "AsDateTime"
+	default:
+		return nil, false
+	}
+
+	return []Code{
+		List(Id(mapName).Index(Id(keyName)), Id("offset"), Err()).
+			Op("=").
+			Id(ptn.IdDecoder).Dot(funcName).Call(Id("offset")),
+		If(Err().Op("!=").Nil()).Block(
+			Return(Lit(0), Err()),
+		),
+	}, true
 }

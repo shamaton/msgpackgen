@@ -17,7 +17,7 @@ var (
 	pointer   = flag.Int("pointer", defaultPointerLevel, "pointer level to consider")
 	useGopath = flag.Bool("use-gopath", false, "use GOPATH instead of go.mod")
 	dryRun    = flag.Bool("dry-run", false, "dry run mode")
-	strict    = flag.Bool("strict", false, "strict mode")
+	strict    = flag.Bool("strict", false, "disable fallback for unrecognized types")
 	verbose   = flag.Bool("v", false, "verbose diagnostics")
 )
 

@@ -28,25 +28,24 @@ func (st *Structure) createArrayCode(node *Node, encodeFieldName, decodeFieldNam
 		_, _, _, _, da, dm = st.createFieldCode(node.Elm(), encodeChildName, decodeChildName+"v")
 	}
 	isChildByte := node.Elm().IsIdentical() && node.Elm().IdenticalName == "byte"
+	passChildPointer := isPointerLoopElement(node.Elm())
 
 	g := arrayCodeGen{}
-	cArray = g.createCalcCode(encodeFieldName, encodeChildName, isChildByte, ca)
-	cMap = g.createCalcCode(encodeFieldName, encodeChildName, isChildByte, cm)
+	cArray = g.createCalcCode(encodeFieldName, encodeChildName, isChildByte, passChildPointer, ca)
+	cMap = g.createCalcCode(encodeFieldName, encodeChildName, isChildByte, passChildPointer, cm)
 
-	eArray = g.createEncCode(encodeFieldName, encodeChildName, isChildByte, ea)
-	eMap = g.createEncCode(encodeFieldName, encodeChildName, isChildByte, em)
+	eArray = g.createEncCode(encodeFieldName, encodeChildName, isChildByte, passChildPointer, ea)
+	eMap = g.createEncCode(encodeFieldName, encodeChildName, isChildByte, passChildPointer, em)
 
-	dArray = g.createDecCode(node, st.Others, decodeFieldName, decodeChildName, da)
-	dMap = g.createDecCode(node, st.Others, decodeFieldName, decodeChildName, dm)
+	dArray = g.createDecCode(node, st.Others, decodeFieldName, decodeChildName, "decodeArray", da)
+	dMap = g.createDecCode(node, st.Others, decodeFieldName, decodeChildName, "decodeMap", dm)
 
 	return
 }
 
-func (g arrayCodeGen) createCalcCode(fieldName, childName string, isChildByte bool, elmCodes []Code) []Code {
+func (g arrayCodeGen) createCalcCode(fieldName, childName string, isChildByte, passChildPointer bool, elmCodes []Code) []Code {
 	blockCodes := createAddSizeErrCheckCode("CalcSliceLength", Len(Id(fieldName)), Lit(isChildByte))
-	blockCodes = append(blockCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Id(fieldName)).Block(
-		elmCodes...,
-	))
+	blockCodes = append(blockCodes, createSequenceRangeCode(fieldName, childName, passChildPointer, elmCodes))
 
 	codes := make([]Code, 0)
 	codes = append(codes, Block(
@@ -55,13 +54,11 @@ func (g arrayCodeGen) createCalcCode(fieldName, childName string, isChildByte bo
 	return codes
 }
 
-func (g arrayCodeGen) createEncCode(fieldName, childName string, isChildByte bool, elmCodes []Code) []Code {
+func (g arrayCodeGen) createEncCode(fieldName, childName string, isChildByte, passChildPointer bool, elmCodes []Code) []Code {
 
 	blockCodes := make([]Code, 0)
-	blockCodes = append(blockCodes, Id("offset").Op("=").Id(ptn.IdEncoder).Dot("WriteSliceLength").Call(Len(Id(fieldName)), Id("offset"), Lit(isChildByte)))
-	blockCodes = append(blockCodes, For(List(Id("_"), Id(childName)).Op(":=").Range().Id(fieldName)).Block(
-		elmCodes...,
-	))
+	blockCodes = append(blockCodes, Id("offset").Op("=").Qual(ptn.PkEnc, "WriteSliceLength").Call(Id("buf"), Len(Id(fieldName)), Id("offset"), Lit(isChildByte)))
+	blockCodes = append(blockCodes, createSequenceRangeCode(fieldName, childName, passChildPointer, elmCodes))
 
 	codes := make([]Code, 0)
 	codes = append(codes, Block(
@@ -70,7 +67,7 @@ func (g arrayCodeGen) createEncCode(fieldName, childName string, isChildByte boo
 	return codes
 }
 
-func (g arrayCodeGen) createDecCode(node *Node, structures []*Structure, fieldName, childName string, elmCodes []Code) []Code {
+func (g arrayCodeGen) createDecCode(node *Node, structures []*Structure, fieldName, childName, funcName string, elmCodes []Code) []Code {
 
 	blockCodes := make([]Code, 0)
 	blockCodes = append(blockCodes, node.TypeJenChain(structures, Var().Id(childName)))
@@ -83,8 +80,12 @@ func (g arrayCodeGen) createDecCode(node *Node, structures []*Structure, fieldNa
 		Return(Lit(0), Qual("fmt", "Errorf").Call(Lit("length size(%d) is over array size(%d)"), Id(childName+"l"), Id(fmt.Sprint(node.ArrayLen)))),
 	))
 
-	elmCodes = append([]Code{node.Elm().TypeJenChain(structures, Var().Id(childName+"v"))}, elmCodes...)
-	elmCodes = append(elmCodes, Id(childName).Index(Id(childName+"i")).Op("=").Id(childName+"v"))
+	if directCodes, ok := createDirectSequenceDecodeCode(node, childName, childName+"i", funcName); ok {
+		elmCodes = directCodes
+	} else {
+		elmCodes = append([]Code{node.Elm().TypeJenChain(structures, Var().Id(childName+"v"))}, elmCodes...)
+		elmCodes = append(elmCodes, Id(childName).Index(Id(childName+"i")).Op("=").Id(childName+"v"))
+	}
 
 	blockCodes = append(blockCodes, For(Id(childName+"i").Op(":=").Range().Id(childName).Index(Id(":"+childName+"l"))).Block(
 		elmCodes...,
@@ -108,11 +109,7 @@ func (g arrayCodeGen) createDecCode(node *Node, structures []*Structure, fieldNa
 	if node.HasParent() && node.Parent.IsPointer() {
 		codes = blockCodes
 	} else {
-		codes = append(codes, If(Op("!").Id(ptn.IdDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
-			blockCodes...,
-		).Else().Block(
-			Id("offset").Op("++"),
-		))
+		codes = []Code{createDecodeNilCheckedCode(blockCodes)}
 	}
 	return codes
 }

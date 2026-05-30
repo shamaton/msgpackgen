@@ -18,8 +18,13 @@ func (st *Structure) createNamedCode(encodeFieldName, decodeFieldName string, as
 	}
 
 	g := namedCodeGen{}
-	cArray = g.createCalcCode(ast, encodeFieldName, sizeName, "calcArraySize")
-	cMap = g.createCalcCode(ast, encodeFieldName, sizeName, "calcMapSize")
+	if ref := st.findStructure(ast.ImportPath, ast.StructName); ref != nil && ref.CanCalcSizeNoErr() {
+		cArray = g.createCalcNoErrCode(ast, encodeFieldName, sizeName, "calcArraySizeNoErr")
+		cMap = g.createCalcNoErrCode(ast, encodeFieldName, sizeName, "calcMapSizeNoErr")
+	} else {
+		cArray = g.createCalcCode(ast, encodeFieldName, sizeName, "calcArraySize")
+		cMap = g.createCalcCode(ast, encodeFieldName, sizeName, "calcMapSize")
+	}
 
 	eArray = g.createEncCode(ast, encodeFieldName, "encodeArray")
 	eMap = g.createEncCode(ast, encodeFieldName, "encodeMap")
@@ -35,7 +40,7 @@ func (g namedCodeGen) createCalcCode(node *Node, fieldName, sizeName, funcName s
 	return []Code{
 		List(Id(sizeName), Err()).
 			Op(":=").
-			Id(createFuncName(funcName, node.StructName, node.ImportPath)).Call(Id(fieldName), Id(ptn.IdEncoder)),
+			Id(createFuncName(funcName, node.StructName, node.ImportPath)).Call(namedCallArg(node, fieldName)),
 		If(Err().Op("!=").Nil()).Block(
 			Return(Lit(0), Err()),
 		),
@@ -43,14 +48,18 @@ func (g namedCodeGen) createCalcCode(node *Node, fieldName, sizeName, funcName s
 	}
 }
 
+func (g namedCodeGen) createCalcNoErrCode(node *Node, fieldName, sizeName, funcName string) []Code {
+	return createNamedSizeNoErrCode(node, fieldName, sizeName, funcName)
+}
+
 func (g namedCodeGen) createEncCode(node *Node, fieldName, funcName string) []Code {
 
 	return []Code{
-		List(Id("_"), Id("offset"), Err()).
+		List(Id("offset"), Err()).
 			Op("=").
-			Id(createFuncName(funcName, node.StructName, node.ImportPath)).Call(Id(fieldName), Id(ptn.IdEncoder), Id("offset")),
+			Id(createFuncName(funcName, node.StructName, node.ImportPath)).Call(namedCallArg(node, fieldName), Id("buf"), Id("offset")),
 		If(Err().Op("!=").Nil()).Block(
-			Return(Nil(), Lit(0), Err()),
+			Return(Lit(0), Err()),
 		),
 	}
 }

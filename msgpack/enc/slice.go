@@ -4,18 +4,16 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/shamaton/msgpack/v2/def"
+	"github.com/shamaton/msgpack/v3/def"
 )
 
 // CalcSliceLength checks values and returns data size that need.
-func (e *Encoder) CalcSliceLength(l int, isChildTypeByte bool) (int, error) {
-
+func CalcSliceLength(l int, isChildTypeByte bool) (int, error) {
 	if isChildTypeByte {
-		return e.calcByteSlice(l)
+		return calcByteSliceLength(l)
 	}
 
 	if l <= 0x0f {
-		// format code only
 		return def.Byte1, nil
 	} else if l <= math.MaxUint16 {
 		return def.Byte1 + def.Byte2, nil
@@ -25,21 +23,28 @@ func (e *Encoder) CalcSliceLength(l int, isChildTypeByte bool) (int, error) {
 	return 0, fmt.Errorf("not support this array length : %d", l)
 }
 
-// WriteSliceLength sets the contents of l to the buffer.
-func (e *Encoder) WriteSliceLength(l int, offset int, isChildTypeByte bool) int {
+// CalcSliceLengthMax returns the maximum data size that a slice header can need.
+func CalcSliceLengthMax(l int, isChildTypeByte bool) (int, error) {
+	if uint(l) > math.MaxUint32 {
+		return 0, fmt.Errorf("not support this array length : %d", l)
+	}
+	return def.Byte1 + def.Byte4, nil
+}
+
+// WriteSliceLength sets the contents of l to buf at offset.
+func WriteSliceLength(buf []byte, l int, offset int, isChildTypeByte bool) int {
 	if isChildTypeByte {
-		return e.writeByteSliceLength(l, offset)
+		return writeByteSliceLength(buf, l, offset)
 	}
 
-	// format size
 	if l <= 0x0f {
-		offset = e.setByte1Int(def.FixArray+l, offset)
+		offset = setByte1Int(buf, def.FixArray+l, offset)
 	} else if l <= math.MaxUint16 {
-		offset = e.setByte1Int(def.Array16, offset)
-		offset = e.setByte2Int(l, offset)
+		offset = setByte1Int(buf, def.Array16, offset)
+		offset = setByte2Int(buf, l, offset)
 	} else if uint(l) <= math.MaxUint32 {
-		offset = e.setByte1Int(def.Array32, offset)
-		offset = e.setByte4Int(l, offset)
+		offset = setByte1Int(buf, def.Array32, offset)
+		offset = setByte4Int(buf, l, offset)
 	}
 	return offset
 }

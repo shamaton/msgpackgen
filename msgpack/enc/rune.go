@@ -1,11 +1,18 @@
 package enc
 
-// CalcRune check value and returns data size that need.
-func (e *Encoder) CalcRune(v rune) int {
-	return e.calcInt(int64(v))
+import "github.com/shamaton/msgpack/v3/def"
+
+// CalcRune checks value and returns data size that need.
+func CalcRune(v rune) int {
+	return calcIntSize(int64(v))
 }
 
-// WriteRune sets the contents of v to the buffer.
-func (e *Encoder) WriteRune(v rune, offset int) int {
-	return e.writeInt(int64(v), offset)
+// CalcRuneMax returns the maximum data size that a rune value can need.
+func CalcRuneMax(v rune) int {
+	return def.Byte1 + def.Byte4
+}
+
+// WriteRune sets the contents of v to buf at offset.
+func WriteRune(buf []byte, v rune, offset int) int {
+	return writeInt(buf, int64(v), offset)
 }

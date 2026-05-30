@@ -3,7 +3,7 @@ package dec
 import (
 	"encoding/binary"
 
-	"github.com/shamaton/msgpack/v2/def"
+	"github.com/shamaton/msgpack/v3/def"
 )
 
 var emptyString = ""
@@ -19,44 +19,52 @@ func (d *Decoder) AsString(offset int) (string, int, error) {
 }
 
 func (d *Decoder) AsStringBytes(offset int) ([]byte, int, error) {
-	l, offset, err := d.stringByteLength(offset)
+	code, offset, err := d.readSize1(offset)
 	if err != nil {
 		return emptyBytes, 0, err
 	}
-	bs, offset := d.asStringByte(offset, l)
-	return bs, offset, nil
-}
 
-func (d *Decoder) stringByteLength(offset int) (int, int, error) {
-	code := d.data[offset]
-	offset++
-
+	var l int
 	if d.isFixString(code) {
-		l := int(code - def.FixStr)
-		return l, offset, nil
+		l = int(code - def.FixStr)
 	} else if code == def.Str8 {
-		b, offset := d.readSize1(offset)
-		return int(b), offset, nil
+		b, next, err := d.readSize1(offset)
+		if err != nil {
+			return emptyBytes, 0, err
+		}
+		l = int(b)
+		offset = next
 	} else if code == def.Str16 {
-		b, offset := d.readSize2(offset)
-		return int(binary.BigEndian.Uint16(b)), offset, nil
+		b, next, err := d.readSize2(offset)
+		if err != nil {
+			return emptyBytes, 0, err
+		}
+		l = int(binary.BigEndian.Uint16(b))
+		offset = next
 	} else if code == def.Str32 {
-		b, offset := d.readSize4(offset)
-		return int(binary.BigEndian.Uint32(b)), offset, nil
+		b, next, err := d.readSize4(offset)
+		if err != nil {
+			return emptyBytes, 0, err
+		}
+		l = int(binary.BigEndian.Uint32(b))
+		offset = next
 	} else if code == def.Nil {
-		return 0, offset, nil
+		return emptyBytes, offset, nil
+	} else {
+		return emptyBytes, 0, d.errorTemplate(code, "StringByteLength")
 	}
-	return 0, 0, d.errorTemplate(code, "StringByteLength")
+
+	if l < 1 {
+		return emptyBytes, offset, nil
+	}
+
+	bs, offset, err := d.readSizeN(offset, l)
+	if err != nil {
+		return emptyBytes, 0, err
+	}
+	return bs, offset, nil
 }
 
 func (d *Decoder) isFixString(v byte) bool {
 	return def.FixStr <= v && v <= def.FixStr+0x1f
-}
-
-func (d *Decoder) asStringByte(offset int, l int) ([]byte, int) {
-	if l < 1 {
-		return emptyBytes, offset
-	}
-
-	return d.readSizeN(offset, l)
 }

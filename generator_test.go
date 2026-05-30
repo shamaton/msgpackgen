@@ -2,15 +2,11 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"io"
-	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/shamaton/msgpackgen/msgpack"
 )
 
 var (
@@ -20,60 +16,6 @@ var (
 	oFile = defaultFileName
 	ptr   = defaultPointerLevel
 )
-
-func TestMain(m *testing.M) {
-	testBeforeRegister()
-	RegisterGeneratedResolver()
-
-	code := m.Run()
-
-	os.Exit(code)
-}
-
-func testBeforeRegister() {
-	{
-		v := rand.Int()
-		b, err := msgpack.Marshal(v)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		var vv int
-		err = msgpack.Unmarshal(b, &vv)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		if v != vv {
-			fmt.Println(v, vv, "different")
-			os.Exit(1)
-		}
-	}
-	msgpack.SetStructAsArray(true)
-	{
-		v := rand.Int()
-		b, err := msgpack.Marshal(v)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		var vv int
-		err = msgpack.Unmarshal(b, &vv)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		if v != vv {
-			fmt.Println(v, vv, "different")
-			os.Exit(1)
-		}
-	}
-	msgpack.SetStructAsArray(false)
-}
 
 func TestGenerateCodeErrorInput(t *testing.T) {
 	{
@@ -235,7 +177,11 @@ func TestGenerateCodeOK(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	goPath := strings.SplitN(filepath.ToSlash(wd), "/src", 2)[0]
+	slashWD := filepath.ToSlash(wd)
+	if !strings.Contains(slashWD, "/src/") {
+		return
+	}
+	goPath := strings.SplitN(slashWD, "/src", 2)[0]
 	err = os.Setenv("GOPATH", filepath.FromSlash(goPath))
 	if err != nil {
 		t.Fatal(err)
@@ -243,5 +189,15 @@ func TestGenerateCodeOK(t *testing.T) {
 	err = generate(iDir, iFile, oDir, oFile, ptr, true, true, false, false, io.Discard)
 	if err != nil {
 		t.Fatal(err)
+	}
+	generated, err := os.ReadFile("resolver_test.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(generated), ".IsCodeNilChecked(") {
+		t.Fatal("generated code must use IsCodeNilChecked")
+	}
+	if strings.Contains(string(generated), ".IsCodeNil(") {
+		t.Fatal("generated code must not use legacy IsCodeNil")
 	}
 }

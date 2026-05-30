@@ -67,7 +67,7 @@ func (g mapCodeGen) createEncCode(
 	elmKeyCodes, elmValueCodes []Code) []Code {
 
 	encCodes := make([]Code, 0)
-	encCodes = append(encCodes, Id("offset").Op("=").Id(ptn.IdEncoder).Dot("WriteMapLength").Call(Len(Id(fieldName)), Id("offset")))
+	encCodes = append(encCodes, Id("offset").Op("=").Qual(ptn.PkEnc, "WriteMapLength").Call(Id("buf"), Len(Id(fieldName)), Id("offset")))
 	encCodes = append(encCodes, For(List(Id(childKeyName), Id(childValueName)).Op(":=").Range().Id(fieldName)).Block(
 		append(elmKeyCodes, elmValueCodes...)...,
 	))
@@ -76,7 +76,7 @@ func (g mapCodeGen) createEncCode(
 	codes = append(codes, If(Id(fieldName).Op("!=").Nil()).Block(
 		encCodes...,
 	).Else().Block(
-		Id("offset").Op("=").Id(ptn.IdEncoder).Dot("WriteNil").Call(Id("offset")),
+		Id("offset").Op("=").Qual(ptn.PkEnc, "WriteNil").Call(Id("buf"), Id("offset")),
 	))
 	return codes
 }
@@ -97,9 +97,13 @@ func (g mapCodeGen) createDecCode(
 
 	da := []Code{ast.Key.TypeJenChain(structures, Var().Id(childKeyName+"v"))}
 	da = append(da, elmKeyCodes...)
-	da = append(da, ast.Value.TypeJenChain(structures, Var().Id(childValueName+"v")))
-	da = append(da, elmValueCodes...)
-	da = append(da, Id(childValueName).Index(Id(childKeyName+"v")).Op("=").Id(childValueName+"v"))
+	if directCodes, ok := createDirectMapValueDecodeCode(ast, childValueName, childKeyName+"v"); ok {
+		da = append(da, directCodes...)
+	} else {
+		da = append(da, ast.Value.TypeJenChain(structures, Var().Id(childValueName+"v")))
+		da = append(da, elmValueCodes...)
+		da = append(da, Id(childValueName).Index(Id(childKeyName+"v")).Op("=").Id(childValueName+"v"))
+	}
 
 	decCodes = append(decCodes, For(Id(childValueName+"i").Op(":=").Lit(0).Op(";").Id(childValueName+"i").Op("<").Id(childValueName+"l").Op(";").Id(childValueName+"i").Op("++")).Block(
 		da...,
@@ -125,12 +129,7 @@ func (g mapCodeGen) createDecCode(
 	if ast.HasParent() && ast.Parent.IsPointer() {
 		codes = decCodes
 	} else {
-
-		codes = append(codes, If(Op("!").Id(ptn.IdDecoder).Dot("IsCodeNil").Call(Id("offset"))).Block(
-			decCodes...,
-		).Else().Block(
-			Id("offset").Op("++"),
-		))
+		codes = []Code{createDecodeNilCheckedCode(decCodes)}
 	}
 	return codes
 }

@@ -18,5 +18,5 @@ type AA struct {
 
 // NotGeneratedChild is a definition for test
 type NotGeneratedChild struct {
-	Interface interface{}
+	Interface any
 }

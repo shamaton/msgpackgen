@@ -3,6 +3,8 @@ package ptn
 const (
 	// PkTop is import path for jen.Qual(path)
 	PkTop = "github.com/shamaton/msgpackgen/msgpack"
+	// PkFallback is import path for fallback runtime APIs.
+	PkFallback = PkTop + "/fallback"
 	// PkEnc is import path for jen.Qual(path)
 	PkEnc = PkTop + "/enc"
 	// PkDec is import path for jen.Qual(path)
