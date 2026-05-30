@@ -4,4 +4,3 @@
     vPrefix = true
     changelog = true
     release = true
-    fixedMajorVersion = 1
