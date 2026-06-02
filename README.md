@@ -31,7 +31,7 @@ And run the following command in your shell:
 go generate
 ```
 
-It will generate one `.go` file for serialization, default is `resolver.msgpackgen.go`.
+It will generate one `.go` file for serialization, default is `msgpack.msgpackgen.go`.
 The generated file defines `Marshal`, `MarshalAsMap`, `MarshalAsArray`, `Unmarshal`, `UnmarshalAsMap`, and `UnmarshalAsArray` in the same package as your generated types.
 
 `Marshal` and `Unmarshal` look like this:
@@ -188,7 +188,7 @@ Usage of msgpackgen:
   -output-dir string
         output directory (default ".")
   -output-file string
-        name of generated file (default "resolver.msgpackgen.go")
+        name of generated file (default "msgpack.msgpackgen.go")
   -pointer int
         pointer level to consider (default 1)
   -strict

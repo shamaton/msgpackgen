@@ -282,7 +282,7 @@ type Unknown struct {
 	S string
 }
 `,
-		"resolver.msgpackgen.go": generated,
+		"msgpack.msgpackgen.go": generated,
 		"resolver_test.go": `package nonstrict
 
 import (
