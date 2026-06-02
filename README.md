@@ -7,43 +7,61 @@
 * 🚀 Extremely Fast
 * ♻️ Easy Maintenance
 * 💯 Compliant with [specifications](https://github.com/msgpack/msgpack/blob/master/spec.md)
+* 🦺 No use `unsafe`
 
 ## Quickstart
 
-Create go.mod file, if you still have not created.
+Create `go.mod` file, if you still have not created.
 
 ```shell
 # example
 go mod init github.com/user/awesome
 ```
 
-In a source file(ex. main.go), include the following directive:
+In a source file(ex. main.go), include one go generate directive.
+For most modules:
 
 ```go
-//go:generate msgpackgen
-or
+package main
+
 //go:generate go run github.com/shamaton/msgpackgen
+```
+
+If you installed `msgpackgen` as a binary:
+
+```go
+package main
+
+//go:generate msgpackgen
+```
+
+If you added it with `go get -tool`:
+
+```go
+package main
+
+//go:generate go tool github.com/shamaton/msgpackgen
 ```
 
 And run the following command in your shell:
 
 ```shell
-go generate
+go generate ./...
 ```
 
-It will generate one `.go` file for serialization, default is `resolver.msgpackgen.go`.
+It will generate one `.go` file for serialization, default is `msgpack.msgpackgen.go`.
 The generated file defines `Marshal`, `MarshalAsMap`, `MarshalAsArray`, `Unmarshal`, `UnmarshalAsMap`, and `UnmarshalAsArray` in the same package as your generated types.
 
 `Marshal` and `Unmarshal` look like this:
 
 ```go
-    v := ResolvedStruct{}
+    v := Struct{}
     b, err := Marshal(v)
     if err != nil {
         panic(err)
     }
 
-    var vv ResolvedStruct
+    var vv Struct
     err = Unmarshal(b, &vv)
     if err != nil {
         panic(err)
@@ -188,7 +206,7 @@ Usage of msgpackgen:
   -output-dir string
         output directory (default ".")
   -output-file string
-        name of generated file (default "resolver.msgpackgen.go")
+        name of generated file (default "msgpack.msgpackgen.go")
   -pointer int
         pointer level to consider (default 1)
   -strict
@@ -200,14 +218,12 @@ Usage of msgpackgen:
 
 ## Benchmarks
 
-These results are recorded by [msgpack_bench](https://github.com/shamaton/msgpack_bench) at 2021/08.
-The result of this package is that the suffix has `ShamatonGen`.
+These results are recorded by [msgpack_bench](https://github.com/shamaton/msgpack_bench).
+Our package results show in `ShamatonGen`.
 
-![msgpack_bench][msgpack-bench-image]
+![Benchmark Encode][benchmark-encode-image]
 
-The result of [go_serialization_benchmarks](https://github.com/alecthomas/go_serialization_benchmarks) is here.
-
-![go_serialization_benchmarks][go-serialization-benchmarks-image]
+![Benchmark Decode][benchmark-decode-image]
 
 [go-reference-badge]:https://pkg.go.dev/badge/github.com/shamaton/msgpackgen.svg
 [go-reference]:https://pkg.go.dev/github.com/shamaton/msgpackgen
@@ -218,5 +234,5 @@ The result of [go_serialization_benchmarks](https://github.com/alecthomas/go_ser
 [codecov]:https://codecov.io/gh/shamaton/msgpackgen
 [fossa-badge]:https://app.fossa.com/api/projects/git%2Bgithub.com%2Fshamaton%2Fmsgpackgen.svg?type=shield
 [fossa]:https://app.fossa.com/projects/git%2Bgithub.com%2Fshamaton%2Fmsgpackgen?ref=badge_shield
-[msgpack-bench-image]:https://user-images.githubusercontent.com/4637556/128298988-0e3c96fd-6014-42a0-9050-36e2b58316b1.png
-[go-serialization-benchmarks-image]:https://user-images.githubusercontent.com/4637556/128299037-06b3a645-2726-4205-848a-cccebb9a3d7f.png
+[benchmark-encode-image]:https://raw.githubusercontent.com/shamaton/msgpack_bench/refs/heads/main/docs/benchmarks/compare-encode.svg
+[benchmark-decode-image]:https://raw.githubusercontent.com/shamaton/msgpack_bench/refs/heads/main/docs/benchmarks/compare-decode.svg

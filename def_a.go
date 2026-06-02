@@ -8,7 +8,7 @@ import (
 	. "github.com/shamaton/msgpackgen/internal/fortest/define/define"
 )
 
-//go:generate go run github.com/shamaton/msgpackgen -output-file resolver_test.go -pointer 2 -strict -v
+//go:generate go run github.com/shamaton/msgpackgen -output-file msgpack.msgpackgen_test.go -pointer 2 -strict -v
 
 type testingValue struct {
 	Int        int

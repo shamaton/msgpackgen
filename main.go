@@ -22,7 +22,7 @@ var (
 )
 
 const (
-	defaultFileName     = "resolver.msgpackgen.go"
+	defaultFileName     = "msgpack.msgpackgen.go"
 	defaultPointerLevel = 1
 )
 

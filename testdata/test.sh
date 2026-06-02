@@ -6,12 +6,12 @@ CURRENT=$(cd "$DIR" && pwd)
 PJ=$(cd "$CURRENT" && cd ../ && pwd)
 cd "${PJ}" || exit 1
 
-TMP_RESOLVER=$(mktemp)
-cp resolver_test.go "${TMP_RESOLVER}"
+TMP_GENERATED=$(mktemp)
+cp msgpack.msgpackgen_test.go "${TMP_GENERATED}"
 cleanup() {
-  cp "${TMP_RESOLVER}" resolver_test.go
-  rm -f "${TMP_RESOLVER}"
-  rm -f resolver.msgpackgen.go
+  cp "${TMP_GENERATED}" msgpack.msgpackgen_test.go
+  rm -f "${TMP_GENERATED}"
+  rm -f msgpack.msgpackgen.go
 }
 trap cleanup EXIT
 

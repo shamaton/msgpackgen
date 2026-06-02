@@ -164,12 +164,12 @@ func TestGenerateCodeOK(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = flag.CommandLine.Set("output-file", "resolver_test.go")
+	err = flag.CommandLine.Set("output-file", "msgpack.msgpackgen_test.go")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// diff resolver_test.go main.go | wc -l
+	// diff msgpack.msgpackgen_test.go main.go | wc -l
 	main()
 
 	// gopath
@@ -190,7 +190,7 @@ func TestGenerateCodeOK(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	generated, err := os.ReadFile("resolver_test.go")
+	generated, err := os.ReadFile("msgpack.msgpackgen_test.go")
 	if err != nil {
 		t.Fatal(err)
 	}
