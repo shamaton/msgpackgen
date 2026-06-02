@@ -116,7 +116,7 @@ func TestGenerateCodeProvidesPublicAPIs(t *testing.T) {
 		analyzedStructs = oldAnalyzedStructs
 	})
 
-	g := generator{outputJenFilePath: "resolver_test"}
+	g := generator{outputJenFilePath: "msgpackgen_test"}
 	got := fmt.Sprintf("%#v", g.generateCode())
 
 	for _, want := range []string{
@@ -140,7 +140,7 @@ func TestGenerateCodeProvidesV1InternalEntrypoints(t *testing.T) {
 		analyzedStructs = oldAnalyzedStructs
 	})
 
-	g := generator{outputJenFilePath: "resolver_test"}
+	g := generator{outputJenFilePath: "msgpackgen_test"}
 	got := fmt.Sprintf("%#v", g.generateCode())
 
 	for _, want := range []string{
@@ -162,7 +162,7 @@ func TestGenerateCodeOmitsLegacyResolverAPIs(t *testing.T) {
 		analyzedStructs = oldAnalyzedStructs
 	})
 
-	g := generator{outputJenFilePath: "resolver_test"}
+	g := generator{outputJenFilePath: "msgpackgen_test"}
 	got := fmt.Sprintf("%#v", g.generateCode())
 
 	for _, unwanted := range []string{
@@ -187,7 +187,7 @@ func TestGenerateCodeFallbackDependsOnStrict(t *testing.T) {
 		analyzedStructs = oldAnalyzedStructs
 	})
 
-	nonStrictGenerator := generator{outputJenFilePath: "resolver_test"}
+	nonStrictGenerator := generator{outputJenFilePath: "msgpackgen_test"}
 	nonStrict := fmt.Sprintf("%#v", nonStrictGenerator.generateCode())
 	for _, want := range []string{
 		"errors.Is(err, msgpack.ErrUndefinedType)",
@@ -203,7 +203,7 @@ func TestGenerateCodeFallbackDependsOnStrict(t *testing.T) {
 		}
 	}
 
-	strictGenerator := generator{outputJenFilePath: "resolver_test", strict: true}
+	strictGenerator := generator{outputJenFilePath: "msgpackgen_test", strict: true}
 	strict := fmt.Sprintf("%#v", strictGenerator.generateCode())
 	for _, want := range []string{
 		"return nil, msgpack.ErrUndefinedType",
@@ -283,7 +283,7 @@ type Unknown struct {
 }
 `,
 		"msgpack.msgpackgen.go": generated,
-		"resolver_test.go": `package nonstrict
+		"nonstrict_test.go": `package nonstrict
 
 import (
 	"errors"
@@ -356,7 +356,7 @@ func TestGenerateCodeUsesStatelessStructEncoder(t *testing.T) {
 		analyzedStructs = oldAnalyzedStructs
 	})
 
-	g := generator{outputJenFilePath: "resolver_test"}
+	g := generator{outputJenFilePath: "msgpackgen_test"}
 	got := fmt.Sprintf("%#v", g.generateCode())
 
 	for _, want := range []string{
@@ -447,7 +447,7 @@ func TestGenerateCodeUsesNoErrSizeForEligibleNamedStructs(t *testing.T) {
 		analyzedStructs = oldAnalyzedStructs
 	})
 
-	g := generator{outputJenFilePath: "resolver_test"}
+	g := generator{outputJenFilePath: "msgpackgen_test"}
 	got := fmt.Sprintf("%#v", g.generateCode())
 
 	for _, want := range []string{
@@ -524,7 +524,7 @@ func TestGenerateCodeOptimizesMapDecodeDispatch(t *testing.T) {
 		analyzedStructs = oldAnalyzedStructs
 	})
 
-	g := generator{outputJenFilePath: "resolver_test"}
+	g := generator{outputJenFilePath: "msgpackgen_test"}
 	got := fmt.Sprintf("%#v", g.generateCode())
 
 	for _, want := range []string{
