@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.0.1](https://github.com/shamaton/msgpackgen/compare/v1.0.0...v1.0.1) - 2026-06-02
+### 🐛 Bug Fixes
+- fix: rename default generated file to msgpack.msgpackgen.go by @shamaton in https://github.com/shamaton/msgpackgen/pull/21
+### 🔧 Maintenance
+- Integrate tagpr with goreleaser by @shamaton in https://github.com/shamaton/msgpackgen/pull/18
+- chore: add CODEOWNERS by @shamaton in https://github.com/shamaton/msgpackgen/pull/20
+- chore: fix latest log in CHANGELOG by @shamaton in https://github.com/shamaton/msgpackgen/pull/22
+
 ## [v1.0.0](https://github.com/shamaton/msgpackgen/compare/v0.3.1...v1.0.0) - 2026-05-30
 ### 💥 Breaking Changes
 - Upgrade to v1 by @shamaton in https://github.com/shamaton/msgpackgen/pull/17
