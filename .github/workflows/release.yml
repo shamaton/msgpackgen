@@ -1,57 +1,53 @@
 name: release
+
 on:
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: "Release tag to publish, for example v1.2.3"
-        required: true
-        type: string
-
-permissions:
-  contents: write
-
-env:
-  GOPATH: ${{ github.workspace }}
-  WORKSPACE: ${{ github.workspace }}/src/github.com/${{ github.repository }}
+  push:
+    branches: ["main"]
 
 jobs:
-  goreleaser:
-    defaults:
-      run:
-        working-directory: ${{ env.WORKSPACE }}
+  tagpr:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: read
+    outputs:
+      tag: ${{ steps.tagpr.outputs.tag }}
     steps:
-      - name: Validate tag input
-        working-directory: ${{ github.workspace }}
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - id: tagpr
+        uses: Songmu/tagpr@555e72cee68c09d43dc2337dc9ba890955b630da # v1.19.0
         env:
-          TAG: ${{ inputs.tag }}
-        run: |
-          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::tag must match vX.Y.Z"
-            exit 1
-          fi
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  goreleaser:
+    needs: tagpr
+    if: needs.tagpr.outputs.tag != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ needs.tagpr.outputs.tag }}
           fetch-depth: 0
-          path: ${{ env.WORKSPACE }}
       - name: Verify checked out tag
         env:
-          TAG: ${{ inputs.tag }}
+          TAG: ${{ needs.tagpr.outputs.tag }}
         run: test "$(git describe --tags --exact-match)" = "$TAG"
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: ${{ env.WORKSPACE }}/go.mod
+          go-version-file: go.mod
           cache: true
-          cache-dependency-path: ${{ env.WORKSPACE }}/go.sum
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
           version: '~> v2'
           args: release --clean
-          workdir: ${{ env.WORKSPACE }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
