@@ -1,5 +1,21 @@
 # Changelog
 
+## [v1.0.2](https://github.com/shamaton/msgpackgen/compare/v1.0.1...v1.0.2) - 2026-06-07
+
+### ⚡ Performance
+- perf: speed up generated encode paths by @shamaton in https://github.com/shamaton/msgpackgen/pull/34
+### 🔧 Maintenance
+- ci: harden GitHub workflows and release automation by @shamaton in https://github.com/shamaton/msgpackgen/pull/23
+- ci: validate go.mod with Dependabot by @shamaton in https://github.com/shamaton/msgpackgen/pull/30
+- chore: add maintenance label if branch name contains "dependabot" by @shamaton in https://github.com/shamaton/msgpackgen/pull/31
+- chore(deps): bump actions/download-artifact from 5.0.0 to 8.0.1 by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/25
+- chore(deps): bump goreleaser/goreleaser-action from 6.4.0 to 7.2.2 by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/26
+- chore(deps): bump golangci/golangci-lint-action from 8.0.0 to 9.2.1 by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/27
+- chore(deps): bump codecov/codecov-action from 1.5.2 to 6.0.1 by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/28
+- chore(deps): bump securego/gosec from 6351b0c6fcc7d75acb230a9be7f9047aada322ae to 9addc97cefc9460a114e3c36f536b935da3b98c9 by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/29
+- chore(deps): bump Songmu/tagpr from 1.19.0 to 1.20.0 by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/32
+- chore(deps): bump actions/checkout from 6.0.2 to 6.0.3 by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/33
+
 ## [v1.0.1](https://github.com/shamaton/msgpackgen/compare/v1.0.0...v1.0.1) - 2026-06-02
 ### 🐛 Bug Fixes
 - fix: rename default generated file to msgpack.msgpackgen.go by @shamaton in https://github.com/shamaton/msgpackgen/pull/21
