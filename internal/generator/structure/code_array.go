@@ -45,7 +45,11 @@ func (st *Structure) createArrayCode(node *Node, encodeFieldName, decodeFieldNam
 
 func (g arrayCodeGen) createCalcCode(fieldName, childName string, isChildByte, passChildPointer bool, elmCodes []Code) []Code {
 	blockCodes := createAddSizeErrCheckCode("CalcSliceLength", Len(Id(fieldName)), Lit(isChildByte))
-	blockCodes = append(blockCodes, createSequenceRangeCode(fieldName, childName, passChildPointer, elmCodes))
+	if isChildByte {
+		blockCodes = append(blockCodes, Id("size").Op("+=").Len(Id(fieldName)))
+	} else {
+		blockCodes = append(blockCodes, createSequenceRangeCode(fieldName, childName, passChildPointer, elmCodes))
+	}
 
 	codes := make([]Code, 0)
 	codes = append(codes, Block(
@@ -58,7 +62,16 @@ func (g arrayCodeGen) createEncCode(fieldName, childName string, isChildByte, pa
 
 	blockCodes := make([]Code, 0)
 	blockCodes = append(blockCodes, Id("offset").Op("=").Qual(ptn.PkEnc, "WriteSliceLength").Call(Id("buf"), Len(Id(fieldName)), Id("offset"), Lit(isChildByte)))
-	blockCodes = append(blockCodes, createSequenceRangeCode(fieldName, childName, passChildPointer, elmCodes))
+	if isChildByte {
+		blockCodes = append(blockCodes,
+			Id("offset").Op("+=").Id("copy").Call(
+				Id("buf").Index(Id("offset").Op(":").Id("offset").Op("+").Len(Id(fieldName))),
+				Id(fieldName).Index(Op(":")),
+			),
+		)
+	} else {
+		blockCodes = append(blockCodes, createSequenceRangeCode(fieldName, childName, passChildPointer, elmCodes))
+	}
 
 	codes := make([]Code, 0)
 	codes = append(codes, Block(

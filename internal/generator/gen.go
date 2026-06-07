@@ -492,8 +492,10 @@ func (g *generator) publicEncodeReturn(privateFuncName, fallbackFuncName string)
 	}
 	if !g.strict {
 		code = append(code,
-			If(Qual("errors", "Is").Call(Err(), Qual(ptn.PkTop, "ErrUndefinedType"))).Block(
-				Return(Qual(ptn.PkFallback, fallbackFuncName).Call(Id("v"))),
+			If(Err().Op("!=").Nil()).Block(
+				If(Qual("errors", "Is").Call(Err(), Qual(ptn.PkTop, "ErrUndefinedType"))).Block(
+					Return(Qual(ptn.PkFallback, fallbackFuncName).Call(Id("v"))),
+				),
 			),
 		)
 	}
@@ -506,8 +508,10 @@ func (g *generator) publicDecodeReturn(privateFuncName, fallbackFuncName string)
 	}
 	if !g.strict {
 		code = append(code,
-			If(Qual("errors", "Is").Call(Err(), Qual(ptn.PkTop, "ErrUndefinedType"))).Block(
-				Return(Qual(ptn.PkFallback, fallbackFuncName).Call(Id("data"), Id("v"))),
+			If(Err().Op("!=").Nil()).Block(
+				If(Qual("errors", "Is").Call(Err(), Qual(ptn.PkTop, "ErrUndefinedType"))).Block(
+					Return(Qual(ptn.PkFallback, fallbackFuncName).Call(Id("data"), Id("v"))),
+				),
 			),
 		)
 	}
