@@ -22,13 +22,14 @@ var (
 )
 
 type generator struct {
-	fileSet               *token.FileSet
-	targetPackages        map[string]bool
-	parseFiles            []*ast.File
-	importPath2ParseFiles map[string][]*ast.File
-	parseFile2ImportPath  map[*ast.File]string
-	importPath2package    map[string]string
-	noUserQualMap         map[string]bool
+	fileSet                   *token.FileSet
+	targetPackages            map[string]bool
+	parseFiles                []*ast.File
+	importPath2ParseFiles     map[string][]*ast.File
+	parseFile2ImportPath      map[*ast.File]string
+	importPath2package        map[string]string
+	importPath2PrimitiveTypes map[string]map[string]primitiveTypeInfo
+	noUserQualMap             map[string]bool
 
 	parseFile2ImportMap    map[*ast.File]map[string]string
 	parseFile2DotImportMap map[*ast.File]map[string]*structure.Structure
@@ -90,16 +91,17 @@ func Run(inputDir, inputFile, outDir, fileName string, pointer int, useGopath, d
 	analyzedStructs = make([]*structure.Structure, 0)
 	structsInBrace = make([]string, 0)
 	g := generator{
-		useGopath:             useGopath,
-		pointer:               pointer,
-		strict:                strict,
-		verbose:               verbose,
-		targetPackages:        map[string]bool{},
-		parseFiles:            []*ast.File{},
-		importPath2package:    map[string]string{},
-		importPath2ParseFiles: map[string][]*ast.File{},
-		parseFile2ImportPath:  map[*ast.File]string{},
-		noUserQualMap:         map[string]bool{},
+		useGopath:                 useGopath,
+		pointer:                   pointer,
+		strict:                    strict,
+		verbose:                   verbose,
+		targetPackages:            map[string]bool{},
+		parseFiles:                []*ast.File{},
+		importPath2package:        map[string]string{},
+		importPath2ParseFiles:     map[string][]*ast.File{},
+		parseFile2ImportPath:      map[*ast.File]string{},
+		importPath2PrimitiveTypes: map[string]map[string]primitiveTypeInfo{},
+		noUserQualMap:             map[string]bool{},
 
 		parseFile2ImportMap:    map[*ast.File]map[string]string{},
 		parseFile2DotImportMap: map[*ast.File]map[string]*structure.Structure{},

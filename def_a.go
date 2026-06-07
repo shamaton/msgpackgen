@@ -183,6 +183,26 @@ func (p *private) SetInt() {
 	p.i = 1
 }
 
+type definedInt int
+type chainedDefinedInt definedInt
+type aliasInt = int
+type definedByte byte
+
+type testingNamedPrimitive struct {
+	Defined       definedInt
+	Chained       chainedDefinedInt
+	Alias         aliasInt
+	Pointer       *definedInt
+	Slice         []definedInt
+	Bytes         []definedByte
+	Array         [2]definedInt
+	Map           map[definedInt]aliasInt
+	Nested        map[aliasInt][]chainedDefinedInt
+	Imported      define2.DefinedInt
+	ImportedSlice []define2.DefinedInt
+	ImportedMap   map[define2.DefinedInt]define2.AliasInt
+}
+
 type notGenerated1 struct {
 	Int       int
 	Interface any
@@ -223,9 +243,4 @@ type notGenerated7 struct {
 type notGenerated8 struct {
 	Child bytes.Buffer
 	Int   int
-}
-
-type notGeneratedInt int
-type notGenerated10 struct {
-	Int notGeneratedInt
 }

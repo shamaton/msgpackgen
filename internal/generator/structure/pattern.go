@@ -95,6 +95,13 @@ func createWriteCode(funcName string, params ...Code) Code {
 	return Id("offset").Op("=").Qual(ptn.PkEnc, funcName).Call(args...)
 }
 
+func createIdentEncodeValue(node *Node, valueName string) Code {
+	if node.AliasName != "" {
+		return Id(node.IdenticalName).Call(Id(valueName))
+	}
+	return Id(valueName)
+}
+
 func createDecodeNilCheckedCode(nonNilCodes []Code) Code {
 	return Block(
 		List(Id("isNil"), Err()).Op(":=").Id(ptn.IdDecoder).Dot("IsCodeNilChecked").Call(Id("offset")),
@@ -191,6 +198,20 @@ func createDirectSequenceDecodeCode(node *Node, childName, childIndexName, funcN
 		return nil, false
 	}
 
+	if child.AliasName != "" {
+		decodedName := childName + "d"
+		return []Code{
+			Var().Id(decodedName).Id(child.IdenticalName),
+			List(Id(decodedName), Id("offset"), Err()).
+				Op("=").
+				Id(ptn.IdDecoder).Dot(funcName).Call(Id("offset")),
+			If(Err().Op("!=").Nil()).Block(
+				Return(Lit(0), Err()),
+			),
+			Id(childName).Index(Id(childIndexName)).Op("=").Add(child.AliasTypeJenChain().Call(Id(decodedName))),
+		}, true
+	}
+
 	return []Code{
 		List(Id(childName).Index(Id(childIndexName)), Id("offset"), Err()).
 			Op("=").
@@ -211,6 +232,20 @@ func createDirectMapValueDecodeCode(node *Node, mapName, keyName string) ([]Code
 		funcName = "AsDateTime"
 	default:
 		return nil, false
+	}
+
+	if child.AliasName != "" {
+		decodedName := mapName + "d"
+		return []Code{
+			Var().Id(decodedName).Id(child.IdenticalName),
+			List(Id(decodedName), Id("offset"), Err()).
+				Op("=").
+				Id(ptn.IdDecoder).Dot(funcName).Call(Id("offset")),
+			If(Err().Op("!=").Nil()).Block(
+				Return(Lit(0), Err()),
+			),
+			Id(mapName).Index(Id(keyName)).Op("=").Add(child.AliasTypeJenChain().Call(Id(decodedName))),
+		}, true
 	}
 
 	return []Code{

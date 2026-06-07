@@ -1407,6 +1407,48 @@ func _checkValue(v any, u1, u2 any, eqs ...func() (bool, any, any)) error {
 	return nil
 }
 
+func TestNamedPrimitive(t *testing.T) {
+	defined := definedInt(rand.Intn(math.MaxInt32))
+	v := testingNamedPrimitive{
+		Defined: definedInt(rand.Intn(math.MaxInt32)),
+		Chained: chainedDefinedInt(rand.Intn(math.MaxInt32)),
+		Alias:   rand.Intn(math.MaxInt32),
+		Pointer: &defined,
+		Slice: []definedInt{
+			definedInt(rand.Intn(math.MaxInt32)),
+			definedInt(rand.Intn(math.MaxInt32)),
+		},
+		Bytes: []definedByte{1, 2, 3, 255},
+		Array: [2]definedInt{
+			definedInt(rand.Intn(math.MaxInt32)),
+			definedInt(rand.Intn(math.MaxInt32)),
+		},
+		Map: map[definedInt]aliasInt{
+			definedInt(rand.Intn(math.MaxInt32)): rand.Intn(math.MaxInt32),
+			definedInt(rand.Intn(math.MaxInt32)): rand.Intn(math.MaxInt32),
+		},
+		Nested: map[aliasInt][]chainedDefinedInt{
+			rand.Intn(math.MaxInt32): {
+				chainedDefinedInt(rand.Intn(math.MaxInt32)),
+				chainedDefinedInt(rand.Intn(math.MaxInt32)),
+			},
+		},
+		Imported: define2.DefinedInt(rand.Intn(math.MaxInt32)),
+		ImportedSlice: []define2.DefinedInt{
+			define2.DefinedInt(rand.Intn(math.MaxInt32)),
+			define2.DefinedInt(rand.Intn(math.MaxInt32)),
+		},
+		ImportedMap: map[define2.DefinedInt]define2.AliasInt{
+			define2.DefinedInt(rand.Intn(math.MaxInt32)): rand.Intn(math.MaxInt32),
+		},
+	}
+
+	var v1, v2 testingNamedPrimitive
+	if err := _checkValue(v, &v1, &v2); err != nil {
+		t.Error(err)
+	}
+}
+
 func TestStruct(t *testing.T) {
 	check := func(v testingStruct) (testingStruct, testingStruct, error) {
 		f := func() (bool, any, any) {
@@ -1457,7 +1499,20 @@ func TestStruct(t *testing.T) {
 	}
 
 	v = testingStruct{}
-	v.A = define2.A{Int: rand.Int(), B: define.B{Int: rand.Int()}}
+	v.A = define2.A{
+		Int:     rand.Int(),
+		B:       define.B{Int: rand.Int()},
+		Defined: define2.DefinedInt(rand.Intn(math.MaxInt32)),
+		Chained: define2.ChainedDefinedInt(rand.Intn(math.MaxInt32)),
+		Alias:   rand.Intn(math.MaxInt32),
+		Slice: []define2.DefinedInt{
+			define2.DefinedInt(rand.Intn(math.MaxInt32)),
+			define2.DefinedInt(rand.Intn(math.MaxInt32)),
+		},
+		Map: map[define2.DefinedInt]define2.AliasInt{
+			define2.DefinedInt(rand.Intn(math.MaxInt32)): rand.Intn(math.MaxInt32),
+		},
+	}
 	v1, v2, err = check(v)
 	if err != nil {
 		t.Error(err)
@@ -1757,7 +1812,7 @@ func TestNotGenerated(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	err = checkUndefined(notGenerated10{}, notGenerated10{}, &notGenerated10{}, &notGenerated10{})
+	err = checkUndefined(define2.NotGeneratedNamedPrimitive{}, define2.NotGeneratedNamedPrimitive{}, &define2.NotGeneratedNamedPrimitive{}, &define2.NotGeneratedNamedPrimitive{})
 	if err != nil {
 		t.Error(err)
 	}

@@ -27,7 +27,7 @@ func (st *Structure) createArrayCode(node *Node, encodeFieldName, decodeFieldNam
 	if isRecursiveChildArraySliceMap(node) {
 		_, _, _, _, da, dm = st.createFieldCode(node.Elm(), encodeChildName, decodeChildName+"v")
 	}
-	isChildByte := node.Elm().IsIdentical() && node.Elm().IdenticalName == "byte"
+	isChildByte := node.Elm().IsIdentical() && node.Elm().IdenticalName == "byte" && node.Elm().AliasName == ""
 	passChildPointer := isPointerLoopElement(node.Elm())
 
 	g := arrayCodeGen{}

@@ -10,7 +10,7 @@ func (st *Structure) createFieldMaxCode(node *Node, encodeFieldName string) (cAr
 	switch {
 	case node.IsIdentical():
 		funcSuffix := identCodeGen{}.toPascalCase(node.IdenticalName)
-		codes := []Code{createAddSizeMaxCode("Calc"+funcSuffix, Id(encodeFieldName))}
+		codes := []Code{createAddSizeMaxCode("Calc"+funcSuffix, createIdentEncodeValue(node, encodeFieldName))}
 		return codes, codes
 
 	case node.IsSlice():
@@ -43,7 +43,7 @@ func (st *Structure) createSliceMaxCode(node *Node, fieldName string) (cArray []
 	}
 
 	childArray, childMap := st.createFieldMaxCode(node.Elm(), childName)
-	isChildByte := node.Elm().IsIdentical() && node.Elm().IdenticalName == "byte"
+	isChildByte := node.Elm().IsIdentical() && node.Elm().IdenticalName == "byte" && node.Elm().AliasName == ""
 	passChildPointer := isPointerLoopElement(node.Elm())
 
 	cArray = createNullableSequenceMaxCode(fieldName, childName, "CalcSliceLength", isChildByte, passChildPointer, childArray)
@@ -58,7 +58,7 @@ func (st *Structure) createArrayMaxCode(node *Node, fieldName string) (cArray []
 	}
 
 	childArray, childMap := st.createFieldMaxCode(node.Elm(), childName)
-	isChildByte := node.Elm().IsIdentical() && node.Elm().IdenticalName == "byte"
+	isChildByte := node.Elm().IsIdentical() && node.Elm().IdenticalName == "byte" && node.Elm().AliasName == ""
 	passChildPointer := isPointerLoopElement(node.Elm())
 
 	cArray = createSequenceMaxCode(fieldName, childName, "CalcSliceLength", isChildByte, passChildPointer, childArray)

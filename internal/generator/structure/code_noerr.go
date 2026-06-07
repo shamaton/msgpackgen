@@ -59,7 +59,7 @@ func (st *Structure) createFieldSizeNoErrCode(node *Node, encodeFieldName string
 		if max {
 			funcName += "Max"
 		}
-		codes := []Code{createAddSizeCode(funcName, Id(encodeFieldName))}
+		codes := []Code{createAddSizeCode(funcName, createIdentEncodeValue(node, encodeFieldName))}
 		return codes, codes
 
 	case node.IsStruct():

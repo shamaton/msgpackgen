@@ -17,11 +17,12 @@ func (st *Structure) createIdentCode(node *Node, encodeFieldName, decodeFieldNam
 
 	funcSuffix := g.toPascalCase(node.IdenticalName)
 
-	cArray = g.createCalcCode("Calc"+funcSuffix, Id(encodeFieldName))
-	cMap = g.createCalcCode("Calc"+funcSuffix, Id(encodeFieldName))
+	encodeValue := createIdentEncodeValue(node, encodeFieldName)
+	cArray = g.createCalcCode("Calc"+funcSuffix, encodeValue)
+	cMap = g.createCalcCode("Calc"+funcSuffix, encodeValue)
 
-	eArray = g.createEncCode("Write"+funcSuffix, Id(encodeFieldName), Id("offset"))
-	eMap = g.createEncCode("Write"+funcSuffix, Id(encodeFieldName), Id("offset"))
+	eArray = g.createEncCode("Write"+funcSuffix, encodeValue, Id("offset"))
+	eMap = g.createEncCode("Write"+funcSuffix, encodeValue, Id("offset"))
 
 	dArray = g.createDecCode(node, st.Others, decodeFieldName, "As"+funcSuffix)
 	dMap = g.createDecCode(node, st.Others, decodeFieldName, "As"+funcSuffix)
@@ -52,12 +53,24 @@ func (g identCodeGen) createDecCode(node *Node, structures []*Structure, fieldNa
 
 	codes, receiverName := createDecodeDefineVarCode(node, structures, varName)
 
-	codes = append(codes,
-		List(Id(receiverName), Id("offset"), Err()).Op("=").Id(ptn.IdDecoder).Dot(funcName).Call(Id("offset")),
-		If(Err().Op("!=").Nil()).Block(
-			Return(Lit(0), Err()),
-		),
-	)
+	if node.AliasName != "" {
+		decodedName := receiverName + "d"
+		codes = append(codes,
+			Var().Id(decodedName).Id(node.IdenticalName),
+			List(Id(decodedName), Id("offset"), Err()).Op("=").Id(ptn.IdDecoder).Dot(funcName).Call(Id("offset")),
+			If(Err().Op("!=").Nil()).Block(
+				Return(Lit(0), Err()),
+			),
+			Id(receiverName).Op("=").Add(node.AliasTypeJenChain().Call(Id(decodedName))),
+		)
+	} else {
+		codes = append(codes,
+			List(Id(receiverName), Id("offset"), Err()).Op("=").Id(ptn.IdDecoder).Dot(funcName).Call(Id("offset")),
+			If(Err().Op("!=").Nil()).Block(
+				Return(Lit(0), Err()),
+			),
+		)
+	}
 
 	codes = append(codes, createDecodeSetValueCode(node, varName, fieldName)...)
 
