@@ -91,6 +91,17 @@ struct: `time.Time` and structures you defined
 
 `time.Time` values are encoded and decoded as UTC by default. Location information is not preserved; values with a non-UTC location round-trip as the same instant in UTC.
 
+named types: types whose underlying type is a supported primitive are supported, including chained definitions and aliases
+
+```go
+type DefinedInt int               // defined type
+type ChainedDefinedInt DefinedInt // chained definition
+type AliasInt = int               // alias
+```
+
+They can also be used as slice/array/map elements (e.g. `[]DefinedInt`, `map[DefinedInt]AliasInt`).
+A named primitive type defined in another package must be exported to be referenced.
+
 ### Tags
 
 Renaming or omitting are available.
@@ -172,6 +183,9 @@ type Example struct {
 
     // because bytes.Buffer is in outside package
     Buf bytes.Buffer
+
+    // because an unexported named primitive type in another package is inaccessible
+    Hidden b.hiddenInt
 }
 
 func (e Example) F() {
