@@ -14,7 +14,6 @@ import (
 )
 
 func TestSearchGoMod(t *testing.T) {
-
 	g := generator{}
 	_, err := g.searchGoModFile("dummy", true)
 	if err == nil {
@@ -47,7 +46,6 @@ func TestSearchGoMod(t *testing.T) {
 }
 
 func TestSetModuleName(t *testing.T) {
-
 	g := generator{}
 	g.goModFilePath = "dummy"
 	err := g.setModuleName()
@@ -263,7 +261,7 @@ func TestGeneratedNonStrictFallbackCompilesAndRuns(t *testing.T) {
 	files := map[string]string{
 		"go.mod": fmt.Sprintf(`module example.com/nonstrict
 
-go 1.23
+go 1.24
 
 require (
 	github.com/shamaton/msgpack/v3 v3.1.2
