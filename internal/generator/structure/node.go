@@ -22,6 +22,11 @@ type Node struct {
 
 	// for identical
 	IdenticalName string
+	AliasName     string
+
+	// for primitive-compatible named type
+	AliasImportPath string
+	AliasNoUseQual  bool
 
 	// for array
 	ArrayLen uint64
@@ -140,7 +145,11 @@ func (n Node) TypeJenChain(structures []*Structure, statements ...*Statement) *S
 
 	switch {
 	case n.IsIdentical():
-		str = str.Id(n.IdenticalName)
+		if n.AliasName != "" {
+			str = n.aliasTypeJenChain(str)
+		} else {
+			str = str.Id(n.IdenticalName)
+		}
 
 	case n.IsStruct():
 		if n.ImportPath == "time" && n.StructName == "Time" {
@@ -193,6 +202,37 @@ func CreateIdentNode(ident *ast.Ident, parent *Node) *Node {
 		fieldType:     fieldTypeIdent,
 		IdenticalName: ident.Name,
 		Parent:        parent,
+	}
+}
+
+// aliasTypeJenChain appends the named primitive type.
+func (n Node) aliasTypeJenChain(str *Statement) *Statement {
+	if n.AliasNoUseQual {
+		return str.Id(n.AliasName)
+	}
+	return str.Qual(n.AliasImportPath, n.AliasName)
+}
+
+// AliasTypeJenChain is a helper method to create alias type code.
+func (n Node) AliasTypeJenChain(statements ...*Statement) *Statement {
+	var str *Statement
+	if len(statements) > 0 {
+		str = statements[0]
+	} else {
+		str = Id("")
+	}
+	return n.aliasTypeJenChain(str)
+}
+
+// CreateIdentAliasNode creates a node of primitive-compatible named type.
+func CreateIdentAliasNode(aliasName, primitiveName, importPath string, noUseQual bool, parent *Node) *Node {
+	return &Node{
+		fieldType:       fieldTypeIdent,
+		IdenticalName:   primitiveName,
+		AliasName:       aliasName,
+		AliasImportPath: importPath,
+		AliasNoUseQual:  noUseQual,
+		Parent:          parent,
 	}
 }
 

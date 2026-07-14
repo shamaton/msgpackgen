@@ -17,6 +17,12 @@ import (
 	"github.com/shamaton/msgpackgen/internal/generator/structure"
 )
 
+type primitiveTypeInfo struct {
+	PrimitiveName string
+	ImportPath    string
+	NoUseQual     bool
+}
+
 func (g *generator) getPackages(files []string) error {
 
 	for _, file := range files {
@@ -97,7 +103,75 @@ func (g *generator) analyze() error {
 		}
 	}
 
+	g.createPrimitiveTypeMap()
 	return g.setFieldToStructs()
+}
+
+func (g *generator) createPrimitiveTypeMap() {
+	for importPath, parseFiles := range g.importPath2ParseFiles {
+		typeExprs := map[string]ast.Expr{}
+		for _, parseFile := range parseFiles {
+			for _, decl := range parseFile.Decls {
+				genDecl, ok := decl.(*ast.GenDecl)
+				if !ok || genDecl.Tok != token.TYPE {
+					continue
+				}
+				for _, spec := range genDecl.Specs {
+					typeSpec, ok := spec.(*ast.TypeSpec)
+					if !ok {
+						continue
+					}
+					if _, ok := typeSpec.Type.(*ast.StructType); ok {
+						continue
+					}
+					typeExprs[typeSpec.Name.Name] = typeSpec.Type
+				}
+			}
+		}
+
+		noUseQual := g.noUserQualMap[importPath]
+
+		primitiveTypes := map[string]primitiveTypeInfo{}
+		resolvedTypes := map[string]primitiveTypeInfo{}
+		var resolve func(string, map[string]bool) (primitiveTypeInfo, bool)
+		resolve = func(name string, seen map[string]bool) (primitiveTypeInfo, bool) {
+			if structure.IsPrimitive(name) {
+				return primitiveTypeInfo{PrimitiveName: name}, true
+			}
+			if info, ok := resolvedTypes[name]; ok {
+				return info, true
+			}
+			if seen[name] {
+				return primitiveTypeInfo{}, false
+			}
+			seen[name] = true
+
+			expr, ok := typeExprs[name]
+			if !ok {
+				return primitiveTypeInfo{}, false
+			}
+			ident, ok := expr.(*ast.Ident)
+			if !ok {
+				return primitiveTypeInfo{}, false
+			}
+			info, ok := resolve(ident.Name, seen)
+			if !ok {
+				return primitiveTypeInfo{}, false
+			}
+			info.ImportPath = importPath
+			info.NoUseQual = noUseQual
+			resolvedTypes[name] = info
+			if importPath == g.outputImportPath || ast.IsExported(name) {
+				primitiveTypes[name] = info
+			}
+			return info, true
+		}
+
+		for name := range typeExprs {
+			resolve(name, map[string]bool{})
+		}
+		g.importPath2PrimitiveTypes[importPath] = primitiveTypes
+	}
 }
 
 func (g *generator) createAnalyzedStructs(parseFile *ast.File, packageName, importPath string, analyzedMap map[*ast.File]bool) error {
@@ -219,7 +293,8 @@ func (g *generator) setFieldToStructs() error {
 			}
 		}
 
-		err := g.setFieldToStruct(analyzedStruct, importMap, dotStructs, sameHierarchyStructs)
+		primitiveTypes := g.importPath2PrimitiveTypes[analyzedStruct.ImportPath]
+		err := g.setFieldToStruct(analyzedStruct, importMap, dotStructs, sameHierarchyStructs, primitiveTypes)
 		if err != nil {
 			return err
 		}
@@ -229,6 +304,7 @@ func (g *generator) setFieldToStructs() error {
 
 func (g *generator) setFieldToStruct(target *structure.Structure,
 	importMap map[string]string, dotStructs map[string]*structure.Structure, sameHierarchyStructs map[string]bool,
+	primitiveTypes map[string]primitiveTypeInfo,
 ) (err error) {
 
 	analyzedFieldMap := map[string]*structure.Node{}
@@ -250,7 +326,7 @@ func (g *generator) setFieldToStruct(target *structure.Structure,
 
 				key := fmt.Sprint(i)
 
-				value, ok, rs := g.createNodeRecursive(field.Type, nil, importMap, dotStructs, sameHierarchyStructs, target.ImportPath, target.Package)
+				value, ok, rs := g.createNodeRecursive(field.Type, nil, importMap, dotStructs, sameHierarchyStructs, primitiveTypes, target.ImportPath, target.Package)
 				canGen = canGen && ok
 				if ok {
 					analyzedFieldMap[key+"@"+x.Name.String()] = value
@@ -275,6 +351,7 @@ func (g *generator) setFieldToStruct(target *structure.Structure,
 }
 func (g *generator) createNodeRecursive(expr ast.Expr, parent *structure.Node,
 	importMap map[string]string, dotStructs map[string]*structure.Structure, sameHierarchyStructs map[string]bool,
+	primitiveTypes map[string]primitiveTypeInfo,
 	importPath, packageName string) (*structure.Node, bool, []string) {
 
 	reasons := make([]string, 0)
@@ -286,6 +363,15 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *structure.Node,
 		// time
 		if ident.Name == "Time" {
 			return structure.CreateStructNode("time", "time", ident.Name, parent), true, reasons
+		}
+		if primitiveInfo, found := primitiveTypes[ident.Name]; found {
+			return structure.CreateIdentAliasNode(
+				ident.Name,
+				primitiveInfo.PrimitiveName,
+				primitiveInfo.ImportPath,
+				primitiveInfo.NoUseQual,
+				parent,
+			), true, reasons
 		}
 		// same hierarchy struct
 		if ident.Obj != nil && ident.Obj.Kind == ast.Typ {
@@ -306,6 +392,16 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *structure.Node,
 	// struct
 	if selector, ok := expr.(*ast.SelectorExpr); ok {
 		pkgName := fmt.Sprint(selector.X)
+		importPath := importMap[pkgName]
+		if primitiveInfo, found := g.importPath2PrimitiveTypes[importPath][selector.Sel.Name]; found {
+			return structure.CreateIdentAliasNode(
+				selector.Sel.Name,
+				primitiveInfo.PrimitiveName,
+				primitiveInfo.ImportPath,
+				primitiveInfo.NoUseQual,
+				parent,
+			), true, reasons
+		}
 		return structure.CreateStructNode(importMap[pkgName], pkgName, selector.Sel.Name, parent), true, reasons
 	}
 
@@ -329,7 +425,7 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *structure.Node,
 			}
 			node = structure.CreateArrayNode(n.Uint64(), parent)
 		}
-		key, check, rs := g.createNodeRecursive(array.Elt, node, importMap, dotStructs, sameHierarchyStructs, importPath, packageName)
+		key, check, rs := g.createNodeRecursive(array.Elt, node, importMap, dotStructs, sameHierarchyStructs, primitiveTypes, importPath, packageName)
 		node.SetKeyNode(key)
 		reasons = append(reasons, rs...)
 		return node, check, reasons
@@ -338,8 +434,8 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *structure.Node,
 	// map
 	if mp, ok := expr.(*ast.MapType); ok {
 		node := structure.CreateMapNode(parent)
-		key, c1, krs := g.createNodeRecursive(mp.Key, node, importMap, dotStructs, sameHierarchyStructs, importPath, packageName)
-		value, c2, vrs := g.createNodeRecursive(mp.Value, node, importMap, dotStructs, sameHierarchyStructs, importPath, packageName)
+		key, c1, krs := g.createNodeRecursive(mp.Key, node, importMap, dotStructs, sameHierarchyStructs, primitiveTypes, importPath, packageName)
+		value, c2, vrs := g.createNodeRecursive(mp.Value, node, importMap, dotStructs, sameHierarchyStructs, primitiveTypes, importPath, packageName)
 		node.SetKeyNode(key)
 		node.SetValueNode(value)
 		reasons = append(reasons, krs...)
@@ -350,7 +446,7 @@ func (g *generator) createNodeRecursive(expr ast.Expr, parent *structure.Node,
 	// *
 	if star, ok := expr.(*ast.StarExpr); ok {
 		node := structure.CreatePointerNode(parent)
-		key, check, rs := g.createNodeRecursive(star.X, node, importMap, dotStructs, sameHierarchyStructs, importPath, packageName)
+		key, check, rs := g.createNodeRecursive(star.X, node, importMap, dotStructs, sameHierarchyStructs, primitiveTypes, importPath, packageName)
 		node.SetKeyNode(key)
 		reasons = append(reasons, rs...)
 		return node, check, reasons
