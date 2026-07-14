@@ -1,5 +1,23 @@
 # Changelog
 
+## [v1.1.0](https://github.com/shamaton/msgpackgen/compare/v1.0.2...v1.1.0) - 2026-07-14
+
+### 🚀 Features
+- feat: support named primitive types by @shamaton in https://github.com/shamaton/msgpackgen/pull/48
+### 🔧 Maintenance
+- chore(deps): bump securego/gosec from 9addc97cefc9460a114e3c36f536b935da3b98c9 to f1c81de5fcdf7b466b229fb24ca02d1a8406dd09 by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/35
+- chore(deps): bump codecov/codecov-action from 6.0.1 to 7.0.0 by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/36
+- chore(deps): bump securego/gosec from f1c81de5fcdf7b466b229fb24ca02d1a8406dd09 to caf8857bbd3276599d0176b0528e9712bb0b5bec by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/38
+- chore(deps): bump actions/checkout from 6.0.3 to 7.0.0 by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/39
+- chore(deps): bump goreleaser/goreleaser-action from 7.2.2 to 7.2.3 by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/43
+- chore(deps): bump securego/gosec from caf8857bbd3276599d0176b0528e9712bb0b5bec to 11023e51e1f46c4ea63315bdb7670f073442168f by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/44
+- chore(deps): bump actions/setup-go from 6.4.0 to 6.5.0 by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/41
+- chore(deps): bump actions/cache from 5.0.5 to 6.1.0 by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/42
+- chore(deps): bump actions/labeler from 6.1.0 to 6.2.0 by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/47
+- chore(deps): bump securego/gosec from 11023e51e1f46c4ea63315bdb7670f073442168f to 849570622f56a251c015c0e2417aebafc0216e17 by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/46
+- chore(deps): bump golangci/golangci-lint-action from 9.2.1 to 9.3.0 by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/45
+- Require Go 1.24 by @shamaton in https://github.com/shamaton/msgpackgen/pull/49
+
 ## [v1.0.2](https://github.com/shamaton/msgpackgen/compare/v1.0.1...v1.0.2) - 2026-06-07
 
 ### ⚡ Performance
