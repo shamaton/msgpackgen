@@ -1,5 +1,12 @@
 # Changelog
 
+## [v1.1.4](https://github.com/shamaton/msgpackgen/compare/v1.1.3...v1.1.4) - 2026-09-20
+
+### 🔧 Maintenance
+- chore(deps): bump securego/gosec from 8075fd2e520d33330afe168f26fc7a91f57f2cbc to 681347199262bc33b9b5119ae2b448dec5718240 by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/70
+- chore(deps): bump codecov/codecov-action from 7.0.0 to 7.1.1 by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/71
+- chore(deps): bump github.com/shamaton/msgpack/v3 from 3.2.2 to 3.2.3 in the gomod group by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/72
+
 ## [v1.1.3](https://github.com/shamaton/msgpackgen/compare/v1.1.2...v1.1.3) - 2026-09-13
 
 ### 🔧 Maintenance
