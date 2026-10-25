@@ -1,5 +1,15 @@
 # Changelog
 
+## [v1.1.5](https://github.com/shamaton/msgpackgen/compare/v1.1.4...v1.1.5) - 2026-10-25
+
+### 🔧 Maintenance
+- chore(deps): bump actions/download-artifact from 8.0.1 to 8.0.2 by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/79
+- chore(deps): bump actions/upload-artifact from 7.0.1 to 7.0.2 by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/80
+- chore(deps): bump Songmu/tagpr from 1.21.1 to 1.21.2 by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/81
+- chore(deps): bump goreleaser/goreleaser-action from 7.2.3 to 7.3.0 by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/82
+- chore(deps): bump securego/gosec from 65c2c082857febe898116edeb1fcddea0193634a to 707f2271f66579a18e1da25794b1e8012247274b by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/83
+- chore(deps): bump github.com/shamaton/msgpack/v3 from 3.2.3 to 3.2.5 in the gomod group by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/84
+
 ## [v1.1.4](https://github.com/shamaton/msgpackgen/compare/v1.1.3...v1.1.4) - 2026-10-04
 
 ### 🔧 Maintenance
