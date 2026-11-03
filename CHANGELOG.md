@@ -1,5 +1,12 @@
 # Changelog
 
+## [v1.1.6](https://github.com/shamaton/msgpackgen/compare/v1.1.5...v1.1.6) - 2026-11-03
+
+### 🔧 Maintenance
+- chore(deps): bump securego/gosec from 707f2271f66579a18e1da25794b1e8012247274b to a7abd50b2947e53b26a7e200223e635ce36fac9b by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/88
+- chore(deps): bump Songmu/tagpr from 1.21.2 to 1.21.4 by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/87
+- chore(deps): bump github.com/shamaton/msgpack/v3 from 3.2.5 to 3.2.6 in the gomod group by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/86
+
 ## [v1.1.5](https://github.com/shamaton/msgpackgen/compare/v1.1.4...v1.1.5) - 2026-10-25
 
 ### 🔧 Maintenance
