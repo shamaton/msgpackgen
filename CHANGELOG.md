@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.1.7](https://github.com/shamaton/msgpackgen/compare/v1.1.6...v1.1.7) - 2026-11-15
+
+### 🔧 Maintenance
+- chore(deps): bump github.com/shamaton/msgpack/v3 from 3.2.6 to 3.2.7 in the gomod group by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/93
+- chore(deps): bump Songmu/tagpr from 1.21.4 to 1.22.0 by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/90
+- chore(deps): bump github/codeql-action/upload-sarif from 7c1e4cf0b20d7c1872b26569c00ba908797a59bf to 3ea37a44b6e4e6847c46edae209410d258d548d1 by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/94
+- chore(deps): bump securego/gosec from a7abd50b2947e53b26a7e200223e635ce36fac9b to 244f1f6f4d1d0d14f89e79a73dab1219eabb5228 by @dependabot[bot] in https://github.com/shamaton/msgpackgen/pull/95
+
 ## [v1.1.6](https://github.com/shamaton/msgpackgen/compare/v1.1.5...v1.1.6) - 2026-11-03
 
 ### 🔧 Maintenance
